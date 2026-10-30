@@ -34,29 +34,29 @@ export function PuntosVentaSeccion() {
         {puntos.data.length === 0 ? (
           <Vacio>Todavía no cargaste puntos de venta.</Vacio>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="-mx-4 overflow-x-auto sm:-mx-6">
             <table className="w-full text-sm">
-              <thead className="text-left text-slate-500">
+              <thead className="bg-niebla text-left font-[family-name:var(--font-ui)] text-[13px] uppercase tracking-[0.08em] text-marca [&_th]:border-b [&_th]:border-black/10">
                 <tr>
-                  <th className="py-2 pr-4 font-medium">Número</th>
-                  <th className="py-2 pr-4 font-medium">Ambiente</th>
-                  <th className="py-2 pr-4 font-medium">Descripción</th>
-                  <th className="py-2 pr-4 font-medium">Estado</th>
+                  <th className="px-3 py-2.5 font-medium">Número</th>
+                  <th className="px-3 py-2.5 font-medium">Ambiente</th>
+                  <th className="px-3 py-2.5 font-medium">Descripción</th>
+                  <th className="px-3 py-2.5 font-medium">Estado</th>
                   <th />
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-black/5">
                 {puntos.data.map((pv) => (
                   <tr key={pv.id}>
-                    <td className="py-2 pr-4 font-mono">{String(pv.numero).padStart(5, '0')}</td>
-                    <td className="py-2 pr-4">{ambienteTexto(pv.ambiente)}</td>
-                    <td className="py-2 pr-4">{pv.descripcion ?? '—'}</td>
-                    <td className="py-2 pr-4">
-                      <Etiqueta className={pv.activo ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'}>
+                    <td className="px-3 py-2 font-mono">{String(pv.numero).padStart(5, '0')}</td>
+                    <td className="px-3 py-2">{ambienteTexto(pv.ambiente)}</td>
+                    <td className="px-3 py-2">{pv.descripcion ?? '—'}</td>
+                    <td className="px-3 py-2">
+                      <Etiqueta className={pv.activo ? 'border-emerald-500/80 bg-emerald-100 text-emerald-950' : 'border-zinc-300/90 bg-zinc-100 text-zinc-800'}>
                         {pv.activo ? 'Activo' : 'Inactivo'}
                       </Etiqueta>
                     </td>
-                    <td className="py-2 text-right">
+                    <td className="px-3 py-2 text-right">
                       <Boton
                         variante="fantasma"
                         cargando={cambiarActivo.isPending && cambiarActivo.variables?.id === pv.id}

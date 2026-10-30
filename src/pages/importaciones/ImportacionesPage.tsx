@@ -19,8 +19,8 @@ export function ImportacionesPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-xl font-semibold">Importaciones</h1>
-        <p className="text-sm text-slate-500">
+        <h1 className="font-[family-name:var(--font-display)] text-3xl tracking-wide sm:text-4xl">Importaciones</h1>
+        <p className="text-sm text-acero">
           Traé lo que hay que facturar desde una planilla (o desde otro sistema por la API), revisalo y generá los borradores en un paso.
         </p>
       </div>
@@ -36,32 +36,32 @@ export function ImportacionesPage() {
           <Vacio>Todavía no importaste nada.</Vacio>
         ) : (
           <>
-            <div className="overflow-x-auto">
+            <div className="-mx-4 overflow-x-auto sm:-mx-6">
               <table className="w-full text-sm">
-                <thead className="text-left text-slate-500">
+                <thead className="bg-niebla text-left font-[family-name:var(--font-ui)] text-[13px] uppercase tracking-[0.08em] text-marca [&_th]:border-b [&_th]:border-black/10">
                   <tr>
-                    <th className="py-2 pr-4 font-medium">Lote</th>
-                    <th className="py-2 pr-4 font-medium">Fecha</th>
-                    <th className="py-2 pr-4 text-right font-medium">Ítems</th>
-                    <th className="py-2 font-medium">Estado</th>
+                    <th className="px-3 py-2.5 font-medium">Lote</th>
+                    <th className="px-3 py-2.5 font-medium">Fecha</th>
+                    <th className="px-3 py-2.5 text-right font-medium">Ítems</th>
+                    <th className="px-3 py-2.5 font-medium">Estado</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-black/5">
                   {data.items.map((i) => (
-                    <tr key={i.id} className="hover:bg-slate-50">
-                      <td className="py-2 pr-4">
-                        <Link to={`/importaciones/${i.id}`} className="font-medium hover:underline">
+                    <tr key={i.id} className="hover:bg-niebla">
+                      <td className="px-3 py-2">
+                        <Link to={`/importaciones/${i.id}`} className="font-medium text-marca hover:text-marca-claro hover:underline">
                           {i.descripcion || ORIGENES[i.origen]}
                         </Link>
-                        <span className="block text-xs text-slate-500">{ORIGENES[i.origen]}</span>
+                        <span className="block text-xs text-acero">{ORIGENES[i.origen]}</span>
                       </td>
-                      <td className="py-2 pr-4 whitespace-nowrap">{fechaHora(i.createdAt)}</td>
-                      <td className="py-2 pr-4 text-right text-xs whitespace-nowrap">
+                      <td className="px-3 py-2 whitespace-nowrap">{fechaHora(i.createdAt)}</td>
+                      <td className="px-3 py-2 text-right text-xs whitespace-nowrap">
                         <span className="text-emerald-700">{i.validos} listos</span>
                         {i.conErrores > 0 && <span className="ml-2 text-red-700">{i.conErrores} con errores</span>}
-                        {i.duplicados > 0 && <span className="ml-2 text-slate-500">{i.duplicados} repetidos</span>}
+                        {i.duplicados > 0 && <span className="ml-2 text-acero">{i.duplicados} repetidos</span>}
                       </td>
-                      <td className="py-2">
+                      <td className="px-3 py-2">
                         <Etiqueta className={ESTADOS_IMPORTACION[i.estado].clase}>{ESTADOS_IMPORTACION[i.estado].texto}</Etiqueta>
                       </td>
                     </tr>
@@ -74,7 +74,7 @@ export function ImportacionesPage() {
                 <Boton variante="secundario" disabled={pagina <= 1} onClick={() => setPagina((p) => p - 1)}>
                   Anterior
                 </Boton>
-                <span className="text-slate-500">
+                <span className="text-acero">
                   Página {pagina} de {paginas}
                 </span>
                 <Boton variante="secundario" disabled={pagina >= paginas} onClick={() => setPagina((p) => p + 1)}>

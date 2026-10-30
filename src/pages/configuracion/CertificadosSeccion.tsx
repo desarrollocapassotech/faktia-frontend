@@ -27,7 +27,7 @@ export function CertificadosSeccion() {
       {!tieneProduccion || claveGenerada ? (
         <AsistenteCertificado emisor={emisor.data} onClaveGenerada={setClaveGenerada} />
       ) : (
-        <details className="rounded-lg border border-slate-200 bg-white p-4 text-sm shadow-sm">
+        <details className="rounded border border-black/10 bg-white p-4 text-sm shadow-sm">
           <summary className="cursor-pointer font-medium">Renovar el certificado de producción (paso a paso)</summary>
           <div className="mt-3">
             <AsistenteCertificado emisor={emisor.data} onClaveGenerada={setClaveGenerada} />
@@ -41,18 +41,18 @@ export function CertificadosSeccion() {
             {emisor.data.ambienteArca === 'HOMOLOGACION' && ' En pruebas no hace falta: se usa el CUIT de prueba de AfipSDK.'}
           </Vacio>
         ) : (
-          <ul className="divide-y divide-slate-100 text-sm">
+          <ul className="divide-y divide-black/5 text-sm">
             {certificados.data.map((c) => {
               const dias = diasHasta(c.venceEl);
               return (
                 <li key={c.id} className="flex flex-wrap items-baseline justify-between gap-2 py-2">
                   <div>
                     <p className="font-medium">{ambienteTexto(c.ambiente)}</p>
-                    <p className="break-all font-mono text-xs text-slate-500">SHA-256 {c.huellaSha256}</p>
+                    <p className="break-all font-mono text-xs text-acero">SHA-256 {c.huellaSha256}</p>
                   </div>
-                  <p className={dias < 0 ? 'text-red-700' : dias <= DIAS_AVISO ? 'text-amber-700' : 'text-slate-600'}>
+                  <p className={dias < 0 ? 'text-red-700' : dias <= DIAS_AVISO ? 'text-amber-700' : 'text-acero'}>
                     {dias < 0 ? `Venció el ${fecha(c.venceEl)}` : `Vence el ${fecha(c.venceEl)}`}
-                    <span className="ml-2 text-xs text-slate-400">cargado el {fecha(c.createdAt)}</span>
+                    <span className="ml-2 text-xs text-acero/60">cargado el {fecha(c.createdAt)}</span>
                   </p>
                 </li>
               );
@@ -107,7 +107,7 @@ function CargarCertificado({ ambiente, claveInicial }: { ambiente: Ambiente; cla
   return (
     <Tarjeta titulo="Cargar certificado">
       <form onSubmit={enviar} className="space-y-4">
-        <p className="text-sm text-slate-600">
+        <p className="text-sm text-acero">
           El certificado (.crt) y la clave privada (.key) se validan (que sean pareja, que no estén vencidos y que el CUIT
           coincida) y se guardan cifrados. Cargar uno nuevo reemplaza al anterior del mismo ambiente.
         </p>

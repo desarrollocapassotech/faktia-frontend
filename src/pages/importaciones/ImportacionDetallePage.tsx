@@ -72,14 +72,14 @@ export function ImportacionDetallePage() {
   return (
     <div className="space-y-4">
       <div>
-        <Link to="/importaciones" className="text-sm text-slate-500 hover:underline">
+        <Link to="/importaciones" className="text-sm text-marca hover:text-marca-claro">
           ← Importaciones
         </Link>
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-xl font-semibold">{i.descripcion || ORIGENES[i.origen]}</h1>
+          <h1 className="font-[family-name:var(--font-display)] text-3xl tracking-wide sm:text-4xl">{i.descripcion || ORIGENES[i.origen]}</h1>
           <Etiqueta className={ESTADOS_IMPORTACION[i.estado].clase}>{ESTADOS_IMPORTACION[i.estado].texto}</Etiqueta>
         </div>
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-acero">
           {ORIGENES[i.origen]} · {fechaHora(i.createdAt)}
         </p>
       </div>
@@ -94,7 +94,7 @@ export function ImportacionDetallePage() {
           <Dato titulo="En borrador / facturados" valor={`${n('EN_BORRADOR')} / ${n('FACTURADO')}`} />
         </dl>
         {i.duplicados > 0 && (
-          <p className="mt-3 text-xs text-slate-500">
+          <p className="mt-3 text-xs text-acero">
             Los repetidos ya estaban importados con los mismos datos: no se vuelven a cargar.
           </p>
         )}
@@ -132,7 +132,7 @@ export function ImportacionDetallePage() {
                 key={f.id}
                 type="button"
                 onClick={() => setFiltro(f.id)}
-                className={`rounded-md px-2 py-1 text-xs ${filtro === f.id ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+                className={`rounded-sm px-2 py-1 text-xs ${filtro === f.id ? 'bg-carbon text-white' : 'text-acero hover:bg-niebla'}`}
               >
                 {f.texto}
               </button>
@@ -146,7 +146,7 @@ export function ImportacionDetallePage() {
         ) : items.data.items.length === 0 ? (
           <Vacio>No hay ítems {filtro ? 'en este estado' : 'en esta importación'}.</Vacio>
         ) : (
-          <ul className="divide-y divide-slate-100">
+          <ul className="divide-y divide-black/5">
             {items.data.items.map((item) => (
               <FilaItem
                 key={item.id}
@@ -188,7 +188,7 @@ export function ImportacionDetallePage() {
 function Dato({ titulo, valor, clase = '' }: { titulo: string; valor: string | number; clase?: string }) {
   return (
     <div>
-      <dt className="text-slate-500">{titulo}</dt>
+      <dt className="text-acero">{titulo}</dt>
       <dd className={`text-lg font-semibold tabular-nums ${clase}`}>{valor}</dd>
     </div>
   );
@@ -226,7 +226,7 @@ function Acciones({
     <Tarjeta titulo={i.estado === 'EN_STAGING' ? 'Revisión' : 'Facturar'}>
       {i.estado === 'EN_STAGING' ? (
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-acero">
             Corregí los ítems con errores (o descartalos) y confirmá. Los que queden con error no se facturan.
           </p>
           <div className="flex gap-2">
@@ -258,7 +258,7 @@ function Acciones({
           <Boton type="submit" cargando={generar.isPending} disabled={listos === 0}>
             Generar borradores ({listos} ítem{listos === 1 ? '' : 's'})
           </Boton>
-          {listos === 0 && <p className="w-full text-sm text-slate-500">No quedan ítems listos para facturar en esta importación.</p>}
+          {listos === 0 && <p className="w-full text-sm text-acero">No quedan ítems listos para facturar en esta importación.</p>}
         </form>
       )}
       <div className="mt-3">
@@ -318,13 +318,13 @@ function FilaItem({
     <li className="grid gap-3 py-3 text-sm lg:grid-cols-12">
       <div className="lg:col-span-5">
         <p className="font-medium">{item.descripcion}</p>
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-acero">
           {periodo}
           {m.fila !== undefined && <> · fila {String(m.fila)}</>}
         </p>
         <p className="mt-1">
           {item.cliente ? (
-            <span className="text-slate-700">{item.cliente.razonSocial}</span>
+            <span className="text-carbon">{item.cliente.razonSocial}</span>
           ) : (
             <span className="text-red-700">
               Sin cliente
@@ -333,7 +333,7 @@ function FilaItem({
             </span>
           )}
           {editable && (
-            <button type="button" onClick={onAsignar} className="ml-2 text-xs text-slate-600 underline">
+            <button type="button" onClick={onAsignar} className="ml-2 text-xs text-acero underline">
               {item.cliente ? 'Cambiar' : 'Asignar cliente'}
             </button>
           )}
@@ -343,9 +343,9 @@ function FilaItem({
       <div className="lg:col-span-3">
         <p className="tabular-nums">
           {cantidad(item.cantidad)} {unidadTexto(item.unidad, item.cantidad)} × {dinero(item.precioUnitario, item.moneda)}
-          {m.precioDeTarifa && m.tarifaId && <span className="ml-1 text-xs text-slate-500">(tarifa)</span>}
+          {m.precioDeTarifa && m.tarifaId && <span className="ml-1 text-xs text-acero">(tarifa)</span>}
         </p>
-        <p className="text-xs text-slate-500 tabular-nums">
+        <p className="text-xs text-acero tabular-nums">
           ≈ {dinero(totalEstimado(item), item.moneda)} con IVA {Number(item.alicuotaIva)} %
         </p>
       </div>
@@ -565,7 +565,7 @@ function AsignarClienteModal({ item, onCerrar, onGuardado }: { item: ItemFactura
     <Modal abierto titulo="Asignar cliente" onCerrar={onCerrar}>
       <div className="space-y-4 text-sm">
         {(alta?.razonSocial || numero) && (
-          <p className="text-slate-600">
+          <p className="text-acero">
             El origen lo identifica como <strong>{alta?.razonSocial ?? '—'}</strong>
             {numero && <> ({cuit(numero)})</>}.
             {item.clienteReferenciaExterna && ' Al asignarlo, se recuerda para las próximas importaciones y se aplica a los otros ítems de ese cliente.'}

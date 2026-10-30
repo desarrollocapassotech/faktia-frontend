@@ -9,11 +9,11 @@ export function NuevoComprobantePage() {
   return (
     <div className="space-y-4">
       <div>
-        <Link to="/comprobantes" className="text-sm text-slate-500 hover:underline">
+        <Link to="/comprobantes" className="text-sm text-marca hover:text-marca-claro">
           ← Comprobantes
         </Link>
-        <h1 className="text-xl font-semibold">Nueva factura</h1>
-        <p className="text-sm text-slate-500">Se guarda como borrador. Lo revisás y lo emitís en el paso siguiente.</p>
+        <h1 className="font-[family-name:var(--font-display)] text-3xl tracking-wide sm:text-4xl">Nueva factura</h1>
+        <p className="text-sm text-acero">Se guarda como borrador. Lo revisás y lo emitís en el paso siguiente.</p>
       </div>
       <EditorComprobante
         onGuardado={(c) => {

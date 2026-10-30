@@ -30,44 +30,44 @@ export function TarifasSeccion() {
   return (
     <div className="space-y-4">
       <Tarjeta titulo="Tarifas por cliente">
-        <p className="mb-3 text-sm text-slate-600">
+        <p className="mb-3 text-sm text-acero">
           Se usan cuando un ítem importado llega sin precio (por ejemplo, horas cargadas por la API). Gana la más específica vigente: la del
           proyecto sobre la del cliente, y la del origen sobre la general.
         </p>
         {data.length === 0 ? (
           <Vacio>No hay tarifas cargadas.</Vacio>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="-mx-4 overflow-x-auto sm:-mx-6">
             <table className="w-full text-sm">
-              <thead className="text-left text-slate-500">
+              <thead className="bg-niebla text-left font-[family-name:var(--font-ui)] text-[13px] uppercase tracking-[0.08em] text-marca [&_th]:border-b [&_th]:border-black/10">
                 <tr>
-                  <th className="py-2 pr-4 font-medium">Cliente</th>
-                  <th className="py-2 pr-4 font-medium">Aplica a</th>
-                  <th className="py-2 pr-4 text-right font-medium">Precio</th>
-                  <th className="py-2 pr-4 font-medium">Vigencia</th>
+                  <th className="px-3 py-2.5 font-medium">Cliente</th>
+                  <th className="px-3 py-2.5 font-medium">Aplica a</th>
+                  <th className="px-3 py-2.5 text-right font-medium">Precio</th>
+                  <th className="px-3 py-2.5 font-medium">Vigencia</th>
                   <th />
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-black/5">
                 {data.map((t) => (
                   <tr key={t.id}>
-                    <td className="py-2 pr-4">
+                    <td className="px-3 py-2">
                       {t.cliente.razonSocial}
-                      {t.descripcion && <span className="block text-xs text-slate-500">“{t.descripcion}”</span>}
+                      {t.descripcion && <span className="block text-xs text-acero">“{t.descripcion}”</span>}
                     </td>
-                    <td className="py-2 pr-4 text-xs text-slate-600">
+                    <td className="px-3 py-2 text-xs text-acero">
                       {t.claveExterna ? <>Proyecto <span className="font-mono">{t.claveExterna}</span></> : 'Todo el cliente'}
                       {' · '}
                       {t.origen ? ORIGENES[t.origen] : 'Cualquier origen'}
                     </td>
-                    <td className="py-2 pr-4 text-right whitespace-nowrap tabular-nums">
+                    <td className="px-3 py-2 text-right whitespace-nowrap tabular-nums">
                       {dinero(t.precioUnitario, t.moneda)} / {unidadTexto(t.unidad)}
-                      <span className="block text-xs text-slate-500">IVA {Number(t.alicuotaIva)} %</span>
+                      <span className="block text-xs text-acero">IVA {Number(t.alicuotaIva)} %</span>
                     </td>
-                    <td className="py-2 pr-4 whitespace-nowrap text-xs">
+                    <td className="px-3 py-2 whitespace-nowrap text-xs">
                       {fecha(t.vigenteDesde)} → {t.vigenteHasta ? fecha(t.vigenteHasta) : 'sin fin'}
                     </td>
-                    <td className="py-2 text-right">
+                    <td className="px-3 py-2 text-right">
                       <Boton
                         variante="fantasma"
                         cargando={eliminar.isPending && eliminar.variables?.id === t.id}

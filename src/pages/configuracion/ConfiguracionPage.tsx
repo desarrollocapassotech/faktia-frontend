@@ -34,9 +34,9 @@ export function ConfiguracionPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-semibold">Configuración</h1>
+      <h1 className="font-[family-name:var(--font-display)] text-3xl tracking-wide sm:text-4xl">Configuración</h1>
       <EstadoArcaTarjeta />
-      <div role="tablist" className="flex flex-wrap gap-1 border-b border-slate-200">
+      <div role="tablist" className="flex flex-wrap gap-2">
         {PESTANAS.map((p) => (
           <button
             key={p.id}
@@ -44,8 +44,10 @@ export function ConfiguracionPage() {
             type="button"
             aria-selected={pestana === p.id}
             onClick={() => setPestana(p.id)}
-            className={`-mb-px border-b-2 px-3 py-2 text-sm ${
-              pestana === p.id ? 'border-slate-900 font-medium text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-800'
+            className={`inline-flex items-center gap-1.5 rounded border px-3 py-1.5 font-[family-name:var(--font-ui)] text-xs uppercase tracking-wider transition-colors ${
+              pestana === p.id
+                ? 'border-marca bg-carbon text-marca-suave'
+                : 'border-acero/40 bg-white text-acero hover:border-marca/50'
             }`}
           >
             {p.texto}

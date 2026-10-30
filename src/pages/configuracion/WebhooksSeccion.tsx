@@ -33,9 +33,9 @@ interface Entrega {
 }
 
 const ESTADO_ENTREGA = {
-  PENDIENTE: 'bg-amber-100 text-amber-800',
-  ENTREGADA: 'bg-emerald-100 text-emerald-800',
-  FALLIDA: 'bg-red-100 text-red-800',
+  PENDIENTE: 'border-amber-400/80 bg-amber-100 text-amber-950',
+  ENTREGADA: 'border-emerald-500/80 bg-emerald-100 text-emerald-950',
+  FALLIDA: 'border-red-400/80 bg-red-100 text-red-950',
 };
 
 /** La documentación se sirve desde el backend (misma base que la API, sin /api). */
@@ -66,7 +66,7 @@ export function WebhooksSeccion() {
   return (
     <div className="space-y-4">
       <Tarjeta titulo="Webhooks">
-        <p className="mb-3 text-sm text-slate-600">
+        <p className="mb-3 text-sm text-acero">
           Avisan a otro sistema cuando pasa algo (por ejemplo, cuando se emite un comprobante). Cada envío va firmado con HMAC; cómo
           verificarlo está en la{' '}
           <a href={URL_DOCS} target="_blank" rel="noreferrer" className="underline">
@@ -77,13 +77,13 @@ export function WebhooksSeccion() {
         {data.length === 0 ? (
           <Vacio>Todavía no hay webhooks.</Vacio>
         ) : (
-          <ul className="divide-y divide-slate-100 text-sm">
+          <ul className="divide-y divide-black/5 text-sm">
             {data.map((s) => (
               <li key={s.id} className="flex flex-wrap items-start justify-between gap-3 py-3">
                 <div className="min-w-0 space-y-1">
                   <p className="break-all font-mono text-xs">{s.url}</p>
-                  <p className="text-xs text-slate-500">{s.eventos.map((e) => EVENTOS[e] ?? e).join(' · ')}</p>
-                  {!s.activa && <Etiqueta className="bg-slate-100 text-slate-500">Pausado</Etiqueta>}
+                  <p className="text-xs text-acero">{s.eventos.map((e) => EVENTOS[e] ?? e).join(' · ')}</p>
+                  {!s.activa && <Etiqueta className="border-zinc-300/90 bg-zinc-100 text-zinc-800">Pausado</Etiqueta>}
                   {probar.data && probar.variables?.id === s.id && (
                     <p className={`text-xs ${probar.data.ok ? 'text-emerald-700' : 'text-red-700'}`}>
                       Prueba: {probar.data.ok ? `respondió ${probar.data.status}` : probar.data.error}
@@ -185,7 +185,7 @@ function NuevoWebhook({ onCreado }: { onCreado: (secreto: string) => void }) {
           <Entrada type="url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://tu-sistema.com/webhooks/facturador" required />
         </Campo>
         <fieldset className="space-y-2">
-          <legend className="text-sm font-medium text-slate-700">Eventos</legend>
+          <legend className="font-[family-name:var(--font-ui)] text-sm uppercase tracking-[0.08em] text-acero">Eventos</legend>
           {Object.entries(EVENTOS).map(([id, texto]) => (
             <label key={id} className="flex items-center gap-2 text-sm">
               <input
@@ -193,7 +193,7 @@ function NuevoWebhook({ onCreado }: { onCreado: (secreto: string) => void }) {
                 checked={eventos.includes(id)}
                 onChange={() => setEventos((es) => (es.includes(id) ? es.filter((x) => x !== id) : [...es, id]))}
               />
-              {texto} <code className="text-xs text-slate-500">{id}</code>
+              {texto} <code className="text-xs text-acero">{id}</code>
             </label>
           ))}
         </fieldset>
@@ -227,14 +227,14 @@ function EntregasModal({ suscripcion, onCerrar }: { suscripcion: Suscripcion; on
       ) : data.length === 0 ? (
         <Vacio>Todavía no hubo envíos.</Vacio>
       ) : (
-        <ul className="max-h-96 divide-y divide-slate-100 overflow-y-auto text-sm">
+        <ul className="max-h-96 divide-y divide-black/5 overflow-y-auto text-sm">
           {data.map((e) => (
             <li key={e.id} className="flex items-start justify-between gap-2 py-2">
               <div>
                 <p>
                   <Etiqueta className={ESTADO_ENTREGA[e.estado]}>{e.estado.toLowerCase()}</Etiqueta> <span className="font-mono text-xs">{e.evento}</span>
                 </p>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-acero">
                   {fechaHora(e.createdAt)} · {e.intentos} intento(s){e.ultimoStatus ? ` · HTTP ${e.ultimoStatus}` : ''}
                   {e.estado === 'PENDIENTE' && e.intentos > 0 && ` · próximo ${fechaHora(e.proximoIntento)}`}
                 </p>

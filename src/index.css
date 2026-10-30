@@ -1,9 +1,90 @@
 @import 'tailwindcss';
 
 @theme {
-  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  /* Acento (mismo rol que el naranja de Vialto): azul cobalto, transmite confianza */
+  --color-marca: #1f63e6;
+  --color-marca-claro: #3d7ef5;
+  --color-marca-suave: #8db4ff;
+
+  /* Neutros (los mismos de Vialto) */
+  --color-carbon: #1a1a1a;
+  --color-grafito: #2e2e2e;
+  --color-acero: #4a4a4a;
+  --color-niebla: #f5f3f0;
+
+  --font-display: 'Bebas Neue', ui-sans-serif, system-ui, sans-serif;
+  --font-body: Barlow, ui-sans-serif, system-ui, sans-serif;
+  --font-ui: 'Barlow Condensed', ui-sans-serif, system-ui, sans-serif;
 }
 
-body {
-  @apply bg-slate-50 text-slate-900 antialiased;
+@layer base {
+  html {
+    @apply antialiased;
+    font-family: var(--font-body);
+    color: var(--color-carbon);
+    background-color: var(--color-niebla);
+    overflow-x: clip;
+  }
+
+  body {
+    overflow-x: clip;
+  }
+}
+
+.sidebar-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(255 255 255 / 0.28) transparent;
+  scrollbar-gutter: stable;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.28);
+  background-clip: padding-box;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgb(255 255 255 / 0.44);
+  background-clip: padding-box;
+}
+
+@keyframes sidebar-expand-hint {
+  0%,
+  100% {
+    transform: translateX(0);
+    box-shadow: 0 4px 14px rgb(0 0 0 / 0.24);
+  }
+  50% {
+    transform: translateX(5px);
+    box-shadow:
+      0 0 0 5px rgb(31 99 230 / 0.2),
+      4px 4px 26px rgb(31 99 230 / 0.9);
+  }
+}
+
+.sidebar-control-zone:hover .sidebar-expand-button {
+  animation: sidebar-expand-hint 1.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-control-zone:hover .sidebar-expand-button {
+    animation: none;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
 }

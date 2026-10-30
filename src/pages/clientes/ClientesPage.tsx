@@ -28,7 +28,7 @@ export function ClientesPage() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-semibold">Clientes</h1>
+        <h1 className="font-[family-name:var(--font-display)] text-3xl tracking-wide sm:text-4xl">Clientes</h1>
         <Boton onClick={() => setEditando(null)}>Nuevo cliente</Boton>
       </div>
       <Tarjeta>
@@ -40,11 +40,11 @@ export function ClientesPage() {
             onChange={(e) => setBusqueda(e.target.value)}
             className="max-w-sm"
           />
-          <label className="flex items-center gap-2 text-sm text-slate-600">
+          <label className="flex items-center gap-2 text-sm text-acero">
             <input type="checkbox" checked={inactivos} onChange={(e) => setInactivos(e.target.checked)} />
             Mostrar inactivos
           </label>
-          {isFetching && <span className="text-xs text-slate-400">Buscando…</span>}
+          {isFetching && <span className="text-xs text-acero/60">Buscando…</span>}
         </div>
         {error ? (
           <AlertaError error={error} />
@@ -53,30 +53,30 @@ export function ClientesPage() {
         ) : data.length === 0 ? (
           <Vacio>{q ? 'No hay clientes que coincidan con la búsqueda.' : 'Todavía no cargaste clientes.'}</Vacio>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="-mx-4 overflow-x-auto sm:-mx-6">
             <table className="w-full text-sm">
-              <thead className="text-left text-slate-500">
+              <thead className="bg-niebla text-left font-[family-name:var(--font-ui)] text-[13px] uppercase tracking-[0.08em] text-marca [&_th]:border-b [&_th]:border-black/10">
                 <tr>
-                  <th className="py-2 pr-4 font-medium">Razón social</th>
-                  <th className="py-2 pr-4 font-medium">Documento</th>
-                  <th className="py-2 pr-4 font-medium">Condición IVA</th>
+                  <th className="px-3 py-2.5 font-medium">Razón social</th>
+                  <th className="px-3 py-2.5 font-medium">Documento</th>
+                  <th className="px-3 py-2.5 font-medium">Condición IVA</th>
                   <th />
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-black/5">
                 {data.map((c) => (
                   <tr key={c.id}>
-                    <td className="py-2 pr-4">
+                    <td className="px-3 py-2">
                       {c.razonSocial}
-                      {!c.activo && <Etiqueta className="ml-2 bg-slate-100 text-slate-600">Inactivo</Etiqueta>}
+                      {!c.activo && <Etiqueta className="ml-2 border-zinc-300/90 bg-zinc-100 text-zinc-800">Inactivo</Etiqueta>}
                     </td>
-                    <td className="py-2 pr-4 whitespace-nowrap">
+                    <td className="px-3 py-2 whitespace-nowrap">
                       {c.tipoDocumento === 'CONSUMIDOR_FINAL'
                         ? TIPOS_DOCUMENTO.CONSUMIDOR_FINAL
                         : `${c.tipoDocumento} ${c.tipoDocumento === 'CUIT' || c.tipoDocumento === 'CUIL' ? cuit(c.numeroDocumento) : c.numeroDocumento}`}
                     </td>
-                    <td className="py-2 pr-4">{CONDICIONES_IVA[c.condicionIva]}</td>
-                    <td className="py-2 text-right">
+                    <td className="px-3 py-2">{CONDICIONES_IVA[c.condicionIva]}</td>
+                    <td className="px-3 py-2 text-right">
                       <Boton variante="fantasma" onClick={() => setEditando(c)}>
                         Editar
                       </Boton>

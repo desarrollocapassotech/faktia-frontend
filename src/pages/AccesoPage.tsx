@@ -39,20 +39,20 @@ export function AccesoPage() {
   }, [canjearAcceso, navigate, queryClient]);
 
   return (
-    <main className="flex min-h-screen items-center justify-center px-4">
-      <div className="w-full max-w-sm text-center">
-        <h1 className="mb-2 text-2xl font-semibold tracking-tight">Facturador</h1>
+    <main className="flex min-h-screen items-center justify-center bg-carbon px-4">
+      <div className="w-full max-w-md border border-white/10 bg-grafito p-6 text-center shadow-xl">
+        <h1 className="mb-4 font-[family-name:var(--font-display)] text-2xl tracking-wide text-white">Facturador</h1>
         {error ? (
           <div className="space-y-4">
-            <p role="alert" className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+            <p role="alert" className="border border-red-700/50 bg-red-900/30 px-3 py-2 text-sm text-red-200">
               {error}
             </p>
-            <Link to="/login" className="text-sm text-slate-600 underline">
+            <Link to="/login" className="text-sm text-marca-suave hover:text-white">
               Ingresar con email y contraseña
             </Link>
           </div>
         ) : (
-          <p className="text-sm text-slate-500">Ingresando…</p>
+          <p className="text-sm text-white/60">Ingresando…</p>
         )}
       </div>
     </main>

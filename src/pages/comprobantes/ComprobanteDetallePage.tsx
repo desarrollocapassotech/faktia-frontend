@@ -46,16 +46,16 @@ export function ComprobanteDetallePage() {
   return (
     <div className="space-y-4">
       <div>
-        <Link to="/comprobantes" className="text-sm text-slate-500 hover:underline">
+        <Link to="/comprobantes" className="text-sm text-marca hover:text-marca-claro">
           ← Comprobantes
         </Link>
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-xl font-semibold">{tipoLargo(c.tipo)}</h1>
-          <span className="font-mono text-sm text-slate-500">{numeroComprobante(c.puntoVenta.numero, c.numero)}</span>
+          <h1 className="font-[family-name:var(--font-display)] text-3xl tracking-wide sm:text-4xl">{tipoLargo(c.tipo)}</h1>
+          <span className="font-mono text-sm text-acero">{numeroComprobante(c.puntoVenta.numero, c.numero)}</span>
           <Etiqueta className={ESTADOS[c.estado].clase}>{ESTADOS[c.estado].texto}</Etiqueta>
         </div>
         {c.asociado && (
-          <p className="mt-1 text-sm text-slate-600">
+          <p className="mt-1 text-sm text-acero">
             Asociada a{' '}
             <Link to={`/comprobantes/${c.asociado.id}`} className="underline">
               {tipoLargo(c.asociado.tipo)} {numeroComprobante(c.asociado.puntoVenta.numero, c.asociado.numero)}
@@ -170,7 +170,7 @@ function EmitirBoton({
             Vas a pedir el CAE a ARCA para una <strong>{tipoLargo(c.tipo)}</strong> a <strong>{c.cliente.razonSocial}</strong> por{' '}
             <strong>{dinero(c.importeTotal, c.moneda)}</strong>.
           </p>
-          <p className="text-slate-600">
+          <p className="text-acero">
             Una vez autorizado no se puede modificar ni borrar: para corregirlo hay que hacer una nota de crédito.
           </p>
           {c.ambiente === 'HOMOLOGACION' && (
@@ -276,7 +276,7 @@ function VistaComprobante({ comprobante: c }: { comprobante: Comprobante }) {
             <Dato titulo="Fecha del comprobante" valor={fecha(c.fechaEmision)} />
             <Dato titulo="Número" valor={<span className="font-mono">{numeroComprobante(c.puntoVenta.numero, c.numero)}</span>} />
           </dl>
-          {c.estado === 'ANULADO' && <p className="mt-3 text-sm text-slate-600">Anulado por una nota de crédito por el total.</p>}
+          {c.estado === 'ANULADO' && <p className="mt-3 text-sm text-acero">Anulado por una nota de crédito por el total.</p>}
           <div className="mt-3">
             <AlertaError error={errorPdf} />
           </div>
@@ -301,29 +301,29 @@ function VistaComprobante({ comprobante: c }: { comprobante: Comprobante }) {
       </Tarjeta>
 
       <Tarjeta titulo="Detalle">
-        <div className="overflow-x-auto">
+        <div className="-mx-4 overflow-x-auto sm:-mx-6">
           <table className="w-full text-sm">
-            <thead className="text-left text-slate-500">
+            <thead className="bg-niebla text-left font-[family-name:var(--font-ui)] text-[13px] uppercase tracking-[0.08em] text-marca [&_th]:border-b [&_th]:border-black/10">
               <tr>
-                <th className="py-2 pr-4 font-medium">Descripción</th>
-                <th className="py-2 pr-4 text-right font-medium">Cantidad</th>
-                <th className="py-2 pr-4 text-right font-medium">Precio unit.</th>
-                <th className="py-2 pr-4 text-right font-medium">Bonif.</th>
-                {discriminaIva && <th className="py-2 pr-4 text-right font-medium">IVA</th>}
-                <th className="py-2 text-right font-medium">Importe</th>
+                <th className="px-3 py-2.5 font-medium">Descripción</th>
+                <th className="px-3 py-2.5 text-right font-medium">Cantidad</th>
+                <th className="px-3 py-2.5 text-right font-medium">Precio unit.</th>
+                <th className="px-3 py-2.5 text-right font-medium">Bonif.</th>
+                {discriminaIva && <th className="px-3 py-2.5 text-right font-medium">IVA</th>}
+                <th className="px-3 py-2.5 text-right font-medium">Importe</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-black/5">
               {c.lineas.map((l) => (
                 <tr key={l.id}>
-                  <td className="py-2 pr-4">{l.descripcion}</td>
-                  <td className="py-2 pr-4 text-right tabular-nums whitespace-nowrap">
+                  <td className="px-3 py-2">{l.descripcion}</td>
+                  <td className="px-3 py-2 text-right tabular-nums whitespace-nowrap">
                     {Number(l.cantidad).toLocaleString('es-AR')} {unidadTexto(l.unidad, l.cantidad)}
                   </td>
-                  <td className="py-2 pr-4 text-right tabular-nums whitespace-nowrap">{dinero(l.precioUnitario, c.moneda)}</td>
-                  <td className="py-2 pr-4 text-right tabular-nums">{Number(l.bonificacionPct) ? `${Number(l.bonificacionPct)} %` : '—'}</td>
-                  {discriminaIva && <td className="py-2 pr-4 text-right tabular-nums">{Number(l.alicuotaIva)} %</td>}
-                  <td className="py-2 text-right tabular-nums whitespace-nowrap">
+                  <td className="px-3 py-2 text-right tabular-nums whitespace-nowrap">{dinero(l.precioUnitario, c.moneda)}</td>
+                  <td className="px-3 py-2 text-right tabular-nums">{Number(l.bonificacionPct) ? `${Number(l.bonificacionPct)} %` : '—'}</td>
+                  {discriminaIva && <td className="px-3 py-2 text-right tabular-nums">{Number(l.alicuotaIva)} %</td>}
+                  <td className="px-3 py-2 text-right tabular-nums whitespace-nowrap">
                     {dinero(discriminaIva ? l.importeNeto : l.importeTotal, c.moneda)}
                   </td>
                 </tr>
@@ -346,7 +346,7 @@ function VistaComprobante({ comprobante: c }: { comprobante: Comprobante }) {
 
       {c.asociadosDesde.length > 0 && (
         <Tarjeta titulo="Notas asociadas">
-          <ul className="divide-y divide-slate-100 text-sm">
+          <ul className="divide-y divide-black/5 text-sm">
             {c.asociadosDesde.map((n) => (
               <li key={n.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
                 <Link to={`/comprobantes/${n.id}`} className="hover:underline">
@@ -406,7 +406,7 @@ function NotaModal({
           emitirla.
         </p>
         {clase === 'NOTA_CREDITO' && (
-          <p className="text-slate-600">Si la nota de crédito es por el total, la factura queda anulada al emitirla.</p>
+          <p className="text-acero">Si la nota de crédito es por el total, la factura queda anulada al emitirla.</p>
         )}
         <Campo etiqueta="Motivo">
           <Entrada value={motivo} onChange={(e) => setMotivo(e.target.value)} required maxLength={500} autoFocus />
@@ -428,7 +428,7 @@ function NotaModal({
 function Dato({ titulo, valor }: { titulo: string; valor: ReactNode }) {
   return (
     <div>
-      <dt className="text-slate-500">{titulo}</dt>
+      <dt className="text-acero">{titulo}</dt>
       <dd className="font-medium">{valor}</dd>
     </div>
   );
@@ -436,8 +436,8 @@ function Dato({ titulo, valor }: { titulo: string; valor: ReactNode }) {
 
 function Fila({ titulo, valor, fuerte }: { titulo: string; valor: string; fuerte?: boolean }) {
   return (
-    <div className={`flex justify-between gap-4 ${fuerte ? 'border-t border-slate-200 pt-1 text-base font-semibold' : ''}`}>
-      <dt className={fuerte ? '' : 'text-slate-500'}>{titulo}</dt>
+    <div className={`flex justify-between gap-4 ${fuerte ? 'border-t border-black/10 pt-1 text-base font-semibold' : ''}`}>
+      <dt className={fuerte ? '' : 'text-acero'}>{titulo}</dt>
       <dd className="tabular-nums">{valor}</dd>
     </div>
   );

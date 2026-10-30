@@ -63,19 +63,19 @@ export const SCOPES: Record<Scope, string> = {
 };
 
 export const ESTADOS_ITEM: Record<EstadoItem, { texto: string; clase: string }> = {
-  VALIDO: { texto: 'Listo', clase: 'bg-emerald-100 text-emerald-800' },
-  CON_ERRORES: { texto: 'Con errores', clase: 'bg-red-100 text-red-800' },
-  DUPLICADO: { texto: 'Duplicado', clase: 'bg-slate-100 text-slate-600' },
-  EN_BORRADOR: { texto: 'En borrador', clase: 'bg-blue-100 text-blue-800' },
-  FACTURADO: { texto: 'Facturado', clase: 'bg-slate-200 text-slate-700' },
-  DESCARTADO: { texto: 'Descartado', clase: 'bg-slate-100 text-slate-500 line-through' },
+  VALIDO: { texto: 'Listo', clase: 'border-emerald-500/80 bg-emerald-100 text-emerald-950' },
+  CON_ERRORES: { texto: 'Con errores', clase: 'border-red-400/80 bg-red-100 text-red-950' },
+  DUPLICADO: { texto: 'Duplicado', clase: 'border-zinc-300/90 bg-zinc-100 text-zinc-800' },
+  EN_BORRADOR: { texto: 'En borrador', clase: 'border-yellow-300 bg-yellow-100 text-yellow-800' },
+  FACTURADO: { texto: 'Facturado', clase: 'border-emerald-600/90 bg-emerald-200 text-emerald-950' },
+  DESCARTADO: { texto: 'Descartado', clase: 'border-zinc-300/90 bg-zinc-100 text-zinc-500 line-through' },
 };
 
 export const ESTADOS_IMPORTACION: Record<EstadoImportacion, { texto: string; clase: string }> = {
-  EN_STAGING: { texto: 'En revisión', clase: 'bg-amber-100 text-amber-800' },
-  CONFIRMADA: { texto: 'Confirmada', clase: 'bg-emerald-100 text-emerald-800' },
-  DESCARTADA: { texto: 'Descartada', clase: 'bg-slate-100 text-slate-500' },
-  FALLIDA: { texto: 'Fallida', clase: 'bg-red-100 text-red-800' },
+  EN_STAGING: { texto: 'En revisión', clase: 'border-amber-400/80 bg-amber-100 text-amber-950' },
+  CONFIRMADA: { texto: 'Confirmada', clase: 'border-emerald-500/80 bg-emerald-100 text-emerald-950' },
+  DESCARTADA: { texto: 'Descartada', clase: 'border-zinc-300/90 bg-zinc-100 text-zinc-500' },
+  FALLIDA: { texto: 'Fallida', clase: 'border-red-400/80 bg-red-100 text-red-950' },
 };
 
 /** "2026-09-28T13:04:00Z" → "28/09/2026 10:04" (hora de Argentina). */
@@ -97,12 +97,12 @@ export function cantidad(v: string | number): string {
 }
 
 export const ESTADOS: Record<EstadoComprobante, { texto: string; clase: string }> = {
-  BORRADOR: { texto: 'Borrador', clase: 'bg-slate-100 text-slate-700' },
-  EMITIENDO: { texto: 'Emitiendo…', clase: 'bg-blue-100 text-blue-800' },
-  PENDIENTE_VERIFICACION: { texto: 'Verificando con ARCA', clase: 'bg-amber-100 text-amber-800' },
-  EMITIDO: { texto: 'Emitido', clase: 'bg-emerald-100 text-emerald-800' },
-  RECHAZADO: { texto: 'Rechazado', clase: 'bg-red-100 text-red-800' },
-  ANULADO: { texto: 'Anulado', clase: 'bg-slate-200 text-slate-600 line-through' },
+  BORRADOR: { texto: 'Borrador', clase: 'border-yellow-300 bg-yellow-100 text-yellow-800' },
+  EMITIENDO: { texto: 'Emitiendo…', clase: 'border-blue-300 bg-blue-50 text-blue-900' },
+  PENDIENTE_VERIFICACION: { texto: 'Verificando con ARCA', clase: 'border-amber-200/95 bg-amber-50 text-amber-950' },
+  EMITIDO: { texto: 'Emitido', clase: 'border-emerald-500/80 bg-emerald-100 text-emerald-950' },
+  RECHAZADO: { texto: 'Rechazado', clase: 'border-red-400/80 bg-red-100 text-red-950' },
+  ANULADO: { texto: 'Anulado', clase: 'border-red-300/80 bg-red-50 text-red-900 line-through' },
 };
 
 const TIPOS: Record<TipoComprobante, { corto: string; largo: string; letra: 'A' | 'B' | 'C' }> = {

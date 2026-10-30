@@ -58,7 +58,7 @@ function FormularioPlantilla({ plantilla }: { plantilla: PlantillaPdf }) {
                 type="color"
                 value={form.colorPrimario}
                 onChange={(e) => cambiar('colorPrimario', e.target.value)}
-                className="h-9 w-12 cursor-pointer rounded border border-slate-300"
+                className="h-9 w-12 cursor-pointer rounded border border-black/15"
               />
               <Entrada value={form.colorPrimario} onChange={(e) => cambiar('colorPrimario', e.target.value)} pattern="#[0-9a-fA-F]{6}" />
             </div>
@@ -69,7 +69,7 @@ function FormularioPlantilla({ plantilla }: { plantilla: PlantillaPdf }) {
                 type="color"
                 value={form.colorSecundario}
                 onChange={(e) => cambiar('colorSecundario', e.target.value)}
-                className="h-9 w-12 cursor-pointer rounded border border-slate-300"
+                className="h-9 w-12 cursor-pointer rounded border border-black/15"
               />
               <Entrada value={form.colorSecundario} onChange={(e) => cambiar('colorSecundario', e.target.value)} pattern="#[0-9a-fA-F]{6}" />
             </div>
@@ -160,15 +160,15 @@ function Logo({ tieneLogo }: { tieneLogo: boolean }) {
   return (
     <Tarjeta titulo="Logo">
       <div className="flex flex-wrap items-center gap-4">
-        <div className="flex h-24 w-48 items-center justify-center rounded border border-dashed border-slate-300 bg-slate-50">
+        <div className="flex h-24 w-48 items-center justify-center rounded border border-dashed border-black/15 bg-niebla">
           {vista ? (
             <img src={vista} alt="Logo de la empresa" className="max-h-20 max-w-44 object-contain" />
           ) : (
-            <span className="text-xs text-slate-400">Sin logo</span>
+            <span className="text-xs text-acero/60">Sin logo</span>
           )}
         </div>
         <div className="space-y-2">
-          <label className="inline-flex cursor-pointer items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium hover:bg-slate-50">
+          <label className="inline-flex cursor-pointer items-center rounded-sm border border-black/15 bg-white px-3 py-2 text-sm font-medium hover:bg-niebla">
             {subirLogo.isPending ? 'Subiendo…' : tieneLogo ? 'Reemplazar logo' : 'Subir logo'}
             <input type="file" accept="image/png,image/jpeg" className="sr-only" onChange={elegir} disabled={subirLogo.isPending} />
           </label>
@@ -177,7 +177,7 @@ function Logo({ tieneLogo }: { tieneLogo: boolean }) {
               Quitar
             </Boton>
           )}
-          <p className="text-xs text-slate-500">PNG o JPG, hasta {LOGO_MAX_KB} KB.</p>
+          <p className="text-xs text-acero">PNG o JPG, hasta {LOGO_MAX_KB} KB.</p>
         </div>
       </div>
       <div className="mt-3 space-y-2">

@@ -321,8 +321,8 @@ export function EditorComprobante({
                   aria-checked={letra === l}
                   disabled={esNota}
                   onClick={() => cambiar('letra', l)}
-                  className={`h-9 w-12 rounded-md border text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60 ${
-                    letra === l ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-300 bg-white hover:bg-slate-50'
+                  className={`h-9 w-12 rounded-sm border text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60 ${
+                    letra === l ? 'border-marca bg-carbon text-white' : 'border-black/15 bg-white hover:bg-niebla'
                   }`}
                 >
                   {l}
@@ -396,7 +396,7 @@ export function EditorComprobante({
       >
         <div className="space-y-3">
           {form.lineas.map((l, i) => (
-            <div key={i} className="grid gap-2 rounded-md border border-slate-100 p-3 sm:grid-cols-12 sm:items-end">
+            <div key={i} className="grid gap-2 rounded-sm border border-black/5 p-3 sm:grid-cols-12 sm:items-end">
               <Campo etiqueta="Descripción" className="sm:col-span-12 lg:col-span-3">
                 <Entrada value={l.descripcion} onChange={(e) => cambiarLinea(i, 'descripcion', e.target.value)} maxLength={500} />
               </Campo>
@@ -430,7 +430,7 @@ export function EditorComprobante({
                 </Campo>
               )}
               <div className={`flex items-center justify-between gap-2 sm:col-span-12 ${letra === 'C' ? 'lg:col-span-3' : 'lg:col-span-2'}`}>
-                <span className="text-sm tabular-nums text-slate-700">{dinero(importeEstimado(l, letra), form.moneda)}</span>
+                <span className="text-sm tabular-nums text-carbon">{dinero(importeEstimado(l, letra), form.moneda)}</span>
                 <Boton
                   variante="fantasma"
                   onClick={() => cambiar('lineas', form.lineas.filter((_, j) => j !== i))}
@@ -447,7 +447,7 @@ export function EditorComprobante({
           <p>
             Total estimado: <span className="text-base font-semibold tabular-nums">{dinero(total, form.moneda)}</span>
           </p>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-acero">
             {letra === 'C' ? 'La Factura C no discrimina IVA.' : 'Incluye IVA.'} El importe definitivo se calcula al guardar.
           </p>
         </div>

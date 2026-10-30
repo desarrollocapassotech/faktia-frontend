@@ -68,13 +68,13 @@ export function ProduccionSeccion() {
               </span>
               <span>
                 <span className="font-medium">{c.titulo}</span>
-                {!c.obligatorio && <span className="text-xs text-slate-500"> (aviso)</span>}
-                <span className="block text-slate-600">{c.mensaje}</span>
+                {!c.obligatorio && <span className="text-xs text-acero"> (aviso)</span>}
+                <span className="block text-acero">{c.mensaje}</span>
               </span>
             </li>
           ))}
         </ul>
-        <p className="mt-3 text-xs text-slate-500">
+        <p className="mt-3 text-xs text-acero">
           La prueba solo consulta a ARCA el último número autorizado de cada punto de venta: no emite nada.
         </p>
         <div className="mt-3 space-y-2">
@@ -128,12 +128,12 @@ function CambiarAmbiente({ estado, onCambio }: { estado: EstadoProduccion; onCam
     <Tarjeta titulo={aProduccion ? 'Pasar a producción' : 'Volver a homologación'}>
       <form onSubmit={enviar} className="space-y-4">
         {aProduccion ? (
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-acero">
             Desde ese momento, cada comprobante que emitas <strong>es real</strong>: se informa a ARCA con tu CUIT y tiene validez fiscal
             (para anularlo hay que hacer una nota de crédito). Antes de activar se vuelve a probar la conexión.
           </p>
         ) : (
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-acero">
             Para hacer pruebas otra vez. Los comprobantes ya emitidos en producción siguen siendo válidos y no cambian.
           </p>
         )}
@@ -146,7 +146,7 @@ function CambiarAmbiente({ estado, onCambio }: { estado: EstadoProduccion; onCam
             {aProduccion ? 'Pasar a producción' : 'Volver a homologación'}
           </Boton>
         </div>
-        {aProduccion && !estado.listo && <p className="text-right text-xs text-slate-500">Completá los puntos marcados con ✕ para habilitarlo.</p>}
+        {aProduccion && !estado.listo && <p className="text-right text-xs text-acero">Completá los puntos marcados con ✕ para habilitarlo.</p>}
       </form>
     </Tarjeta>
   );

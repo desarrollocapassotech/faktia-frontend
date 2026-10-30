@@ -31,20 +31,20 @@ function Paso({
 }) {
   const [abierto, setAbierto] = useState(!hecho);
   return (
-    <li className={`rounded-md border ${hecho ? 'border-emerald-200 bg-emerald-50/40' : 'border-slate-200'} p-3`}>
+    <li className={`rounded-sm border ${hecho ? 'border-emerald-200 bg-emerald-50/40' : 'border-black/10'} p-3`}>
       <div className="flex items-center justify-between gap-2">
         <button type="button" onClick={() => setAbierto((v) => !v)} className="flex items-center gap-2 text-left text-sm font-medium">
-          <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs ${hecho ? 'bg-emerald-600 text-white' : 'bg-slate-900 text-white'}`}>
+          <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs ${hecho ? 'bg-emerald-600 text-white' : 'bg-carbon text-white'}`}>
             {hecho ? '✓' : n}
           </span>
           {titulo}
         </button>
-        <label className="flex items-center gap-1 text-xs text-slate-600">
+        <label className="flex items-center gap-1 text-xs text-acero">
           <input type="checkbox" checked={hecho} onChange={(e) => onHecho(e.target.checked)} />
           Listo
         </label>
       </div>
-      {abierto && <div className="mt-3 space-y-2 pl-8 text-sm text-slate-700">{children}</div>}
+      {abierto && <div className="mt-3 space-y-2 pl-8 text-sm text-carbon">{children}</div>}
     </li>
   );
 }
@@ -86,7 +86,7 @@ export function AsistenteCertificado({ emisor, onClaveGenerada }: { emisor: Emis
 
   return (
     <Tarjeta titulo="Cómo obtener el certificado de producción (paso a paso)">
-      <p className="mb-3 text-sm text-slate-600">
+      <p className="mb-3 text-sm text-acero">
         El certificado permite que el Facturador emita en tu nombre por Web Services. Se tramita una sola vez con tu clave fiscal (nivel 3) y
         dura 2 años. Tarda unos 15 minutos.
       </p>
@@ -132,13 +132,13 @@ export function AsistenteCertificado({ emisor, onClaveGenerada }: { emisor: Emis
               Buscá el servicio <strong>Administración de Certificados Digitales</strong>. Si no aparece: entrá a <strong>Administrador de
               Relaciones de Clave Fiscal</strong> → <strong>Adherir servicio</strong> → ARCA → Servicios interactivos → Administración de
               Certificados Digitales, confirmá y volvé a entrar.
-              <span className="mt-1 block text-xs text-slate-500">
+              <span className="mt-1 block text-xs text-acero">
                 Si ARCA responde “La autorización … arfe_certificado … ya existe”, no es un problema: el servicio ya estaba adherido.
                 Salí, volvé a entrar y buscalo en <strong>Mis servicios</strong> (o con el buscador).
               </span>
             </li>
             <li>
-              <strong>Agregar alias</strong>: escribí <code className="rounded bg-slate-100 px-1">{alias || 'facturador'}</code>, elegí el archivo{' '}
+              <strong>Agregar alias</strong>: escribí <code className="rounded bg-niebla px-1">{alias || 'facturador'}</code>, elegí el archivo{' '}
               <strong>{alias || 'facturador'}.csr</strong> y tocá <strong>Agregar alias</strong>.
             </li>
             <li>
@@ -160,7 +160,7 @@ export function AsistenteCertificado({ emisor, onClaveGenerada }: { emisor: Emis
               fiscal) y <strong>Confirmar</strong>.
             </li>
           </ol>
-          <p className="text-xs text-slate-500">Sin este paso, ARCA rechaza la conexión aunque el certificado sea válido.</p>
+          <p className="text-xs text-acero">Sin este paso, ARCA rechaza la conexión aunque el certificado sea válido.</p>
         </Paso>
 
         <Paso n={4} titulo="Dar de alta un punto de venta para Web Services" hecho={hechos.includes('arca-pv')} onHecho={marcar('arca-pv')}>
@@ -205,7 +205,7 @@ export function AsistenteCertificado({ emisor, onClaveGenerada }: { emisor: Emis
           </p>
         </Paso>
       </ol>
-      <p className="mt-3 text-xs text-slate-500">
+      <p className="mt-3 text-xs text-acero">
         Para pruebas en homologación no hace falta certificado. Si querés uno de homologación con tu CUIT, el trámite es el mismo pero en el
         servicio <strong>WSASS - Autogestión Certificados Homologación</strong>.
       </p>

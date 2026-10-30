@@ -23,7 +23,7 @@ export function IntegracionesSeccion() {
   return (
     <div className="space-y-4">
       <Tarjeta titulo="Sistemas integrados">
-        <p className="mb-3 text-sm text-slate-600">
+        <p className="mb-3 text-sm text-acero">
           Cada sistema que se conecta con el Facturador (un ERP, un time tracker, una tienda) usa su propia API key.
           Qué puede hacer cada permiso y cómo usar la API está en la{' '}
           <a href={URL_DOCS} target="_blank" rel="noreferrer" className="underline">
@@ -34,19 +34,19 @@ export function IntegracionesSeccion() {
         {data.length === 0 ? (
           <Vacio>Todavía no hay integraciones.</Vacio>
         ) : (
-          <ul className="divide-y divide-slate-100 text-sm">
+          <ul className="divide-y divide-black/5 text-sm">
             {data.map((i) => (
               <li key={i.id} className="flex flex-wrap items-start justify-between gap-3 py-3">
                 <div className="space-y-1">
                   <p className="font-medium">
                     {i.nombre}
-                    {i.revocadaEn && <Etiqueta className="ml-2 bg-slate-100 text-slate-500">Revocada</Etiqueta>}
+                    {i.revocadaEn && <Etiqueta className="ml-2 border-zinc-300/90 bg-zinc-100 text-zinc-800">Revocada</Etiqueta>}
                   </p>
-                  <p className="font-mono text-xs text-slate-500">{i.keyPrefijo}_…</p>
-                  <p className="text-xs text-slate-500">
+                  <p className="font-mono text-xs text-acero">{i.keyPrefijo}_…</p>
+                  <p className="text-xs text-acero">
                     {ORIGENES[i.origen]} · {i.scopes.map((s) => SCOPES[s] ?? s).join(' · ')}
                   </p>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-acero/60">
                     Creada {fechaHora(i.createdAt)} · último uso {fechaHora(i.ultimoUsoEn)}
                   </p>
                 </div>
@@ -96,7 +96,7 @@ function ClaveUnaVez({ nombre, clave, onListo }: { nombre: string; clave: string
           {copiada ? 'Copiada' : 'Copiar'}
         </Boton>
       </div>
-      <p className="text-slate-600">
+      <p className="text-acero">
         Se configura del lado del otro sistema (nunca en un navegador), junto con la URL de la API del Facturador, terminada en{' '}
         <code>/api</code>.
       </p>
@@ -147,14 +147,14 @@ function NuevaIntegracion({ onCreada }: { onCreada: (nombre: string, clave: stri
           </Campo>
         </div>
         <fieldset className="space-y-2">
-          <legend className="text-sm font-medium text-slate-700">Permisos</legend>
+          <legend className="font-[family-name:var(--font-ui)] text-sm uppercase tracking-[0.08em] text-acero">Permisos</legend>
           {(Object.keys(SCOPES) as Scope[]).map((s) => (
             <label key={s} className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={scopes.includes(s)} onChange={() => alternar(s)} />
               {SCOPES[s]}
             </label>
           ))}
-          <p className="text-xs text-slate-500">Para facturar desde el otro sistema hacen falta los tres de ítems y comprobantes.</p>
+          <p className="text-xs text-acero">Para facturar desde el otro sistema hacen falta los tres de ítems y comprobantes.</p>
         </fieldset>
         <AlertaError error={crear.error} />
         <div className="flex justify-end">

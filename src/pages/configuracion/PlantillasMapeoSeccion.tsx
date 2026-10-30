@@ -39,18 +39,18 @@ export function PlantillasMapeoSeccion() {
 
   return (
     <Tarjeta titulo="Plantillas de Excel / CSV" acciones={<Boton onClick={() => setEditando(null)}>Nueva plantilla</Boton>}>
-      <p className="mb-3 text-sm text-slate-600">Indican qué columna del archivo corresponde a cada dato. Se arma una vez por formato de planilla.</p>
+      <p className="mb-3 text-sm text-acero">Indican qué columna del archivo corresponde a cada dato. Se arma una vez por formato de planilla.</p>
       {data.length === 0 ? (
         <Vacio>Todavía no hay plantillas.</Vacio>
       ) : (
-        <ul className="divide-y divide-slate-100 text-sm">
+        <ul className="divide-y divide-black/5 text-sm">
           {data.map((p) => (
             <li key={p.id} className="flex items-center justify-between gap-3 py-2">
               <span>
                 <span className="font-medium">{p.nombre}</span>
-                <Etiqueta className="ml-2 bg-slate-100 text-slate-600">{p.formato.toUpperCase()}</Etiqueta>
-                {!p.activa && <Etiqueta className="ml-1 bg-slate-100 text-slate-500">Inactiva</Etiqueta>}
-                <span className="block text-xs text-slate-500">{p.config.columnas.map((c) => c.encabezado).join(' · ')}</span>
+                <Etiqueta className="ml-2 border-zinc-300/90 bg-zinc-100 text-zinc-800">{p.formato.toUpperCase()}</Etiqueta>
+                {!p.activa && <Etiqueta className="ml-1 border-zinc-300/90 bg-zinc-100 text-zinc-800">Inactiva</Etiqueta>}
+                <span className="block text-xs text-acero">{p.config.columnas.map((c) => c.encabezado).join(' · ')}</span>
               </span>
               <Boton variante="fantasma" onClick={() => setEditando(p)}>
                 Editar
@@ -216,12 +216,12 @@ function EditorPlantilla({ plantilla, onCerrar }: { plantilla: PlantillaMapeo | 
           <AlertaError error={previsualizar.error} />
         </div>
         {vista && (
-          <div className="mt-4 overflow-x-auto rounded border border-slate-200">
+          <div className="mt-4 overflow-x-auto rounded border border-black/10">
             <table className="w-full text-xs">
               <tbody>
                 {vista.filas.slice(0, 8).map((f, i) => (
-                  <tr key={i} className={i + 1 === filaEncabezado ? 'bg-amber-50 font-semibold' : i + 1 < filaEncabezado ? 'text-slate-400' : ''}>
-                    <td className="border-r border-slate-200 px-2 py-1 text-slate-400">{i + 1}</td>
+                  <tr key={i} className={i + 1 === filaEncabezado ? 'bg-amber-50 font-semibold' : i + 1 < filaEncabezado ? 'text-acero/60' : ''}>
+                    <td className="border-r border-black/10 px-2 py-1 text-acero/60">{i + 1}</td>
                     {f.map((c, j) => (
                       <td key={j} className="max-w-40 truncate px-2 py-1">
                         {c}
@@ -231,7 +231,7 @@ function EditorPlantilla({ plantilla, onCerrar }: { plantilla: PlantillaMapeo | 
                 ))}
               </tbody>
             </table>
-            <p className="px-2 py-1 text-xs text-slate-500">{vista.totalFilas} filas en total. La fila resaltada son los encabezados.</p>
+            <p className="px-2 py-1 text-xs text-acero">{vista.totalFilas} filas en total. La fila resaltada son los encabezados.</p>
           </div>
         )}
       </Tarjeta>
@@ -244,11 +244,11 @@ function EditorPlantilla({ plantilla, onCerrar }: { plantilla: PlantillaMapeo | 
             {CAMPOS.map(({ campo, texto, tipo, requerido, ayuda }) => {
               const col = columnas[campo];
               return (
-                <div key={campo} className="grid gap-2 border-b border-slate-100 pb-2 sm:grid-cols-12 sm:items-center">
+                <div key={campo} className="grid gap-2 border-b border-black/5 pb-2 sm:grid-cols-12 sm:items-center">
                   <div className="text-sm sm:col-span-4">
                     {texto}
                     {requerido && <span className="text-red-600"> *</span>}
-                    {ayuda && <span className="block text-xs text-slate-500">{ayuda}</span>}
+                    {ayuda && <span className="block text-xs text-acero">{ayuda}</span>}
                   </div>
                   <Selector className="sm:col-span-4" value={col?.encabezado ?? ''} onChange={(e) => mapear(campo, tipo, e.target.value)}>
                     <option value="">— no usar —</option>
@@ -309,8 +309,8 @@ function EditorPlantilla({ plantilla, onCerrar }: { plantilla: PlantillaMapeo | 
         </div>
         {encabezados.length > 0 && !columnas.referenciaExterna && (
           <fieldset className="mt-4 space-y-1">
-            <legend className="text-sm font-medium text-slate-700">Columnas que identifican una fila (para no duplicar al reimportar)</legend>
-            <p className="text-xs text-slate-500">Si no elegís ninguna, se compara la fila completa.</p>
+            <legend className="font-[family-name:var(--font-ui)] text-sm uppercase tracking-[0.08em] text-acero">Columnas que identifican una fila (para no duplicar al reimportar)</legend>
+            <p className="text-xs text-acero">Si no elegís ninguna, se compara la fila completa.</p>
             <div className="flex flex-wrap gap-3 pt-1">
               {encabezados.map((h) => (
                 <label key={h} className="flex items-center gap-1 text-sm">

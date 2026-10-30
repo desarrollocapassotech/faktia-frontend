@@ -204,8 +204,8 @@ export function RecibosPage() {
   return (
     <form onSubmit={generar} className="space-y-4">
       <div>
-        <h1 className="text-xl font-semibold">Recibos</h1>
-        <p className="text-sm text-slate-500">
+        <h1 className="font-[family-name:var(--font-display)] text-3xl tracking-wide sm:text-4xl">Recibos</h1>
+        <p className="text-sm text-acero">
           Se generan en PDF con tus datos y tu logo. No se guardan ni son comprobantes de ARCA: llevá tu propia numeración.
         </p>
       </div>
@@ -223,12 +223,12 @@ export function RecibosPage() {
             role="radio"
             aria-checked={tipo === t}
             onClick={() => cambiarTipo(t)}
-            className={`rounded-lg border p-3 text-left transition ${
-              tipo === t ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 bg-white hover:border-slate-400'
+            className={`rounded border p-3 text-left transition-colors ${
+              tipo === t ? 'border-marca bg-carbon text-white' : 'border-black/10 bg-white hover:border-marca/50'
             }`}
           >
-            <span className="block text-sm font-semibold">{titulo}</span>
-            <span className={`block text-xs ${tipo === t ? 'text-slate-300' : 'text-slate-500'}`}>{ayuda}</span>
+            <span className={`block font-[family-name:var(--font-ui)] text-sm font-semibold uppercase tracking-wider ${tipo === t ? 'text-marca-suave' : ''}`}>{titulo}</span>
+            <span className={`block text-xs ${tipo === t ? 'text-white/60' : 'text-acero'}`}>{ayuda}</span>
           </button>
         ))}
       </div>
@@ -289,11 +289,11 @@ export function RecibosPage() {
           {facturas.error ? (
             <AlertaError error={facturas.error} />
           ) : !facturas.data ? (
-            <p className="text-sm text-slate-500">Cargando facturas…</p>
+            <p className="text-sm text-acero">Cargando facturas…</p>
           ) : facturas.data.items.filter((f) => f.tipo.startsWith('FACTURA')).length === 0 ? (
-            <p className="text-sm text-slate-500">Este cliente no tiene facturas emitidas.</p>
+            <p className="text-sm text-acero">Este cliente no tiene facturas emitidas.</p>
           ) : (
-            <ul className="divide-y divide-slate-100 text-sm">
+            <ul className="divide-y divide-black/5 text-sm">
               {facturas.data.items
                 .filter((f) => f.tipo.startsWith('FACTURA'))
                 .map((f) => (
@@ -302,7 +302,7 @@ export function RecibosPage() {
                       <span className="flex items-center gap-2">
                         <input type="checkbox" checked={aplicados.some((a) => a.id === f.id)} onChange={() => alternarFactura(f)} />
                         {tipoLargo(f.tipo)} <span className="font-mono text-xs">{numeroComprobante(f.puntoVenta.numero, f.numero)}</span>
-                        <span className="text-slate-500">{fecha(f.fechaEmision)}</span>
+                        <span className="text-acero">{fecha(f.fechaEmision)}</span>
                       </span>
                       <span className="tabular-nums">{dinero(f.importeTotal, f.moneda)}</span>
                     </label>
@@ -311,7 +311,7 @@ export function RecibosPage() {
             </ul>
           )}
           {aplicados.length > 0 && (
-            <p className="mt-2 text-xs text-slate-500">Si el pago es parcial, corregí el importe del concepto correspondiente.</p>
+            <p className="mt-2 text-xs text-acero">Si el pago es parcial, corregí el importe del concepto correspondiente.</p>
           )}
         </Tarjeta>
       )}
@@ -326,7 +326,7 @@ export function RecibosPage() {
       >
         <div className="space-y-3">
           {items.map((it, i) => (
-            <div key={i} className="grid gap-2 rounded-md border border-slate-100 p-3 sm:grid-cols-12 sm:items-end">
+            <div key={i} className="grid gap-2 rounded-sm border border-black/5 p-3 sm:grid-cols-12 sm:items-end">
               <Campo etiqueta="Descripción" className="sm:col-span-6">
                 <Entrada value={it.descripcion} onChange={(e) => cambiarItem(i, 'descripcion', e.target.value)} maxLength={500} required />
               </Campo>
