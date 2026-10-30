@@ -272,21 +272,28 @@ export function EditorComprobante({
       : null;
 
   return (
-    <form onSubmit={enviar} className="space-y-4">
+    <form onSubmit={enviar} className="space-y-6">
       {puntosDisponibles.length === 0 && (
         <Aviso>
-          No hay puntos de venta activos para este ambiente. <Link to="/configuracion" className="underline">Cargá uno en Configuración</Link>{' '}
+          No hay puntos de venta activos para este ambiente.{' '}
+          <Link to="/configuracion" className="font-medium underline underline-offset-2">
+            Cargá uno en Configuración
+          </Link>{' '}
           antes de facturar.
         </Aviso>
       )}
       {listaClientes.length === 0 && (
         <Aviso>
-          Todavía no hay clientes. <Link to="/clientes" className="underline">Cargá uno</Link> para poder facturarle.
+          Todavía no hay clientes.{' '}
+          <Link to="/clientes" className="font-medium underline underline-offset-2">
+            Cargá uno
+          </Link>{' '}
+          para poder facturarle.
         </Aviso>
       )}
 
       <Tarjeta titulo="Datos del comprobante">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           <Campo etiqueta="Cliente" className="sm:col-span-2">
             <Selector value={form.clienteId} onChange={(e) => elegirCliente(e.target.value)} disabled={esNota} required>
               <option value="">Elegí un cliente…</option>
@@ -321,8 +328,8 @@ export function EditorComprobante({
                   aria-checked={letra === l}
                   disabled={esNota}
                   onClick={() => cambiar('letra', l)}
-                  className={`h-9 w-12 rounded-sm border text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60 ${
-                    letra === l ? 'border-marca bg-carbon text-white' : 'border-black/15 bg-white hover:bg-niebla'
+                  className={`h-10 w-12 rounded-fk border text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
+                    letra === l ? 'border-fk-fiordo bg-fk-fiordo text-fk-blanco' : 'border-fk-borde bg-fk-blanco text-fk-grafito hover:bg-fk-niebla'
                   }`}
                 >
                   {l}
@@ -377,7 +384,7 @@ export function EditorComprobante({
           )}
         </div>
         {servicios && (!form.fechaServicioDesde || !form.fechaServicioHasta || !form.fechaVtoPago) && (
-          <p className="mt-3 text-xs text-amber-700">Para emitir servicios, ARCA exige el período facturado y el vencimiento de pago.</p>
+          <p className="mt-4 text-[13px] text-fk-pendiente-texto">Para emitir servicios, ARCA exige el período facturado y el vencimiento de pago.</p>
         )}
         {advertenciaLetra && (
           <div className="mt-4">
@@ -389,14 +396,14 @@ export function EditorComprobante({
       <Tarjeta
         titulo="Detalle"
         acciones={
-          <Boton variante="secundario" onClick={() => cambiar('lineas', [...form.lineas, lineaVacia(form.concepto)])} disabled={form.lineas.length >= 200}>
+          <Boton variante="terciario" onClick={() => cambiar('lineas', [...form.lineas, lineaVacia(form.concepto)])} disabled={form.lineas.length >= 200}>
             Agregar línea
           </Boton>
         }
       >
         <div className="space-y-3">
           {form.lineas.map((l, i) => (
-            <div key={i} className="grid gap-2 rounded-sm border border-black/5 p-3 sm:grid-cols-12 sm:items-end">
+            <div key={i} className="grid gap-3 rounded-fk border border-fk-borde p-4 sm:grid-cols-12 sm:items-end">
               <Campo etiqueta="Descripción" className="sm:col-span-12 lg:col-span-3">
                 <Entrada value={l.descripcion} onChange={(e) => cambiarLinea(i, 'descripcion', e.target.value)} maxLength={500} />
               </Campo>
@@ -430,7 +437,7 @@ export function EditorComprobante({
                 </Campo>
               )}
               <div className={`flex items-center justify-between gap-2 sm:col-span-12 ${letra === 'C' ? 'lg:col-span-3' : 'lg:col-span-2'}`}>
-                <span className="text-sm tabular-nums text-carbon">{dinero(importeEstimado(l, letra), form.moneda)}</span>
+                <span className="fk-num text-sm font-medium">{dinero(importeEstimado(l, letra), form.moneda)}</span>
                 <Boton
                   variante="fantasma"
                   onClick={() => cambiar('lineas', form.lineas.filter((_, j) => j !== i))}
@@ -443,18 +450,18 @@ export function EditorComprobante({
             </div>
           ))}
         </div>
-        <div className="mt-4 flex flex-col items-end gap-1 text-sm">
-          <p>
-            Total estimado: <span className="text-base font-semibold tabular-nums">{dinero(total, form.moneda)}</span>
+        <div className="mt-6 flex flex-col items-end gap-1 border-t border-fk-borde pt-4 text-sm">
+          <p className="text-fk-gris-texto">
+            Total estimado: <span className="fk-num text-lg font-semibold text-fk-fiordo">{dinero(total, form.moneda)}</span>
           </p>
-          <p className="text-xs text-acero">
+          <p className="text-xs text-fk-gris-texto">
             {letra === 'C' ? 'La Factura C no discrimina IVA.' : 'Incluye IVA.'} El importe definitivo se calcula al guardar.
           </p>
         </div>
       </Tarjeta>
 
       <Tarjeta titulo="Observaciones">
-        <div className="space-y-4">
+        <div className="space-y-5">
           {esNota && (
             <Campo etiqueta="Motivo de la nota">
               <Entrada value={form.motivo} onChange={(e) => cambiar('motivo', e.target.value)} maxLength={500} />
@@ -474,7 +481,7 @@ export function EditorComprobante({
       <AlertaError mensaje={errorLocal} />
       <AlertaError error={guardar.error} />
       <div className="flex flex-wrap items-center justify-end gap-2">
-        {sucio && comprobante && <span className="text-xs text-amber-700">Hay cambios sin guardar.</span>}
+        {sucio && comprobante && <span className="text-[13px] text-fk-pendiente-texto">Hay cambios sin guardar.</span>}
         {acciones?.({ sucio })}
         <Boton type="submit" variante={comprobante ? 'secundario' : 'primario'} cargando={guardar.isPending} disabled={comprobante && !sucio}>
           {comprobante ? 'Guardar cambios' : 'Guardar borrador'}

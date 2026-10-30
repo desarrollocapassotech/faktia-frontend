@@ -1,7 +1,7 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { AlertaError, Boton, Cargando, Etiqueta, Selector, Tarjeta, Vacio } from '@/components/ui';
+import { AlertaError, Boton, Cargando, ContenedorTabla, EncabezadoPagina, EtiquetaEstado, Selector, Tarjeta, Vacio } from '@/components/ui';
 import { dinero, ESTADOS, fecha, numeroComprobante, tipoLargo } from '@/lib/formato';
 import type { ComprobanteResumen, EstadoComprobante, Paginado } from '@/lib/tipos';
 import { useApi } from '@/lib/useApi';
@@ -27,13 +27,10 @@ export function ComprobantesPage() {
   const paginas = data ? Math.max(1, Math.ceil(data.total / data.porPagina)) : 1;
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="font-[family-name:var(--font-display)] text-3xl tracking-wide sm:text-4xl">Comprobantes</h1>
-        <Boton onClick={() => navigate('/comprobantes/nuevo')}>Nueva factura</Boton>
-      </div>
+    <div className="space-y-8">
+      <EncabezadoPagina titulo="Comprobantes" acciones={<Boton onClick={() => navigate('/comprobantes/nuevo')}>Nueva factura</Boton>} />
       <Tarjeta>
-        <div className="mb-4 flex flex-wrap items-center gap-3">
+        <div className="mb-5 flex flex-wrap items-center gap-3">
           <Selector
             value={estado}
             onChange={(e) => {
@@ -50,57 +47,62 @@ export function ComprobantesPage() {
               </option>
             ))}
           </Selector>
-          {isFetching && <span className="text-xs text-acero/60">Actualizando…</span>}
+          {isFetching && <span className="text-xs text-fk-gris-texto">Actualizando…</span>}
         </div>
         {error ? (
           <AlertaError error={error} />
         ) : !data ? (
           <Cargando />
         ) : data.items.length === 0 ? (
-          <Vacio>{estado ? 'No hay comprobantes en ese estado.' : 'Todavía no hay comprobantes. Empezá con “Nueva factura”.'}</Vacio>
+          estado ? (
+            <Vacio>No hay comprobantes en ese estado.</Vacio>
+          ) : (
+            <Vacio accion={<Boton onClick={() => navigate('/comprobantes/nuevo')}>Nueva factura</Boton>}>Todavía no hay comprobantes.</Vacio>
+          )
         ) : (
           <>
-            <div className="-mx-4 overflow-x-auto sm:-mx-6">
-              <table className="w-full text-sm">
-                <thead className="bg-niebla text-left font-[family-name:var(--font-ui)] text-[13px] uppercase tracking-[0.08em] text-marca [&_th]:border-b [&_th]:border-black/10">
+            <ContenedorTabla>
+              <table className="fk-tabla">
+                <thead>
                   <tr>
-                    <th className="px-3 py-2.5 font-medium">Comprobante</th>
-                    <th className="px-3 py-2.5 font-medium">Fecha</th>
-                    <th className="px-3 py-2.5 font-medium">Cliente</th>
-                    <th className="px-3 py-2.5 text-right font-medium">Total</th>
-                    <th className="px-3 py-2.5 font-medium">Estado</th>
+                    <th>Comprobante</th>
+                    <th className="fk-num">Número</th>
+                    <th>Fecha</th>
+                    <th>Cliente</th>
+                    <th className="fk-num">Total</th>
+                    <th>Estado</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-black/5">
+                <tbody>
                   {data.items.map((c) => (
-                    <tr key={c.id} className="hover:bg-niebla">
-                      <td className="px-3 py-2">
-                        <Link to={`/comprobantes/${c.id}`} className="font-medium text-marca hover:text-marca-claro hover:underline">
+                    <tr key={c.id}>
+                      <td className="whitespace-nowrap">
+                        <Link to={`/comprobantes/${c.id}`} className="font-medium text-fk-fiordo underline-offset-2 hover:underline">
                           {tipoLargo(c.tipo)}
                         </Link>
-                        <span className="block font-mono text-xs text-acero">{numeroComprobante(c.puntoVenta.numero, c.numero)}</span>
                       </td>
-                      <td className="px-3 py-2 whitespace-nowrap">{fecha(c.fechaEmision)}</td>
-                      <td className="px-3 py-2">{c.cliente.razonSocial}</td>
-                      <td className="px-3 py-2 text-right whitespace-nowrap tabular-nums">{dinero(c.importeTotal, c.moneda)}</td>
-                      <td className="px-3 py-2">
-                        <Etiqueta className={ESTADOS[c.estado].clase}>{ESTADOS[c.estado].texto}</Etiqueta>
-                        {c.ambiente === 'HOMOLOGACION' && <span className="ml-1 text-xs text-amber-700">prueba</span>}
+                      <td className="fk-num">{numeroComprobante(c.puntoVenta.numero, c.numero)}</td>
+                      <td className="whitespace-nowrap tabular-nums">{fecha(c.fechaEmision)}</td>
+                      <td>{c.cliente.razonSocial}</td>
+                      <td className="fk-num">{dinero(c.importeTotal, c.moneda)}</td>
+                      <td className="whitespace-nowrap">
+                        <EtiquetaEstado estado={ESTADOS[c.estado]} />
+                        {c.ambiente === 'HOMOLOGACION' && <span className="ml-2 text-xs text-fk-pendiente-texto">Prueba</span>}
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-            </div>
+            </ContenedorTabla>
             {paginas > 1 && (
-              <div className="mt-4 flex items-center justify-end gap-2 text-sm">
-                <Boton variante="secundario" disabled={pagina <= 1} onClick={() => setPagina((p) => p - 1)}>
+              <div className="mt-5 flex items-center justify-end gap-3 text-sm">
+                <Boton variante="terciario" disabled={pagina <= 1} onClick={() => setPagina((p) => p - 1)}>
                   Anterior
                 </Boton>
-                <span className="text-acero">
+                <span className="text-fk-gris-texto tabular-nums">
                   Página {data.pagina} de {paginas}
                 </span>
-                <Boton variante="secundario" disabled={pagina >= paginas} onClick={() => setPagina((p) => p + 1)}>
+                <Boton variante="terciario" disabled={pagina >= paginas} onClick={() => setPagina((p) => p + 1)}>
                   Siguiente
                 </Boton>
               </div>

@@ -1,7 +1,20 @@
 import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query';
 import { useState, type ChangeEvent, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { AlertaError, Aviso, Boton, Campo, Cargando, Etiqueta, Selector, Tarjeta, Vacio } from '@/components/ui';
+import {
+  AlertaError,
+  Aviso,
+  Boton,
+  Campo,
+  Cargando,
+  claseArchivo,
+  ContenedorTabla,
+  EncabezadoPagina,
+  EtiquetaEstado,
+  Selector,
+  Tarjeta,
+  Vacio,
+} from '@/components/ui';
 import { ESTADOS_IMPORTACION, fechaHora, ORIGENES } from '@/lib/formato';
 import type { Importacion, Paginado, PlantillaMapeo } from '@/lib/tipos';
 import { useApi } from '@/lib/useApi';
@@ -17,14 +30,12 @@ export function ImportacionesPage() {
   const paginas = data ? Math.max(1, Math.ceil(data.total / data.porPagina)) : 1;
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h1 className="font-[family-name:var(--font-display)] text-3xl tracking-wide sm:text-4xl">Importaciones</h1>
-        <p className="text-sm text-acero">
-          Traé lo que hay que facturar desde una planilla (o desde otro sistema por la API), revisalo y generá los borradores en un paso.
-        </p>
-      </div>
-      <div className="grid gap-4 lg:grid-cols-2">
+    <div className="space-y-8">
+      <EncabezadoPagina
+        titulo="Importaciones"
+        descripcion="Traé lo que hay que facturar desde una planilla (o desde otro sistema por la API), revisalo y generá los borradores en un paso."
+      />
+      <div className="grid gap-6 lg:grid-cols-2">
         <ImportarExcel />
       </div>
       <Tarjeta titulo="Historial">
@@ -36,48 +47,48 @@ export function ImportacionesPage() {
           <Vacio>Todavía no importaste nada.</Vacio>
         ) : (
           <>
-            <div className="-mx-4 overflow-x-auto sm:-mx-6">
-              <table className="w-full text-sm">
-                <thead className="bg-niebla text-left font-[family-name:var(--font-ui)] text-[13px] uppercase tracking-[0.08em] text-marca [&_th]:border-b [&_th]:border-black/10">
+            <ContenedorTabla>
+              <table className="fk-tabla">
+                <thead>
                   <tr>
-                    <th className="px-3 py-2.5 font-medium">Lote</th>
-                    <th className="px-3 py-2.5 font-medium">Fecha</th>
-                    <th className="px-3 py-2.5 text-right font-medium">Ítems</th>
-                    <th className="px-3 py-2.5 font-medium">Estado</th>
+                    <th>Lote</th>
+                    <th>Fecha</th>
+                    <th className="fk-num">Ítems</th>
+                    <th>Estado</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-black/5">
+                <tbody>
                   {data.items.map((i) => (
-                    <tr key={i.id} className="hover:bg-niebla">
-                      <td className="px-3 py-2">
-                        <Link to={`/importaciones/${i.id}`} className="font-medium text-marca hover:text-marca-claro hover:underline">
+                    <tr key={i.id}>
+                      <td>
+                        <Link to={`/importaciones/${i.id}`} className="font-medium text-fk-fiordo underline-offset-2 hover:underline">
                           {i.descripcion || ORIGENES[i.origen]}
                         </Link>
-                        <span className="block text-xs text-acero">{ORIGENES[i.origen]}</span>
+                        <span className="block text-xs text-fk-gris-texto">{ORIGENES[i.origen]}</span>
                       </td>
-                      <td className="px-3 py-2 whitespace-nowrap">{fechaHora(i.createdAt)}</td>
-                      <td className="px-3 py-2 text-right text-xs whitespace-nowrap">
-                        <span className="text-emerald-700">{i.validos} listos</span>
-                        {i.conErrores > 0 && <span className="ml-2 text-red-700">{i.conErrores} con errores</span>}
-                        {i.duplicados > 0 && <span className="ml-2 text-acero">{i.duplicados} repetidos</span>}
+                      <td className="whitespace-nowrap tabular-nums">{fechaHora(i.createdAt)}</td>
+                      <td className="fk-num text-[13px]">
+                        <span className="text-fk-ok-texto">{i.validos} listos</span>
+                        {i.conErrores > 0 && <span className="ml-3 text-fk-error-texto">{i.conErrores} con errores</span>}
+                        {i.duplicados > 0 && <span className="ml-3 text-fk-gris-texto">{i.duplicados} repetidos</span>}
                       </td>
-                      <td className="px-3 py-2">
-                        <Etiqueta className={ESTADOS_IMPORTACION[i.estado].clase}>{ESTADOS_IMPORTACION[i.estado].texto}</Etiqueta>
+                      <td>
+                        <EtiquetaEstado estado={ESTADOS_IMPORTACION[i.estado]} />
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-            </div>
+            </ContenedorTabla>
             {paginas > 1 && (
-              <div className="mt-4 flex items-center justify-end gap-2 text-sm">
-                <Boton variante="secundario" disabled={pagina <= 1} onClick={() => setPagina((p) => p - 1)}>
+              <div className="mt-5 flex items-center justify-end gap-3 text-sm">
+                <Boton variante="terciario" disabled={pagina <= 1} onClick={() => setPagina((p) => p - 1)}>
                   Anterior
                 </Boton>
-                <span className="text-acero">
+                <span className="text-fk-gris-texto tabular-nums">
                   Página {pagina} de {paginas}
                 </span>
-                <Boton variante="secundario" disabled={pagina >= paginas} onClick={() => setPagina((p) => p + 1)}>
+                <Boton variante="terciario" disabled={pagina >= paginas} onClick={() => setPagina((p) => p + 1)}>
                   Siguiente
                 </Boton>
               </div>
@@ -117,7 +128,7 @@ function ImportarExcel() {
       <Tarjeta titulo="Planilla Excel / CSV">
         <Aviso tono="azul">
           Primero armá una plantilla que diga qué columna es cada dato, en{' '}
-          <Link to="/configuracion?tab=mapeo" className="underline">
+          <Link to="/configuracion?tab=mapeo" className="font-medium underline underline-offset-2">
             Configuración → Plantillas Excel
           </Link>
           .
@@ -128,7 +139,7 @@ function ImportarExcel() {
 
   return (
     <Tarjeta titulo="Planilla Excel / CSV">
-      <form onSubmit={enviar} className="space-y-4">
+      <form onSubmit={enviar} className="space-y-5">
         <Campo etiqueta="Plantilla">
           <Selector value={elegida} onChange={(e) => setPlantillaId(e.target.value)}>
             {activas.map((p) => (
@@ -139,7 +150,7 @@ function ImportarExcel() {
           </Selector>
         </Campo>
         <Campo etiqueta="Archivo" ayuda=".xlsx o .csv, hasta 5 MB. El formato .xls viejo no está soportado.">
-          <input type="file" accept=".xlsx,.csv,.txt" onChange={elegirArchivo} className="text-sm" required />
+          <input type="file" accept=".xlsx,.csv,.txt" onChange={elegirArchivo} className={claseArchivo} required />
         </Campo>
         <AlertaError error={importar.error ?? plantillas.error} />
         <div className="flex justify-end">

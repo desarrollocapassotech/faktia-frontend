@@ -3,12 +3,12 @@ import { useEffect, useRef, useState, type MouseEvent as EventoMouse } from 'rea
 import { createPortal } from 'react-dom';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import {
-  ChevronLeft,
-  ChevronRight,
   FileSpreadsheet,
   HandCoins,
   LogOut,
   Menu,
+  PanelLeftClose,
+  PanelLeftOpen,
   Receipt,
   Settings,
   Users,
@@ -16,6 +16,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { useAuth } from '@/auth/auth-context';
+import { Etiqueta } from './ui';
 
 type ItemNav = { a: string; texto: string; icono: LucideIcon; secundario?: boolean };
 
@@ -24,27 +25,27 @@ const NAV: ItemNav[] = [
   { a: '/importaciones', texto: 'Importaciones', icono: FileSpreadsheet },
   { a: '/recibos', texto: 'Recibos', icono: HandCoins },
   { a: '/clientes', texto: 'Clientes', icono: Users },
-  // Secundario: va pegado al fondo del menú, más apagado (como "Ajustes" en Vialto).
+  // Secundario: va pegado al fondo del menú.
   { a: '/configuracion', texto: 'Configuración', icono: Settings, secundario: true },
 ];
 
 const claseMenuBase =
-  'sidebar-scrollbar shrink-0 bg-carbon text-niebla flex flex-col py-6 gap-6 overflow-y-auto transition-[width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]';
-const claseMenuExpandido = 'w-[16rem] max-w-[92vw] px-4';
-const claseMenuColapsado = 'w-[4.5rem] px-2';
+  'fk-sobre-oscuro flex shrink-0 flex-col gap-8 overflow-y-auto bg-fk-fiordo py-6 text-fk-blanco-roto transition-[width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] [scrollbar-width:thin] [scrollbar-color:color-mix(in_srgb,var(--fk-blanco-roto)_25%,transparent)_transparent]';
+const claseMenuExpandido = 'w-[var(--fk-sidebar)] max-w-[92vw] px-3';
+const claseMenuColapsado = 'w-[var(--fk-sidebar-colapsado)] px-3';
+
+// Ítem del menú: texto en blanco roto; el activo lleva una barra terracota de 3 px a la izquierda,
+// además de fondo y peso (la barra sola no llega a 3:1 contra el fiordo).
+const claseItem = 'relative flex min-h-11 items-center rounded-fk text-[15px] transition-colors';
+const claseItemActivo =
+  'bg-fk-blanco-roto/10 font-semibold text-fk-blanco-roto before:absolute before:inset-y-2 before:left-0 before:w-[3px] before:rounded-r-full before:bg-fk-terracota';
+const claseItemInactivo = 'font-medium text-fk-blanco-roto/80 hover:bg-fk-blanco-roto/5 hover:text-fk-blanco-roto';
+
+const claseBotonIcono =
+  'inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-fk text-fk-blanco-roto/80 transition-colors hover:bg-fk-blanco-roto/10 hover:text-fk-blanco-roto';
 
 const claseTooltip =
-  'pointer-events-none fixed z-[200] -translate-y-1/2 whitespace-nowrap rounded-md bg-carbon px-3.5 py-2 font-[family-name:var(--font-ui)] text-sm font-medium tracking-wide text-white shadow-lg';
-
-function MarcaLogo() {
-  return (
-    <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-marca" aria-hidden>
-      <svg viewBox="0 0 32 32" className="h-9 w-9">
-        <path d="M10 8h12v3H13.5v3.5H20v3h-6.5V24H10z" fill="white" />
-      </svg>
-    </span>
-  );
-}
+  'pointer-events-none fixed z-[200] -translate-y-1/2 whitespace-nowrap rounded-fk bg-fk-grafito px-3 py-1.5 text-sm font-medium text-fk-blanco';
 
 export function AppLayout() {
   const { usuario, tenant, logout } = useAuth();
@@ -92,143 +93,101 @@ export function AppLayout() {
 
   const nombreCuenta = usuario?.nombre?.trim() || usuario?.email || 'Cuenta';
   const inicial = nombreCuenta.charAt(0).toUpperCase() || 'U';
+  const enPruebas = tenant?.ambienteArca === 'HOMOLOGACION';
 
-  function renderMenu(conCerrar: boolean, enRiel: boolean) {
+  function renderNav(enRiel: boolean) {
     return (
-      <>
-        {conCerrar && (
-          <div className="flex justify-end px-1">
-            <button
-              type="button"
-              onClick={() => setMenuAbierto(false)}
-              aria-label="Cerrar menú"
-              className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-white/15 text-white/80 hover:bg-white/10"
+      <nav aria-label="Principal" className="flex flex-1 flex-col gap-1">
+        {NAV.map((item, i) => {
+          const primerSecundario = item.secundario && !NAV[i - 1]?.secundario;
+          return (
+            <NavLink
+              key={item.a}
+              to={item.a}
+              aria-label={enRiel ? item.texto : undefined}
+              onMouseEnter={(e) => enRiel && mostrarTooltip(e, item.texto)}
+              onMouseLeave={() => setTooltip(null)}
+              onClick={() => {
+                setMenuAbierto(false);
+                setTooltip(null);
+              }}
+              className={({ isActive }) =>
+                [
+                  claseItem,
+                  enRiel ? 'justify-center px-0' : 'gap-3 px-3',
+                  primerSecundario ? 'mt-auto' : '',
+                  isActive ? claseItemActivo : claseItemInactivo,
+                ].join(' ')
+              }
             >
-              <X className="h-5 w-5" strokeWidth={1.75} />
-            </button>
-          </div>
-        )}
-
-        <nav className={`flex flex-1 flex-col gap-0.5 ${enRiel ? 'items-center' : ''}`}>
-          {NAV.map((item, i) => {
-            const primerSecundario = item.secundario && !NAV[i - 1]?.secundario;
-            return (
-              <div key={item.a} className={`flex flex-col ${enRiel ? 'items-center' : ''} ${primerSecundario ? 'mt-auto pt-4' : ''}`}>
-                <NavLink
-                  to={item.a}
-                  aria-label={enRiel ? item.texto : undefined}
-                  onMouseEnter={(e) => enRiel && mostrarTooltip(e, item.texto)}
-                  onMouseLeave={() => setTooltip(null)}
-                  onClick={() => {
-                    setMenuAbierto(false);
-                    setTooltip(null);
-                  }}
-                  className={({ isActive }) =>
-                    [
-                      'flex min-h-11 items-center rounded-md border font-[family-name:var(--font-ui)] text-sm font-medium uppercase tracking-wider transition-colors',
-                      enRiel ? 'w-11 justify-center px-0' : 'gap-2.5 px-3 py-2.5',
-                      item.secundario
-                        ? isActive
-                          ? 'border-white/20 bg-white/[0.1] text-white'
-                          : 'border-white/[0.06] text-white/60 hover:border-white/15 hover:bg-white/[0.06] hover:text-white'
-                        : isActive
-                          ? 'border-marca bg-marca text-white shadow-sm'
-                          : 'border-white/10 bg-white/[0.03] text-white/65 hover:border-white/20 hover:bg-white/[0.08] hover:text-white',
-                    ].join(' ')
-                  }
-                >
-                  <item.icono className="h-4 w-4 shrink-0" strokeWidth={1.75} />
-                  {!enRiel && <span className="whitespace-nowrap">{item.texto}</span>}
-                </NavLink>
-              </div>
-            );
-          })}
-        </nav>
-      </>
+              <item.icono className="h-[18px] w-[18px] shrink-0" strokeWidth={1.75} aria-hidden />
+              {!enRiel && <span className="whitespace-nowrap">{item.texto}</span>}
+            </NavLink>
+          );
+        })}
+      </nav>
     );
   }
 
   return (
-    <div className="flex min-h-screen flex-col overflow-x-clip bg-niebla">
-      <header className="sticky top-0 z-[1] flex h-16 shrink-0 items-center gap-3 bg-carbon px-4">
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            aria-label="Abrir menú"
-            aria-expanded={menuAbierto}
-            onClick={() => setMenuAbierto(true)}
-            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-white/15 bg-white/5 text-white hover:bg-white/10 lg:hidden"
-          >
-            <Menu className="h-5 w-5" strokeWidth={1.75} />
-          </button>
-          <MarcaLogo />
-          <div className="inline-flex flex-col justify-center leading-none">
-            <span className="block font-[family-name:var(--font-display)] text-lg text-marca-claro [text-align-last:justify] [text-justify:inter-character]">
-              FACTURADOR
-            </span>
-            <span className="-mt-1 block font-[family-name:var(--font-ui)] text-[10px] uppercase text-white [text-align-last:justify] [text-justify:inter-character]">
-              Electrónico
-            </span>
-          </div>
-
-          {tenant && (
-            <div className="hidden min-w-0 items-center gap-3 border-l border-white/10 pl-3 sm:flex">
-              <span className="max-w-[9rem] truncate font-[family-name:var(--font-ui)] text-xs tracking-wide text-white/45 md:max-w-[14rem]">
-                {tenant.nombre}
-              </span>
-            </div>
-          )}
-        </div>
-
+    <div className="min-h-screen bg-fk-blanco-roto">
+      {/* Mobile: barra fiordo con el logo y el menú desplegable. */}
+      <header className="fk-sobre-oscuro sticky top-0 z-40 flex h-14 items-center gap-2 bg-fk-fiordo px-2 lg:hidden">
+        <button
+          type="button"
+          aria-label={menuAbierto ? 'Cerrar menú' : 'Abrir menú'}
+          aria-expanded={menuAbierto}
+          aria-controls="menu-mobile"
+          onClick={() => setMenuAbierto((v) => !v)}
+          className={claseBotonIcono}
+        >
+          {menuAbierto ? <X className="h-5 w-5" strokeWidth={1.75} /> : <Menu className="h-5 w-5" strokeWidth={1.75} />}
+        </button>
+        <img src="/brand/faktia-horizontal-negativo.svg" alt="Faktia" className="h-7 w-auto" />
         <div className="flex-1" />
-
-        <div className="flex shrink-0 items-center gap-2">
-          {tenant?.ambienteArca === 'HOMOLOGACION' && (
-            <span className="rounded-sm border border-amber-500 bg-amber-400 px-2 py-0.5 font-[family-name:var(--font-ui)] text-[9px] uppercase tracking-[0.15em] text-amber-900">
-              Ambiente de pruebas
-            </span>
-          )}
-
-          <div className="hidden min-w-0 items-center gap-2 pl-1 sm:flex">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10 text-xs font-semibold text-white/80 ring-2 ring-white/20">
-              {inicial}
-            </div>
-            <div className="flex min-w-0 flex-col justify-center leading-none">
-              <span className="max-w-[9rem] truncate text-sm text-white/90">{nombreCuenta}</span>
-              {usuario?.nombre && usuario.email && (
-                <span className="-mt-0.5 max-w-[9rem] truncate font-[family-name:var(--font-ui)] text-[10px] tracking-wide text-white/45">
-                  {usuario.email}
-                </span>
-              )}
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={salir}
-            aria-label="Cerrar sesión"
-            title="Cerrar sesión"
-            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-white/15 bg-white/5 text-white/85 transition-colors hover:border-white/30 hover:bg-white/10 hover:text-white"
-          >
-            <LogOut className="h-4 w-4" strokeWidth={1.75} />
-          </button>
-        </div>
+        <button type="button" onClick={salir} aria-label="Cerrar sesión" title="Cerrar sesión" className={claseBotonIcono}>
+          <LogOut className="h-[18px] w-[18px]" strokeWidth={1.75} />
+        </button>
       </header>
 
-      <div className="flex min-h-0 flex-1">
-        {menuAbierto && (
-          <button
-            type="button"
-            aria-label="Cerrar menú"
-            className="fixed inset-x-0 top-16 bottom-0 z-40 bg-black/50 lg:hidden"
-            onClick={() => setMenuAbierto(false)}
-          />
-        )}
+      {menuAbierto && (
+        <button
+          type="button"
+          aria-label="Cerrar menú"
+          tabIndex={-1}
+          className="fixed inset-x-0 top-14 bottom-0 z-30 bg-fk-grafito/40 lg:hidden"
+          onClick={() => setMenuAbierto(false)}
+        />
+      )}
+      <aside
+        id="menu-mobile"
+        aria-hidden={!menuAbierto}
+        inert={!menuAbierto}
+        className={[
+          claseMenuBase,
+          claseMenuExpandido,
+          'fixed top-14 bottom-0 left-0 z-40 transition-transform duration-200 ease-out lg:hidden',
+          menuAbierto ? 'translate-x-0' : '-translate-x-full',
+        ].join(' ')}
+      >
+        {renderNav(false)}
+        <div className="border-t border-fk-blanco-roto/15 px-3 pt-4 text-sm">
+          <p className="truncate font-medium">{nombreCuenta}</p>
+          {tenant && <p className="truncate text-fk-blanco-roto/75">{tenant.nombre}</p>}
+        </div>
+      </aside>
 
-        <div ref={menuDesktopRef} className="sidebar-control-zone fixed top-16 left-0 z-30 hidden h-[calc(100dvh-4rem)] lg:block">
-          <aside className={['flex h-full', claseMenuBase, colapsado ? claseMenuColapsado : claseMenuExpandido].join(' ')}>
-            {renderMenu(false, colapsado)}
-          </aside>
+      {/* Desktop: sidebar fiordo a toda la altura, con el logo arriba. */}
+      <div ref={menuDesktopRef} className="fixed inset-y-0 left-0 z-30 hidden lg:flex">
+        <aside className={['h-full', claseMenuBase, colapsado ? claseMenuColapsado : claseMenuExpandido].join(' ')}>
+          <div className={`flex h-10 items-center ${colapsado ? 'justify-center' : 'px-3'}`}>
+            {colapsado ? (
+              <img src="/brand/faktia-icono-negativo.svg" alt="Faktia" className="h-8 w-8" />
+            ) : (
+              <img src="/brand/faktia-horizontal-negativo.svg" alt="Faktia" className="h-8 w-auto" />
+            )}
+          </div>
+          {renderNav(colapsado)}
           <button
             type="button"
             onClick={() => {
@@ -236,40 +195,58 @@ export function AppLayout() {
               setTooltip(null);
             }}
             aria-label={colapsado ? 'Expandir menú' : 'Colapsar menú'}
-            onMouseEnter={(e) => mostrarTooltip(e, colapsado ? 'Expandir menú' : 'Colapsar menú')}
+            aria-expanded={!colapsado}
+            onMouseEnter={(e) => colapsado && mostrarTooltip(e, 'Expandir menú')}
             onMouseLeave={() => setTooltip(null)}
-            className="sidebar-expand-button group absolute top-1/2 -right-3 z-10 -mt-6 inline-flex h-12 w-7 cursor-pointer items-center justify-center rounded-r-lg border border-l-0 border-white/20 bg-marca text-white shadow-lg transition-[background-color,box-shadow,transform] duration-300 ease-out hover:bg-marca/90 hover:shadow-xl hover:brightness-110 active:scale-95"
+            className={`${claseItem} ${claseItemInactivo} ${colapsado ? 'justify-center px-0' : 'gap-3 px-3'}`}
           >
             {colapsado ? (
-              <ChevronRight className="h-4 w-4 transition-transform duration-300 ease-out group-hover:translate-x-0.5" strokeWidth={2.25} />
+              <PanelLeftOpen className="h-[18px] w-[18px] shrink-0" strokeWidth={1.75} aria-hidden />
             ) : (
-              <ChevronLeft className="h-4 w-4 transition-transform duration-300 ease-out group-hover:-translate-x-0.5" strokeWidth={2.25} />
+              <>
+                <PanelLeftClose className="h-[18px] w-[18px] shrink-0" strokeWidth={1.75} aria-hidden />
+                <span className="whitespace-nowrap">Colapsar</span>
+              </>
             )}
           </button>
-        </div>
-
-        <aside
-          aria-hidden={!menuAbierto}
-          className={[
-            claseMenuBase,
-            claseMenuExpandido,
-            'fixed top-16 bottom-0 left-0 z-50 transition-transform duration-200 ease-in-out lg:hidden',
-            menuAbierto ? 'translate-x-0' : 'pointer-events-none -translate-x-full',
-          ].join(' ')}
-        >
-          {renderMenu(true, false)}
         </aside>
+      </div>
 
-        <div
-          className={[
-            'flex min-w-0 flex-1 flex-col transition-[margin-left] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]',
-            colapsado ? 'lg:ml-[4.5rem]' : 'lg:ml-[16rem]',
-          ].join(' ')}
-        >
-          <main className="mx-auto w-full max-w-7xl min-w-0 flex-1 p-4 md:p-6 lg:p-8">
-            <Outlet />
-          </main>
+      <div
+        className={[
+          'flex min-w-0 flex-col transition-[padding-left] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]',
+          colapsado ? 'lg:pl-[var(--fk-sidebar-colapsado)]' : 'lg:pl-[var(--fk-sidebar)]',
+        ].join(' ')}
+      >
+        {/* Barra de cuenta: ambiente y usuario, sobre el fondo de la app. En mobile solo aparece si hay que avisar el ambiente. */}
+        <div className={`border-b border-fk-borde ${enPruebas ? '' : 'hidden lg:block'}`}>
+          <div className="mx-auto flex min-h-12 w-full max-w-[var(--fk-ancho-contenido)] items-center gap-3 px-4 py-2 md:px-8 lg:min-h-16 lg:px-10">
+            {enPruebas && <Etiqueta tono="pendiente">Ambiente de pruebas</Etiqueta>}
+            <div className="flex-1" />
+            <div className="hidden min-w-0 items-center gap-3 lg:flex">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-fk-niebla text-[13px] font-semibold text-fk-fiordo" aria-hidden>
+                {inicial}
+              </div>
+              <div className="flex min-w-0 flex-col leading-tight">
+                <span className="max-w-[14rem] truncate text-sm font-medium text-fk-grafito">{nombreCuenta}</span>
+                {usuario?.nombre && usuario.email && <span className="max-w-[14rem] truncate text-xs text-fk-gris-texto">{usuario.email}</span>}
+              </div>
+              <button
+                type="button"
+                onClick={salir}
+                aria-label="Cerrar sesión"
+                title="Cerrar sesión"
+                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-fk text-fk-gris-texto transition-colors hover:bg-fk-niebla hover:text-fk-fiordo"
+              >
+                <LogOut className="h-[18px] w-[18px]" strokeWidth={1.75} />
+              </button>
+            </div>
+          </div>
         </div>
+
+        <main className="mx-auto w-full max-w-[var(--fk-ancho-contenido)] min-w-0 flex-1 px-4 pt-5 pb-8 md:px-8 lg:px-10 lg:pt-6 lg:pb-10">
+          <Outlet />
+        </main>
       </div>
 
       {tooltip &&

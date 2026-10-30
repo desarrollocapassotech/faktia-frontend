@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type FormEvent } from 'react';
-import { AlertaError, Boton, Campo, Cargando, Entrada, EntradaNumero, Selector, Tarjeta, Vacio } from '@/components/ui';
+import { AlertaError, Boton, Campo, Cargando, ContenedorTabla, Entrada, EntradaNumero, Selector, Tarjeta, Vacio } from '@/components/ui';
 import { ALICUOTAS, dinero, fecha, hoy, ORIGENES, UNIDADES, unidadTexto } from '@/lib/formato';
 import type { Cliente, Moneda, OrigenItem, Tarifa, Unidad } from '@/lib/tipos';
 import { useApi } from '@/lib/useApi';
@@ -30,46 +30,46 @@ export function TarifasSeccion() {
   return (
     <div className="space-y-4">
       <Tarjeta titulo="Tarifas por cliente">
-        <p className="mb-3 text-sm text-acero">
+        <p className="mb-3 text-sm text-fk-gris-texto">
           Se usan cuando un ítem importado llega sin precio (por ejemplo, horas cargadas por la API). Gana la más específica vigente: la del
           proyecto sobre la del cliente, y la del origen sobre la general.
         </p>
         {data.length === 0 ? (
           <Vacio>No hay tarifas cargadas.</Vacio>
         ) : (
-          <div className="-mx-4 overflow-x-auto sm:-mx-6">
-            <table className="w-full text-sm">
-              <thead className="bg-niebla text-left font-[family-name:var(--font-ui)] text-[13px] uppercase tracking-[0.08em] text-marca [&_th]:border-b [&_th]:border-black/10">
+          <ContenedorTabla>
+            <table className="fk-tabla">
+              <thead>
                 <tr>
-                  <th className="px-3 py-2.5 font-medium">Cliente</th>
-                  <th className="px-3 py-2.5 font-medium">Aplica a</th>
-                  <th className="px-3 py-2.5 text-right font-medium">Precio</th>
-                  <th className="px-3 py-2.5 font-medium">Vigencia</th>
+                  <th>Cliente</th>
+                  <th>Aplica a</th>
+                  <th className="fk-num">Precio</th>
+                  <th>Vigencia</th>
                   <th />
                 </tr>
               </thead>
-              <tbody className="divide-y divide-black/5">
+              <tbody>
                 {data.map((t) => (
                   <tr key={t.id}>
-                    <td className="px-3 py-2">
+                    <td>
                       {t.cliente.razonSocial}
-                      {t.descripcion && <span className="block text-xs text-acero">“{t.descripcion}”</span>}
+                      {t.descripcion && <span className="block text-xs text-fk-gris-texto">“{t.descripcion}”</span>}
                     </td>
-                    <td className="px-3 py-2 text-xs text-acero">
+                    <td className="text-[13px] text-fk-gris-texto">
                       {t.claveExterna ? <>Proyecto <span className="font-mono">{t.claveExterna}</span></> : 'Todo el cliente'}
                       {' · '}
                       {t.origen ? ORIGENES[t.origen] : 'Cualquier origen'}
                     </td>
-                    <td className="px-3 py-2 text-right whitespace-nowrap tabular-nums">
+                    <td className="fk-num">
                       {dinero(t.precioUnitario, t.moneda)} / {unidadTexto(t.unidad)}
-                      <span className="block text-xs text-acero">IVA {Number(t.alicuotaIva)} %</span>
+                      <span className="block text-xs text-fk-gris-texto">IVA {Number(t.alicuotaIva)} %</span>
                     </td>
-                    <td className="px-3 py-2 whitespace-nowrap text-xs">
+                    <td className="text-[13px] whitespace-nowrap tabular-nums">
                       {fecha(t.vigenteDesde)} → {t.vigenteHasta ? fecha(t.vigenteHasta) : 'sin fin'}
                     </td>
-                    <td className="px-3 py-2 text-right">
+                    <td className="text-right">
                       <Boton
-                        variante="fantasma"
+                        variante="destructivo"
                         cargando={eliminar.isPending && eliminar.variables?.id === t.id}
                         onClick={() => {
                           if (window.confirm('¿Eliminar esta tarifa?')) eliminar.mutate(t);
@@ -82,7 +82,7 @@ export function TarifasSeccion() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </ContenedorTabla>
         )}
         <div className="mt-3">
           <AlertaError error={eliminar.error} />

@@ -1,6 +1,6 @@
 // Genera en el navegador la clave privada (RSA 2048) y el pedido de certificado (CSR PKCS#10)
 // que ARCA pide en "Administración de Certificados Digitales". La clave no sale del navegador
-// hasta que el usuario la carga en el Facturador (que la guarda cifrada).
+// hasta que el usuario la carga en Faktia (que la guarda cifrada).
 // Equivale a: openssl req -new -newkey rsa:2048 -nodes -subj "/C=AR/O=…/CN=…/serialNumber=CUIT …"
 
 type Bytes = Uint8Array;

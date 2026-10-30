@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type FormEvent } from 'react';
 import { AlertaError, Aviso, Boton, Campo, Cargando, Entrada, Etiqueta, Modal, Tarjeta, Vacio } from '@/components/ui';
 import { API_URL } from '@/lib/api';
-import { fechaHora } from '@/lib/formato';
+import { fechaHora, type Tono } from '@/lib/formato';
 import { useApi } from '@/lib/useApi';
 
 const EVENTOS: Record<string, string> = {
@@ -32,10 +32,10 @@ interface Entrega {
   entregadaEn: string | null;
 }
 
-const ESTADO_ENTREGA = {
-  PENDIENTE: 'border-amber-400/80 bg-amber-100 text-amber-950',
-  ENTREGADA: 'border-emerald-500/80 bg-emerald-100 text-emerald-950',
-  FALLIDA: 'border-red-400/80 bg-red-100 text-red-950',
+const ESTADO_ENTREGA: Record<Entrega['estado'], Tono> = {
+  PENDIENTE: 'pendiente',
+  ENTREGADA: 'ok',
+  FALLIDA: 'error',
 };
 
 /** La documentación se sirve desde el backend (misma base que la API, sin /api). */
@@ -66,10 +66,10 @@ export function WebhooksSeccion() {
   return (
     <div className="space-y-4">
       <Tarjeta titulo="Webhooks">
-        <p className="mb-3 text-sm text-acero">
+        <p className="mb-3 text-sm text-fk-gris-texto">
           Avisan a otro sistema cuando pasa algo (por ejemplo, cuando se emite un comprobante). Cada envío va firmado con HMAC; cómo
           verificarlo está en la{' '}
-          <a href={URL_DOCS} target="_blank" rel="noreferrer" className="underline">
+          <a href={URL_DOCS} target="_blank" rel="noreferrer" className="font-medium underline underline-offset-2">
             documentación de la API
           </a>
           .
@@ -77,21 +77,21 @@ export function WebhooksSeccion() {
         {data.length === 0 ? (
           <Vacio>Todavía no hay webhooks.</Vacio>
         ) : (
-          <ul className="divide-y divide-black/5 text-sm">
+          <ul className="divide-y divide-fk-borde text-sm">
             {data.map((s) => (
               <li key={s.id} className="flex flex-wrap items-start justify-between gap-3 py-3">
                 <div className="min-w-0 space-y-1">
                   <p className="break-all font-mono text-xs">{s.url}</p>
-                  <p className="text-xs text-acero">{s.eventos.map((e) => EVENTOS[e] ?? e).join(' · ')}</p>
-                  {!s.activa && <Etiqueta className="border-zinc-300/90 bg-zinc-100 text-zinc-800">Pausado</Etiqueta>}
+                  <p className="text-xs text-fk-gris-texto">{s.eventos.map((e) => EVENTOS[e] ?? e).join(' · ')}</p>
+                  {!s.activa && <Etiqueta>Pausado</Etiqueta>}
                   {probar.data && probar.variables?.id === s.id && (
-                    <p className={`text-xs ${probar.data.ok ? 'text-emerald-700' : 'text-red-700'}`}>
+                    <p className={`text-xs ${probar.data.ok ? 'text-fk-ok-texto' : 'text-fk-error-texto'}`}>
                       Prueba: {probar.data.ok ? `respondió ${probar.data.status}` : probar.data.error}
                     </p>
                   )}
                 </div>
                 <div className="flex flex-wrap gap-1">
-                  <Boton variante="secundario" cargando={probar.isPending && probar.variables?.id === s.id} onClick={() => probar.mutate(s)}>
+                  <Boton variante="terciario" cargando={probar.isPending && probar.variables?.id === s.id} onClick={() => probar.mutate(s)}>
                     Probar
                   </Boton>
                   <Boton variante="fantasma" onClick={() => setViendo(s)}>
@@ -109,7 +109,7 @@ export function WebhooksSeccion() {
                     Nuevo secreto
                   </Boton>
                   <Boton
-                    variante="fantasma"
+                    variante="destructivo"
                     onClick={() => {
                       if (window.confirm('¿Eliminar este webhook y su historial de envíos?')) eliminar.mutate(s);
                     }}
@@ -142,7 +142,7 @@ function SecretoUnaVez({ secreto, onListo }: { secreto: string; onListo: () => v
       <div className="flex gap-2">
         <Entrada readOnly value={secreto} className="font-mono text-xs" onFocus={(e) => e.target.select()} />
         <Boton
-          variante="secundario"
+          variante="terciario"
           onClick={async () => {
             await navigator.clipboard.writeText(secreto);
             setCopiado(true);
@@ -182,10 +182,10 @@ function NuevoWebhook({ onCreado }: { onCreado: (secreto: string) => void }) {
     <Tarjeta titulo="Nuevo webhook">
       <form onSubmit={enviar} className="space-y-4">
         <Campo etiqueta="URL que recibe los avisos" ayuda="Tiene que ser https y responder 2xx en menos de 10 segundos.">
-          <Entrada type="url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://tu-sistema.com/webhooks/facturador" required />
+          <Entrada type="url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://tu-sistema.com/webhooks/faktia" required />
         </Campo>
         <fieldset className="space-y-2">
-          <legend className="font-[family-name:var(--font-ui)] text-sm uppercase tracking-[0.08em] text-acero">Eventos</legend>
+          <legend className="text-[13px] font-semibold text-fk-grafito">Eventos</legend>
           {Object.entries(EVENTOS).map(([id, texto]) => (
             <label key={id} className="flex items-center gap-2 text-sm">
               <input
@@ -193,7 +193,7 @@ function NuevoWebhook({ onCreado }: { onCreado: (secreto: string) => void }) {
                 checked={eventos.includes(id)}
                 onChange={() => setEventos((es) => (es.includes(id) ? es.filter((x) => x !== id) : [...es, id]))}
               />
-              {texto} <code className="text-xs text-acero">{id}</code>
+              {texto} <code className="text-xs text-fk-gris-texto">{id}</code>
             </label>
           ))}
         </fieldset>
@@ -227,18 +227,18 @@ function EntregasModal({ suscripcion, onCerrar }: { suscripcion: Suscripcion; on
       ) : data.length === 0 ? (
         <Vacio>Todavía no hubo envíos.</Vacio>
       ) : (
-        <ul className="max-h-96 divide-y divide-black/5 overflow-y-auto text-sm">
+        <ul className="max-h-96 divide-y divide-fk-borde overflow-y-auto text-sm">
           {data.map((e) => (
             <li key={e.id} className="flex items-start justify-between gap-2 py-2">
               <div>
                 <p>
-                  <Etiqueta className={ESTADO_ENTREGA[e.estado]}>{e.estado.toLowerCase()}</Etiqueta> <span className="font-mono text-xs">{e.evento}</span>
+                  <Etiqueta tono={ESTADO_ENTREGA[e.estado]}>{e.estado.toLowerCase()}</Etiqueta> <span className="font-mono text-xs">{e.evento}</span>
                 </p>
-                <p className="text-xs text-acero">
+                <p className="text-xs text-fk-gris-texto">
                   {fechaHora(e.createdAt)} · {e.intentos} intento(s){e.ultimoStatus ? ` · HTTP ${e.ultimoStatus}` : ''}
                   {e.estado === 'PENDIENTE' && e.intentos > 0 && ` · próximo ${fechaHora(e.proximoIntento)}`}
                 </p>
-                {e.ultimoError && <p className="text-xs text-red-700">{e.ultimoError}</p>}
+                {e.ultimoError && <p className="text-xs text-fk-error-texto">{e.ultimoError}</p>}
               </div>
               {e.estado !== 'ENTREGADA' && (
                 <Boton variante="fantasma" cargando={reenviar.isPending && reenviar.variables?.id === e.id} onClick={() => reenviar.mutate(e)}>

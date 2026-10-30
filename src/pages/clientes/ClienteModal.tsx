@@ -129,7 +129,7 @@ export function ClienteModal({
                 />
                 {esCuit && (
                   <Boton
-                    variante="secundario"
+                    variante="terciario"
                     cargando={padron.isPending}
                     disabled={form.numeroDocumento.replace(/\D/g, '').length !== 11}
                     onClick={() => padron.mutate()}
@@ -187,7 +187,7 @@ export function ClienteModal({
         )}
         <AlertaError error={guardar.error} />
         <div className="flex justify-end gap-2">
-          <Boton variante="secundario" onClick={onCerrar}>
+          <Boton variante="terciario" onClick={onCerrar}>
             Cancelar
           </Boton>
           <Boton type="submit" cargando={guardar.isPending}>

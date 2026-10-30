@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
+import { Cargando } from '@/components/ui';
 import { useAuth } from './auth-context';
 
 export function RequireAuth({ children }: { children: ReactNode }) {
@@ -8,8 +9,8 @@ export function RequireAuth({ children }: { children: ReactNode }) {
 
   if (estado === 'cargando') {
     return (
-      <div className="flex min-h-screen items-center justify-center text-sm text-acero">
-        Cargando…
+      <div className="flex min-h-screen items-center justify-center">
+        <Cargando />
       </div>
     );
   }

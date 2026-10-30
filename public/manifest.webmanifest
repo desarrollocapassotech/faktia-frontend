@@ -1,0 +1,15 @@
+{
+  "name": "Faktia - Sistema de facturación",
+  "short_name": "Faktia",
+  "description": "Facturar no debería ser un trámite.",
+  "lang": "es-AR",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "theme_color": "#1E3A4C",
+  "background_color": "#F2F1EC",
+  "icons": [
+    { "src": "/brand/faktia-app-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" }
+  ]
+}

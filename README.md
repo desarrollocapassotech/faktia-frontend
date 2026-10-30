@@ -1,6 +1,6 @@
-# facturador-frontend
+# faktia-frontend
 
-Frontend del Facturador. Vite 6 + React 19 + React Router 7 + Tailwind 4.
+Frontend de Faktia. Vite 6 + React 19 + React Router 7 + Tailwind 4.
 La arquitectura completa está en `../ARCHITECTURE.md`.
 
 ## Puesta en marcha

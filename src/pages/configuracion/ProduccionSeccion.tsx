@@ -55,7 +55,7 @@ export function ProduccionSeccion() {
       <Tarjeta
         titulo="Chequeo previo"
         acciones={
-          <Boton variante="secundario" cargando={probar.isPending} onClick={() => probar.mutate()}>
+          <Boton variante="terciario" cargando={probar.isPending} onClick={() => probar.mutate()}>
             Probar conexión con ARCA producción
           </Boton>
         }
@@ -63,18 +63,18 @@ export function ProduccionSeccion() {
         <ul className="space-y-2 text-sm">
           {data.chequeos.map((c) => (
             <li key={c.id} className="flex gap-2">
-              <span aria-hidden className={`mt-0.5 font-bold ${c.ok ? 'text-emerald-600' : c.obligatorio ? 'text-red-600' : 'text-amber-600'}`}>
+              <span aria-hidden className={`mt-0.5 font-bold ${c.ok ? 'text-fk-ok-texto' : c.obligatorio ? 'text-fk-error-texto' : 'text-fk-pendiente-texto'}`}>
                 {c.ok ? '✓' : c.obligatorio ? '✕' : '!'}
               </span>
               <span>
                 <span className="font-medium">{c.titulo}</span>
-                {!c.obligatorio && <span className="text-xs text-acero"> (aviso)</span>}
-                <span className="block text-acero">{c.mensaje}</span>
+                {!c.obligatorio && <span className="text-xs text-fk-gris-texto"> (aviso)</span>}
+                <span className="block text-fk-gris-texto">{c.mensaje}</span>
               </span>
             </li>
           ))}
         </ul>
-        <p className="mt-3 text-xs text-acero">
+        <p className="mt-3 text-xs text-fk-gris-texto">
           La prueba solo consulta a ARCA el último número autorizado de cada punto de venta: no emite nada.
         </p>
         <div className="mt-3 space-y-2">
@@ -128,12 +128,12 @@ function CambiarAmbiente({ estado, onCambio }: { estado: EstadoProduccion; onCam
     <Tarjeta titulo={aProduccion ? 'Pasar a producción' : 'Volver a homologación'}>
       <form onSubmit={enviar} className="space-y-4">
         {aProduccion ? (
-          <p className="text-sm text-acero">
+          <p className="text-sm text-fk-gris-texto">
             Desde ese momento, cada comprobante que emitas <strong>es real</strong>: se informa a ARCA con tu CUIT y tiene validez fiscal
             (para anularlo hay que hacer una nota de crédito). Antes de activar se vuelve a probar la conexión.
           </p>
         ) : (
-          <p className="text-sm text-acero">
+          <p className="text-sm text-fk-gris-texto">
             Para hacer pruebas otra vez. Los comprobantes ya emitidos en producción siguen siendo válidos y no cambian.
           </p>
         )}
@@ -142,11 +142,11 @@ function CambiarAmbiente({ estado, onCambio }: { estado: EstadoProduccion; onCam
         </Campo>
         <AlertaError error={cambiar.error} />
         <div className="flex justify-end">
-          <Boton type="submit" variante={aProduccion ? 'peligro' : 'secundario'} cargando={cambiar.isPending} disabled={!coincide || (aProduccion && !estado.listo)}>
+          <Boton type="submit" variante={aProduccion ? 'destructivo' : 'terciario'} cargando={cambiar.isPending} disabled={!coincide || (aProduccion && !estado.listo)}>
             {aProduccion ? 'Pasar a producción' : 'Volver a homologación'}
           </Boton>
         </div>
-        {aProduccion && !estado.listo && <p className="text-right text-xs text-acero">Completá los puntos marcados con ✕ para habilitarlo.</p>}
+        {aProduccion && !estado.listo && <p className="text-right text-xs text-fk-gris-texto">Completá los puntos marcados con ✕ para habilitarlo.</p>}
       </form>
     </Tarjeta>
   );

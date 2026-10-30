@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type ChangeEvent, type FormEvent } from 'react';
-import { AlertaError, Aviso, Boton, Campo, Cargando, Selector, Tarjeta, Vacio, claseInput } from '@/components/ui';
+import { AlertaError, Aviso, Boton, Campo, Cargando, Selector, Tarjeta, Vacio, claseArchivo, claseInput } from '@/components/ui';
 import { ambienteTexto, fecha } from '@/lib/formato';
 import type { Ambiente, Certificado, Emisor } from '@/lib/tipos';
 import { useApi } from '@/lib/useApi';
@@ -23,13 +23,13 @@ export function CertificadosSeccion() {
   const tieneProduccion = certificados.data.some((c) => c.ambiente === 'PRODUCCION');
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {!tieneProduccion || claveGenerada ? (
         <AsistenteCertificado emisor={emisor.data} onClaveGenerada={setClaveGenerada} />
       ) : (
-        <details className="rounded border border-black/10 bg-white p-4 text-sm shadow-sm">
-          <summary className="cursor-pointer font-medium">Renovar el certificado de producción (paso a paso)</summary>
-          <div className="mt-3">
+        <details className="rounded-fk border border-fk-borde bg-fk-blanco px-4 py-4 text-sm sm:px-6">
+          <summary className="cursor-pointer font-semibold text-fk-fiordo">Renovar el certificado de producción (paso a paso)</summary>
+          <div className="mt-4">
             <AsistenteCertificado emisor={emisor.data} onClaveGenerada={setClaveGenerada} />
           </div>
         </details>
@@ -41,18 +41,18 @@ export function CertificadosSeccion() {
             {emisor.data.ambienteArca === 'HOMOLOGACION' && ' En pruebas no hace falta: se usa el CUIT de prueba de AfipSDK.'}
           </Vacio>
         ) : (
-          <ul className="divide-y divide-black/5 text-sm">
+          <ul className="divide-y divide-fk-borde text-sm">
             {certificados.data.map((c) => {
               const dias = diasHasta(c.venceEl);
               return (
-                <li key={c.id} className="flex flex-wrap items-baseline justify-between gap-2 py-2">
+                <li key={c.id} className="flex flex-wrap items-baseline justify-between gap-2 py-3">
                   <div>
                     <p className="font-medium">{ambienteTexto(c.ambiente)}</p>
-                    <p className="break-all font-mono text-xs text-acero">SHA-256 {c.huellaSha256}</p>
+                    <p className="font-mono text-xs break-all text-fk-gris-texto">SHA-256 {c.huellaSha256}</p>
                   </div>
-                  <p className={dias < 0 ? 'text-red-700' : dias <= DIAS_AVISO ? 'text-amber-700' : 'text-acero'}>
+                  <p className={`tabular-nums ${dias < 0 ? 'text-fk-error-texto' : dias <= DIAS_AVISO ? 'text-fk-pendiente-texto' : 'text-fk-gris-texto'}`}>
                     {dias < 0 ? `Venció el ${fecha(c.venceEl)}` : `Vence el ${fecha(c.venceEl)}`}
-                    <span className="ml-2 text-xs text-acero/60">cargado el {fecha(c.createdAt)}</span>
+                    <span className="ml-2 text-xs text-fk-gris-texto">cargado el {fecha(c.createdAt)}</span>
                   </p>
                 </li>
               );
@@ -106,8 +106,8 @@ function CargarCertificado({ ambiente, claveInicial }: { ambiente: Ambiente; cla
 
   return (
     <Tarjeta titulo="Cargar certificado">
-      <form onSubmit={enviar} className="space-y-4">
-        <p className="text-sm text-acero">
+      <form onSubmit={enviar} className="space-y-5">
+        <p className="text-sm text-fk-gris-texto">
           El certificado (.crt) y la clave privada (.key) se validan (que sean pareja, que no estén vencidos y que el CUIT
           coincida) y se guardan cifrados. Cargar uno nuevo reemplaza al anterior del mismo ambiente.
         </p>
@@ -117,7 +117,7 @@ function CargarCertificado({ ambiente, claveInicial }: { ambiente: Ambiente; cla
             <option value="PRODUCCION">{ambienteTexto('PRODUCCION')}</option>
           </Selector>
         </Campo>
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-5 md:grid-cols-2">
           <Campo etiqueta="Certificado (PEM)">
             <textarea
               className={`${claseInput} h-40 font-mono text-xs`}
@@ -127,7 +127,7 @@ function CargarCertificado({ ambiente, claveInicial }: { ambiente: Ambiente; cla
               spellCheck={false}
               required
             />
-            <input type="file" accept=".crt,.pem,.cer" onChange={leerArchivo(setCert)} className="text-xs" />
+            <input type="file" accept=".crt,.pem,.cer" onChange={leerArchivo(setCert)} className={claseArchivo} />
           </Campo>
           <Campo etiqueta="Clave privada (PEM)">
             <textarea
@@ -139,7 +139,7 @@ function CargarCertificado({ ambiente, claveInicial }: { ambiente: Ambiente; cla
               autoComplete="off"
               required
             />
-            <input type="file" accept=".key,.pem" onChange={leerArchivo(setClave)} className="text-xs" />
+            <input type="file" accept=".key,.pem" onChange={leerArchivo(setClave)} className={claseArchivo} />
           </Campo>
         </div>
         <AlertaError error={cargar.error} />

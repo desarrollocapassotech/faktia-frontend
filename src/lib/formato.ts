@@ -56,26 +56,35 @@ export const ALICUOTAS = ['21', '10.5', '27', '5', '2.5', '0'];
 export const ORIGENES: Record<OrigenItem, string> = { TRACKER: 'Time tracker', API: 'API', EXCEL: 'Excel / CSV', MANUAL: 'Carga manual' };
 
 export const SCOPES: Record<Scope, string> = {
-  'acceso:emitir': 'Entrar al Facturador sin contraseña (botón "Ir al facturador")',
+  'acceso:emitir': 'Entrar a Faktia sin contraseña desde el otro sistema',
   'items:write': 'Cargar ítems a facturar',
   'comprobantes:write': 'Crear y emitir comprobantes',
   'comprobantes:read': 'Consultar comprobantes',
 };
 
-export const ESTADOS_ITEM: Record<EstadoItem, { texto: string; clase: string }> = {
-  VALIDO: { texto: 'Listo', clase: 'border-emerald-500/80 bg-emerald-100 text-emerald-950' },
-  CON_ERRORES: { texto: 'Con errores', clase: 'border-red-400/80 bg-red-100 text-red-950' },
-  DUPLICADO: { texto: 'Duplicado', clase: 'border-zinc-300/90 bg-zinc-100 text-zinc-800' },
-  EN_BORRADOR: { texto: 'En borrador', clase: 'border-yellow-300 bg-yellow-100 text-yellow-800' },
-  FACTURADO: { texto: 'Facturado', clase: 'border-emerald-600/90 bg-emerald-200 text-emerald-950' },
-  DESCARTADO: { texto: 'Descartado', clase: 'border-zinc-300/90 bg-zinc-100 text-zinc-500 line-through' },
+/** Tono de un badge o alerta (colores de estado de la marca). */
+export type Tono = 'ok' | 'pendiente' | 'error' | 'info';
+
+export interface Estado {
+  texto: string;
+  tono: Tono;
+  tachado?: boolean;
+}
+
+export const ESTADOS_ITEM: Record<EstadoItem, Estado> = {
+  VALIDO: { texto: 'Listo', tono: 'ok' },
+  CON_ERRORES: { texto: 'Con errores', tono: 'error' },
+  DUPLICADO: { texto: 'Duplicado', tono: 'info' },
+  EN_BORRADOR: { texto: 'En borrador', tono: 'info' },
+  FACTURADO: { texto: 'Facturado', tono: 'ok' },
+  DESCARTADO: { texto: 'Descartado', tono: 'info', tachado: true },
 };
 
-export const ESTADOS_IMPORTACION: Record<EstadoImportacion, { texto: string; clase: string }> = {
-  EN_STAGING: { texto: 'En revisión', clase: 'border-amber-400/80 bg-amber-100 text-amber-950' },
-  CONFIRMADA: { texto: 'Confirmada', clase: 'border-emerald-500/80 bg-emerald-100 text-emerald-950' },
-  DESCARTADA: { texto: 'Descartada', clase: 'border-zinc-300/90 bg-zinc-100 text-zinc-500' },
-  FALLIDA: { texto: 'Fallida', clase: 'border-red-400/80 bg-red-100 text-red-950' },
+export const ESTADOS_IMPORTACION: Record<EstadoImportacion, Estado> = {
+  EN_STAGING: { texto: 'En revisión', tono: 'pendiente' },
+  CONFIRMADA: { texto: 'Confirmada', tono: 'ok' },
+  DESCARTADA: { texto: 'Descartada', tono: 'info' },
+  FALLIDA: { texto: 'Fallida', tono: 'error' },
 };
 
 /** "2026-09-28T13:04:00Z" → "28/09/2026 10:04" (hora de Argentina). */
@@ -96,13 +105,13 @@ export function cantidad(v: string | number): string {
   return Number(v).toLocaleString('es-AR', { maximumFractionDigits: 4 });
 }
 
-export const ESTADOS: Record<EstadoComprobante, { texto: string; clase: string }> = {
-  BORRADOR: { texto: 'Borrador', clase: 'border-yellow-300 bg-yellow-100 text-yellow-800' },
-  EMITIENDO: { texto: 'Emitiendo…', clase: 'border-blue-300 bg-blue-50 text-blue-900' },
-  PENDIENTE_VERIFICACION: { texto: 'Verificando con ARCA', clase: 'border-amber-200/95 bg-amber-50 text-amber-950' },
-  EMITIDO: { texto: 'Emitido', clase: 'border-emerald-500/80 bg-emerald-100 text-emerald-950' },
-  RECHAZADO: { texto: 'Rechazado', clase: 'border-red-400/80 bg-red-100 text-red-950' },
-  ANULADO: { texto: 'Anulado', clase: 'border-red-300/80 bg-red-50 text-red-900 line-through' },
+export const ESTADOS: Record<EstadoComprobante, Estado> = {
+  BORRADOR: { texto: 'Borrador', tono: 'info' },
+  EMITIENDO: { texto: 'Emitiendo…', tono: 'pendiente' },
+  PENDIENTE_VERIFICACION: { texto: 'Verificando con ARCA', tono: 'pendiente' },
+  EMITIDO: { texto: 'Emitido', tono: 'ok' },
+  RECHAZADO: { texto: 'Rechazado', tono: 'error' },
+  ANULADO: { texto: 'Anulado', tono: 'info', tachado: true },
 };
 
 const TIPOS: Record<TipoComprobante, { corto: string; largo: string; letra: 'A' | 'B' | 'C' }> = {

@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { AlertaError, Aviso, Boton, Campo, Cargando, Entrada, Etiqueta, Modal, Tarjeta } from '@/components/ui';
+import { AlertaError, Aviso, Boton, Campo, Cargando, ContenedorTabla, EncabezadoPagina, Entrada, EtiquetaEstado, Modal, Tarjeta } from '@/components/ui';
 import { ApiError } from '@/lib/api';
 import {
   CONCEPTOS,
@@ -44,25 +44,30 @@ export function ComprobanteDetallePage() {
   const editable = EDITABLES.includes(c.estado);
 
   return (
-    <div className="space-y-4">
-      <div>
-        <Link to="/comprobantes" className="text-sm text-marca hover:text-marca-claro">
-          ← Comprobantes
-        </Link>
-        <div className="flex flex-wrap items-center gap-3">
-          <h1 className="font-[family-name:var(--font-display)] text-3xl tracking-wide sm:text-4xl">{tipoLargo(c.tipo)}</h1>
-          <span className="font-mono text-sm text-acero">{numeroComprobante(c.puntoVenta.numero, c.numero)}</span>
-          <Etiqueta className={ESTADOS[c.estado].clase}>{ESTADOS[c.estado].texto}</Etiqueta>
-        </div>
-        {c.asociado && (
-          <p className="mt-1 text-sm text-acero">
-            Asociada a{' '}
-            <Link to={`/comprobantes/${c.asociado.id}`} className="underline">
-              {tipoLargo(c.asociado.tipo)} {numeroComprobante(c.asociado.puntoVenta.numero, c.asociado.numero)}
-            </Link>
-          </p>
-        )}
-      </div>
+    <div className="space-y-6">
+      <EncabezadoPagina
+        titulo={tipoLargo(c.tipo)}
+        migas={[
+          { texto: 'Comprobantes', a: '/comprobantes' },
+          { texto: `${tipoLargo(c.tipo)} ${numeroComprobante(c.puntoVenta.numero, c.numero)}` },
+        ]}
+        junto={
+          <>
+            <span className="text-xl text-fk-gris-texto tabular-nums">{numeroComprobante(c.puntoVenta.numero, c.numero)}</span>
+            <EtiquetaEstado estado={ESTADOS[c.estado]} />
+          </>
+        }
+        descripcion={
+          c.asociado && (
+            <>
+              Asociada a{' '}
+              <Link to={`/comprobantes/${c.asociado.id}`} className="font-medium text-fk-fiordo underline underline-offset-2">
+                {tipoLargo(c.asociado.tipo)} <span className="tabular-nums">{numeroComprobante(c.asociado.puntoVenta.numero, c.asociado.numero)}</span>
+              </Link>
+            </>
+          )
+        }
+      />
 
       {c.ambiente === 'HOMOLOGACION' && (
         <Aviso>Ambiente de pruebas: este comprobante no tiene validez fiscal.</Aviso>
@@ -109,7 +114,7 @@ function PendienteVerificacion({ comprobante: c, onActualizado }: { comprobante:
           emitir: el sistema lo consulta solo cada minuto, o podés verificarlo ahora.
         </p>
         {c.errorMensaje && <p className="mt-1 text-xs">Último error: {c.errorMensaje}</p>}
-        <Boton variante="secundario" className="mt-2" cargando={verificar.isPending} onClick={() => verificar.mutate()}>
+        <Boton variante="terciario" className="mt-3" cargando={verificar.isPending} onClick={() => verificar.mutate()}>
           Verificar ahora
         </Boton>
       </Aviso>
@@ -170,7 +175,7 @@ function EmitirBoton({
             Vas a pedir el CAE a ARCA para una <strong>{tipoLargo(c.tipo)}</strong> a <strong>{c.cliente.razonSocial}</strong> por{' '}
             <strong>{dinero(c.importeTotal, c.moneda)}</strong>.
           </p>
-          <p className="text-acero">
+          <p className="text-fk-gris-texto">
             Una vez autorizado no se puede modificar ni borrar: para corregirlo hay que hacer una nota de crédito.
           </p>
           {c.ambiente === 'HOMOLOGACION' && (
@@ -183,7 +188,7 @@ function EmitirBoton({
             <AlertaError error={emitir.error} />
           )}
           <div className="flex justify-end gap-2">
-            <Boton variante="secundario" onClick={() => setAbierto(false)} disabled={emitir.isPending}>
+            <Boton variante="terciario" onClick={() => setAbierto(false)} disabled={emitir.isPending}>
               Cancelar
             </Boton>
             <Boton cargando={emitir.isPending} onClick={() => emitir.mutate()}>
@@ -215,7 +220,7 @@ function EliminarBorrador({ comprobante: c }: { comprobante: Comprobante }) {
     <>
       {eliminar.error && <AlertaError error={eliminar.error} />}
       <Boton
-        variante="fantasma"
+        variante="destructivo"
         cargando={eliminar.isPending}
         onClick={() => {
           if (window.confirm('¿Eliminar este borrador? No se puede deshacer.')) eliminar.mutate();
@@ -256,10 +261,10 @@ function VistaComprobante({ comprobante: c }: { comprobante: Comprobante }) {
             <div className="flex flex-wrap gap-2">
               {esFactura(c.tipo) && c.estado === 'EMITIDO' && (
                 <>
-                  <Boton variante="secundario" onClick={() => setNota('NOTA_CREDITO')}>
+                  <Boton variante="terciario" onClick={() => setNota('NOTA_CREDITO')}>
                     Nota de crédito
                   </Boton>
-                  <Boton variante="secundario" onClick={() => setNota('NOTA_DEBITO')}>
+                  <Boton variante="terciario" onClick={() => setNota('NOTA_DEBITO')}>
                     Nota de débito
                   </Boton>
                 </>
@@ -270,13 +275,13 @@ function VistaComprobante({ comprobante: c }: { comprobante: Comprobante }) {
             </div>
           }
         >
-          <dl className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
-            <Dato titulo="CAE" valor={<span className="font-mono">{c.cae}</span>} />
-            <Dato titulo="Vencimiento del CAE" valor={fecha(c.caeVencimiento)} />
-            <Dato titulo="Fecha del comprobante" valor={fecha(c.fechaEmision)} />
-            <Dato titulo="Número" valor={<span className="font-mono">{numeroComprobante(c.puntoVenta.numero, c.numero)}</span>} />
+          <dl className="grid gap-5 text-sm sm:grid-cols-2 lg:grid-cols-4">
+            <Dato titulo="CAE" valor={<span className="tabular-nums">{c.cae}</span>} />
+            <Dato titulo="Vencimiento del CAE" valor={<span className="tabular-nums">{fecha(c.caeVencimiento)}</span>} />
+            <Dato titulo="Fecha del comprobante" valor={<span className="tabular-nums">{fecha(c.fechaEmision)}</span>} />
+            <Dato titulo="Número" valor={<span className="tabular-nums">{numeroComprobante(c.puntoVenta.numero, c.numero)}</span>} />
           </dl>
-          {c.estado === 'ANULADO' && <p className="mt-3 text-sm text-acero">Anulado por una nota de crédito por el total.</p>}
+          {c.estado === 'ANULADO' && <p className="mt-4 text-sm text-fk-gris-texto">Anulado por una nota de crédito por el total.</p>}
           <div className="mt-3">
             <AlertaError error={errorPdf} />
           </div>
@@ -284,7 +289,7 @@ function VistaComprobante({ comprobante: c }: { comprobante: Comprobante }) {
       )}
 
       <Tarjeta titulo="Datos">
-        <dl className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
+        <dl className="grid gap-5 text-sm sm:grid-cols-2 lg:grid-cols-4">
           <Dato titulo="Cliente" valor={c.cliente.razonSocial} />
           <Dato titulo="Condición IVA" valor={CONDICIONES_IVA[c.cliente.condicionIva]} />
           <Dato titulo="Concepto" valor={CONCEPTOS[c.concepto]} />
@@ -301,37 +306,35 @@ function VistaComprobante({ comprobante: c }: { comprobante: Comprobante }) {
       </Tarjeta>
 
       <Tarjeta titulo="Detalle">
-        <div className="-mx-4 overflow-x-auto sm:-mx-6">
-          <table className="w-full text-sm">
-            <thead className="bg-niebla text-left font-[family-name:var(--font-ui)] text-[13px] uppercase tracking-[0.08em] text-marca [&_th]:border-b [&_th]:border-black/10">
+        <ContenedorTabla>
+          <table className="fk-tabla">
+            <thead>
               <tr>
-                <th className="px-3 py-2.5 font-medium">Descripción</th>
-                <th className="px-3 py-2.5 text-right font-medium">Cantidad</th>
-                <th className="px-3 py-2.5 text-right font-medium">Precio unit.</th>
-                <th className="px-3 py-2.5 text-right font-medium">Bonif.</th>
-                {discriminaIva && <th className="px-3 py-2.5 text-right font-medium">IVA</th>}
-                <th className="px-3 py-2.5 text-right font-medium">Importe</th>
+                <th>Descripción</th>
+                <th className="fk-num">Cantidad</th>
+                <th className="fk-num">Precio unit.</th>
+                <th className="fk-num">Bonif.</th>
+                {discriminaIva && <th className="fk-num">IVA</th>}
+                <th className="fk-num">Importe</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-black/5">
+            <tbody>
               {c.lineas.map((l) => (
                 <tr key={l.id}>
-                  <td className="px-3 py-2">{l.descripcion}</td>
-                  <td className="px-3 py-2 text-right tabular-nums whitespace-nowrap">
+                  <td>{l.descripcion}</td>
+                  <td className="fk-num">
                     {Number(l.cantidad).toLocaleString('es-AR')} {unidadTexto(l.unidad, l.cantidad)}
                   </td>
-                  <td className="px-3 py-2 text-right tabular-nums whitespace-nowrap">{dinero(l.precioUnitario, c.moneda)}</td>
-                  <td className="px-3 py-2 text-right tabular-nums">{Number(l.bonificacionPct) ? `${Number(l.bonificacionPct)} %` : '—'}</td>
-                  {discriminaIva && <td className="px-3 py-2 text-right tabular-nums">{Number(l.alicuotaIva)} %</td>}
-                  <td className="px-3 py-2 text-right tabular-nums whitespace-nowrap">
-                    {dinero(discriminaIva ? l.importeNeto : l.importeTotal, c.moneda)}
-                  </td>
+                  <td className="fk-num">{dinero(l.precioUnitario, c.moneda)}</td>
+                  <td className="fk-num">{Number(l.bonificacionPct) ? `${Number(l.bonificacionPct)} %` : '—'}</td>
+                  {discriminaIva && <td className="fk-num">{Number(l.alicuotaIva)} %</td>}
+                  <td className="fk-num">{dinero(discriminaIva ? l.importeNeto : l.importeTotal, c.moneda)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-        </div>
-        <dl className="mt-4 ml-auto max-w-xs space-y-1 text-sm">
+        </ContenedorTabla>
+        <dl className="mt-6 ml-auto max-w-xs space-y-1.5 border-t border-fk-borde pt-4 text-sm">
           {discriminaIva && (
             <>
               <Fila titulo="Neto gravado" valor={dinero(c.importeNetoGravado, c.moneda)} />
@@ -346,15 +349,16 @@ function VistaComprobante({ comprobante: c }: { comprobante: Comprobante }) {
 
       {c.asociadosDesde.length > 0 && (
         <Tarjeta titulo="Notas asociadas">
-          <ul className="divide-y divide-black/5 text-sm">
+          <ul className="divide-y divide-fk-borde text-sm">
             {c.asociadosDesde.map((n) => (
-              <li key={n.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
-                <Link to={`/comprobantes/${n.id}`} className="hover:underline">
-                  {tipoLargo(n.tipo)} {n.numero !== null ? numeroComprobante(c.puntoVenta.numero, n.numero) : '(sin número)'}
+              <li key={n.id} className="flex min-h-12 flex-wrap items-center justify-between gap-2 py-2">
+                <Link to={`/comprobantes/${n.id}`} className="font-medium text-fk-fiordo underline-offset-2 hover:underline">
+                  {tipoLargo(n.tipo)}{' '}
+                  <span className="tabular-nums">{n.numero !== null ? numeroComprobante(c.puntoVenta.numero, n.numero) : '(sin número)'}</span>
                 </Link>
-                <span className="flex items-center gap-2">
+                <span className="flex items-center gap-3">
                   <span className="tabular-nums">{dinero(n.importeTotal, c.moneda)}</span>
-                  <Etiqueta className={ESTADOS[n.estado].clase}>{ESTADOS[n.estado].texto}</Etiqueta>
+                  <EtiquetaEstado estado={ESTADOS[n.estado]} />
                 </span>
               </li>
             ))}
@@ -406,14 +410,14 @@ function NotaModal({
           emitirla.
         </p>
         {clase === 'NOTA_CREDITO' && (
-          <p className="text-acero">Si la nota de crédito es por el total, la factura queda anulada al emitirla.</p>
+          <p className="text-fk-gris-texto">Si la nota de crédito es por el total, la factura queda anulada al emitirla.</p>
         )}
         <Campo etiqueta="Motivo">
           <Entrada value={motivo} onChange={(e) => setMotivo(e.target.value)} required maxLength={500} autoFocus />
         </Campo>
         <AlertaError error={crear.error} />
         <div className="flex justify-end gap-2">
-          <Boton variante="secundario" onClick={onCerrar}>
+          <Boton variante="terciario" onClick={onCerrar}>
             Cancelar
           </Boton>
           <Boton type="submit" cargando={crear.isPending}>
@@ -427,8 +431,8 @@ function NotaModal({
 
 function Dato({ titulo, valor }: { titulo: string; valor: ReactNode }) {
   return (
-    <div>
-      <dt className="text-acero">{titulo}</dt>
+    <div className="space-y-1">
+      <dt className="fk-etiqueta">{titulo}</dt>
       <dd className="font-medium">{valor}</dd>
     </div>
   );
@@ -436,9 +440,9 @@ function Dato({ titulo, valor }: { titulo: string; valor: ReactNode }) {
 
 function Fila({ titulo, valor, fuerte }: { titulo: string; valor: string; fuerte?: boolean }) {
   return (
-    <div className={`flex justify-between gap-4 ${fuerte ? 'border-t border-black/10 pt-1 text-base font-semibold' : ''}`}>
-      <dt className={fuerte ? '' : 'text-acero'}>{titulo}</dt>
-      <dd className="tabular-nums">{valor}</dd>
+    <div className={`flex justify-between gap-4 ${fuerte ? 'border-t border-fk-borde pt-2 text-base font-semibold text-fk-fiordo' : ''}`}>
+      <dt className={fuerte ? '' : 'text-fk-gris-texto'}>{titulo}</dt>
+      <dd className="fk-num">{valor}</dd>
     </div>
   );
 }

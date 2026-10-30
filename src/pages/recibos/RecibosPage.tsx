@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState, type FormEvent } from 'react';
-import { AlertaError, Aviso, Boton, Campo, claseInput, Entrada, EntradaNumero, Selector, Tarjeta } from '@/components/ui';
+import { HandCoins, Wallet } from 'lucide-react';
+import { AlertaError, Aviso, Boton, Campo, Cargando, claseInput, EncabezadoPagina, Entrada, EntradaNumero, Selector, Tarjeta } from '@/components/ui';
 import { cuit, dinero, fecha, hoy, numeroComprobante, tipoLargo } from '@/lib/formato';
 import type { Cliente, ComprobanteResumen, Moneda, Paginado } from '@/lib/tipos';
 import { useApi } from '@/lib/useApi';
@@ -51,7 +52,7 @@ function documentoDe(c: Cliente): string {
 
 // Numeración: la lleva el usuario (no se guardan recibos). Recordamos el último número por tipo en
 // este navegador solo para sugerir el siguiente.
-const CLAVE_NUMERO = (t: Tipo) => `facturador.recibo.ultimoNumero.${t}`;
+const CLAVE_NUMERO = (t: Tipo) => `faktia.recibo.ultimoNumero.${t}`;
 
 function leerUltimo(t: Tipo): string {
   try {
@@ -202,116 +203,120 @@ export function RecibosPage() {
   const esCobro = tipo === 'COBRO';
 
   return (
-    <form onSubmit={generar} className="space-y-4">
-      <div>
-        <h1 className="font-[family-name:var(--font-display)] text-3xl tracking-wide sm:text-4xl">Recibos</h1>
-        <p className="text-sm text-acero">
-          Se generan en PDF con tus datos y tu logo. No se guardan ni son comprobantes de ARCA: llevá tu propia numeración.
-        </p>
-      </div>
+    <form onSubmit={generar} className="space-y-6">
+      <EncabezadoPagina
+        titulo="Recibos"
+        descripcion="Se generan en PDF con tus datos y tu logo. No se guardan ni son comprobantes de ARCA: llevá tu propia numeración."
+      />
 
-      <div role="radiogroup" aria-label="Tipo de recibo" className="grid gap-2 sm:grid-cols-2">
+      <div role="radiogroup" aria-label="Tipo de recibo" className="grid gap-3 sm:grid-cols-2">
         {(
           [
-            ['COBRO', 'Recibo de cobro', 'Un cliente te paga. Firmás vos.'],
-            ['PAGO', 'Recibo de pago', 'Le pagás a un colaborador o proveedor. Firma quien cobra.'],
+            ['COBRO', 'Recibo de cobro', 'Un cliente te paga. Firmás vos.', HandCoins],
+            ['PAGO', 'Recibo de pago', 'Le pagás a un colaborador o proveedor. Firma quien cobra.', Wallet],
           ] as const
-        ).map(([t, titulo, ayuda]) => (
+        ).map(([t, titulo, ayuda, Icono]) => (
           <button
             key={t}
             type="button"
             role="radio"
             aria-checked={tipo === t}
             onClick={() => cambiarTipo(t)}
-            className={`rounded border p-3 text-left transition-colors ${
-              tipo === t ? 'border-marca bg-carbon text-white' : 'border-black/10 bg-white hover:border-marca/50'
+            className={`flex items-start gap-3 rounded-fk border bg-fk-blanco p-4 text-left transition-colors ${
+              tipo === t ? 'border-fk-fiordo ring-1 ring-fk-fiordo' : 'border-fk-borde hover:border-fk-gris-texto'
             }`}
           >
-            <span className={`block font-[family-name:var(--font-ui)] text-sm font-semibold uppercase tracking-wider ${tipo === t ? 'text-marca-suave' : ''}`}>{titulo}</span>
-            <span className={`block text-xs ${tipo === t ? 'text-white/60' : 'text-acero'}`}>{ayuda}</span>
+            <Icono className={`mt-0.5 h-5 w-5 shrink-0 ${tipo === t ? 'text-fk-fiordo' : 'text-fk-gris-texto'}`} strokeWidth={1.75} aria-hidden />
+            <span>
+              <span className={`block text-[15px] font-semibold ${tipo === t ? 'text-fk-fiordo' : 'text-fk-grafito'}`}>{titulo}</span>
+              <span className="mt-0.5 block text-[13px] text-fk-gris-texto">{ayuda}</span>
+            </span>
           </button>
         ))}
       </div>
 
-      <Tarjeta titulo="Datos del recibo">
-        <div className="grid gap-4 sm:grid-cols-3">
-          <Campo etiqueta="Número" ayuda="Opcional. Se sugiere el siguiente al último que generaste.">
-            <Entrada value={numero} onChange={(e) => setNumero(e.target.value)} maxLength={30} placeholder="0001-00000001" />
-          </Campo>
-          <Campo etiqueta="Fecha">
-            <Entrada type="date" value={fechaRecibo} onChange={(e) => setFechaRecibo(e.target.value)} required />
-          </Campo>
-          <Campo etiqueta="Moneda">
-            <Selector value={moneda} onChange={(e) => setMoneda(e.target.value as Moneda)}>
-              <option value="ARS">Pesos</option>
-              <option value="USD">Dólares</option>
-            </Selector>
-          </Campo>
-        </div>
-      </Tarjeta>
-
-      <Tarjeta titulo={esCobro ? 'Quién paga' : 'A quién le pagás'}>
-        <div className="grid gap-4 sm:grid-cols-2">
-          {esCobro && (
-            <Campo etiqueta="Cliente" className="sm:col-span-2" ayuda="Elegilo para completar sus datos y ver sus facturas emitidas.">
-              <Selector value={clienteId} onChange={(e) => elegirCliente(e.target.value)}>
-                <option value="">Otro (cargar a mano)</option>
-                {(clientes.data ?? []).map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.razonSocial}
-                  </option>
-                ))}
+      {/* En pantallas anchas, los datos del recibo y la contraparte van lado a lado. */}
+      <div className="grid gap-6 xl:grid-cols-2">
+        <Tarjeta titulo="Datos del recibo">
+          <div className="grid gap-5 sm:grid-cols-3">
+            <Campo etiqueta="Número" ayuda="Opcional. Se sugiere el siguiente al último que generaste.">
+              <Entrada value={numero} onChange={(e) => setNumero(e.target.value)} maxLength={30} placeholder="0001-00000001" />
+            </Campo>
+            <Campo etiqueta="Fecha">
+              <Entrada type="date" value={fechaRecibo} onChange={(e) => setFechaRecibo(e.target.value)} required />
+            </Campo>
+            <Campo etiqueta="Moneda">
+              <Selector value={moneda} onChange={(e) => setMoneda(e.target.value as Moneda)}>
+                <option value="ARS">Pesos</option>
+                <option value="USD">Dólares</option>
               </Selector>
             </Campo>
-          )}
-          <Campo etiqueta="Nombre o razón social">
-            <Entrada value={contraparte.nombre} onChange={(e) => setContraparte((p) => ({ ...p, nombre: e.target.value }))} maxLength={200} required />
-          </Campo>
-          <Campo etiqueta="Documento" ayuda="Como querés que se lea: “CUIT 20-12345678-9”, “DNI 12.345.678”.">
-            <Entrada value={contraparte.documento} onChange={(e) => setContraparte((p) => ({ ...p, documento: e.target.value }))} maxLength={60} />
-          </Campo>
-          <Campo etiqueta="Domicilio" className="sm:col-span-2">
-            <Entrada value={contraparte.domicilio} onChange={(e) => setContraparte((p) => ({ ...p, domicilio: e.target.value }))} maxLength={300} />
-          </Campo>
-          {!esCobro && (
-            <Campo etiqueta="Período" ayuda="Opcional. Se menciona en el texto del recibo.">
-              <Entrada value={periodo} onChange={(e) => setPeriodo(e.target.value)} maxLength={60} />
+          </div>
+        </Tarjeta>
+
+        <Tarjeta titulo={esCobro ? 'Quién paga' : 'A quién le pagás'}>
+          <div className="grid gap-5 sm:grid-cols-2">
+            {esCobro && (
+              <Campo etiqueta="Cliente" className="sm:col-span-2" ayuda="Elegilo para completar sus datos y ver sus facturas emitidas.">
+                <Selector value={clienteId} onChange={(e) => elegirCliente(e.target.value)}>
+                  <option value="">Otro (cargar a mano)</option>
+                  {(clientes.data ?? []).map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.razonSocial}
+                    </option>
+                  ))}
+                </Selector>
+              </Campo>
+            )}
+            <Campo etiqueta="Nombre o razón social">
+              <Entrada value={contraparte.nombre} onChange={(e) => setContraparte((p) => ({ ...p, nombre: e.target.value }))} maxLength={200} required />
             </Campo>
-          )}
-        </div>
-        <div className="mt-3">
-          <AlertaError error={clientes.error} />
-        </div>
-      </Tarjeta>
+            <Campo etiqueta="Documento" ayuda="Como querés que se lea: “CUIT 20-12345678-9”, “DNI 12.345.678”.">
+              <Entrada value={contraparte.documento} onChange={(e) => setContraparte((p) => ({ ...p, documento: e.target.value }))} maxLength={60} />
+            </Campo>
+            <Campo etiqueta="Domicilio" className="sm:col-span-2">
+              <Entrada value={contraparte.domicilio} onChange={(e) => setContraparte((p) => ({ ...p, domicilio: e.target.value }))} maxLength={300} />
+            </Campo>
+            {!esCobro && (
+              <Campo etiqueta="Período" ayuda="Opcional. Se menciona en el texto del recibo.">
+                <Entrada value={periodo} onChange={(e) => setPeriodo(e.target.value)} maxLength={60} />
+              </Campo>
+            )}
+          </div>
+          <div className="mt-3">
+            <AlertaError error={clientes.error} />
+          </div>
+        </Tarjeta>
+      </div>
 
       {esCobro && clienteId && (
         <Tarjeta titulo="Facturas que cancela">
           {facturas.error ? (
             <AlertaError error={facturas.error} />
           ) : !facturas.data ? (
-            <p className="text-sm text-acero">Cargando facturas…</p>
+            <Cargando texto="Cargando facturas…" />
           ) : facturas.data.items.filter((f) => f.tipo.startsWith('FACTURA')).length === 0 ? (
-            <p className="text-sm text-acero">Este cliente no tiene facturas emitidas.</p>
+            <p className="text-sm text-fk-gris-texto">Este cliente no tiene facturas emitidas.</p>
           ) : (
-            <ul className="divide-y divide-black/5 text-sm">
+            <ul className="-mx-4 divide-y divide-fk-borde text-sm sm:-mx-6">
               {facturas.data.items
                 .filter((f) => f.tipo.startsWith('FACTURA'))
                 .map((f) => (
                   <li key={f.id}>
-                    <label className="flex cursor-pointer items-center justify-between gap-3 py-2">
-                      <span className="flex items-center gap-2">
+                    <label className="flex min-h-12 cursor-pointer items-center justify-between gap-3 px-4 py-2 hover:bg-fk-niebla sm:px-6">
+                      <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
                         <input type="checkbox" checked={aplicados.some((a) => a.id === f.id)} onChange={() => alternarFactura(f)} />
-                        {tipoLargo(f.tipo)} <span className="font-mono text-xs">{numeroComprobante(f.puntoVenta.numero, f.numero)}</span>
-                        <span className="text-acero">{fecha(f.fechaEmision)}</span>
+                        {tipoLargo(f.tipo)} <span className="tabular-nums">{numeroComprobante(f.puntoVenta.numero, f.numero)}</span>
+                        <span className="text-fk-gris-texto tabular-nums">{fecha(f.fechaEmision)}</span>
                       </span>
-                      <span className="tabular-nums">{dinero(f.importeTotal, f.moneda)}</span>
+                      <span className="fk-num">{dinero(f.importeTotal, f.moneda)}</span>
                     </label>
                   </li>
                 ))}
             </ul>
           )}
           {aplicados.length > 0 && (
-            <p className="mt-2 text-xs text-acero">Si el pago es parcial, corregí el importe del concepto correspondiente.</p>
+            <p className="mt-3 text-xs text-fk-gris-texto">Si el pago es parcial, corregí el importe del concepto correspondiente.</p>
           )}
         </Tarjeta>
       )}
@@ -319,27 +324,30 @@ export function RecibosPage() {
       <Tarjeta
         titulo="Conceptos"
         acciones={
-          <Boton variante="secundario" onClick={() => setItems((its) => [...its, { descripcion: '', cantidad: '', importe: '' }])} disabled={items.length >= 200}>
+          <Boton variante="terciario" onClick={() => setItems((its) => [...its, { descripcion: '', cantidad: '', importe: '' }])} disabled={items.length >= 200}>
             Agregar concepto
           </Boton>
         }
       >
         <div className="space-y-3">
           {items.map((it, i) => (
-            <div key={i} className="grid gap-2 rounded-sm border border-black/5 p-3 sm:grid-cols-12 sm:items-end">
+            <div key={i} className="grid gap-3 rounded-fk border border-fk-borde p-4 sm:grid-cols-12 sm:items-end">
               <Campo etiqueta="Descripción" className="sm:col-span-6">
                 <Entrada value={it.descripcion} onChange={(e) => cambiarItem(i, 'descripcion', e.target.value)} maxLength={500} required />
               </Campo>
               <Campo etiqueta="Cantidad" ayuda="Opcional" className="sm:col-span-2">
                 <Entrada value={it.cantidad} onChange={(e) => cambiarItem(i, 'cantidad', e.target.value)} maxLength={40} placeholder="80 hs" />
               </Campo>
-              <Campo etiqueta="Importe" className="sm:col-span-3">
+              <Campo
+                etiqueta="Importe"
+                className="sm:col-span-3"
+                error={it.importe !== '' && centavos[i] === null ? 'Importe no válido.' : null}
+              >
                 <EntradaNumero
                   value={it.importe}
                   onValueChange={(v) => cambiarItem(i, 'importe', v)}
                   required
                   aria-invalid={it.importe !== '' && centavos[i] === null}
-                  className={it.importe !== '' && centavos[i] === null ? 'border-red-400' : ''}
                 />
               </Campo>
               <div className="sm:col-span-1">
@@ -355,13 +363,13 @@ export function RecibosPage() {
             </div>
           ))}
         </div>
-        <p className="mt-4 text-right text-sm">
-          Total: <span className="text-base font-semibold tabular-nums">{total === null ? '—' : dinero(total / 100, moneda)}</span>
+        <p className="mt-6 border-t border-fk-borde pt-4 text-right text-sm text-fk-gris-texto">
+          Total: <span className="fk-num text-lg font-semibold text-fk-fiordo">{total === null ? '—' : dinero(total / 100, moneda)}</span>
         </p>
       </Tarjeta>
 
       <Tarjeta titulo="Otros datos">
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-5 sm:grid-cols-2">
           <Campo etiqueta="Medio de pago" ayuda="Opcional.">
             <Entrada list="medios-pago" value={medioPago} onChange={(e) => setMedioPago(e.target.value)} maxLength={100} />
             <datalist id="medios-pago">

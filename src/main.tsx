@@ -5,7 +5,11 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import { AuthProvider } from './auth/AuthProvider';
 import { ApiError } from './lib/api';
+import { migrarClavesViejas } from './lib/storage';
 import './index.css';
+
+// Antes de que el AuthProvider lea la sesión guardada.
+migrarClavesViejas();
 
 const queryClient = new QueryClient({
   defaultOptions: {

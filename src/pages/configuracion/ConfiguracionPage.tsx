@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { Building2, FileSpreadsheet, FileText, Plug, Rocket, ShieldCheck, Store, Tags, Webhook } from 'lucide-react';
+import { EncabezadoPagina } from '@/components/ui';
 import { CertificadosSeccion } from './CertificadosSeccion';
 import { EmisorSeccion } from './EmisorSeccion';
 import { EstadoArcaTarjeta } from './EstadoArcaTarjeta';
@@ -11,15 +13,15 @@ import { TarifasSeccion } from './TarifasSeccion';
 import { WebhooksSeccion } from './WebhooksSeccion';
 
 const PESTANAS = [
-  { id: 'emisor', texto: 'Datos del emisor' },
-  { id: 'puntos', texto: 'Puntos de venta' },
-  { id: 'certificados', texto: 'Certificados ARCA' },
-  { id: 'plantilla', texto: 'Plantilla PDF' },
-  { id: 'produccion', texto: 'Producción' },
-  { id: 'tarifas', texto: 'Tarifas' },
-  { id: 'mapeo', texto: 'Plantillas Excel' },
-  { id: 'integraciones', texto: 'Integraciones' },
-  { id: 'webhooks', texto: 'Webhooks' },
+  { id: 'emisor', texto: 'Datos del emisor', icono: Building2 },
+  { id: 'puntos', texto: 'Puntos de venta', icono: Store },
+  { id: 'certificados', texto: 'Certificados ARCA', icono: ShieldCheck },
+  { id: 'plantilla', texto: 'Plantilla PDF', icono: FileText },
+  { id: 'produccion', texto: 'Producción', icono: Rocket },
+  { id: 'tarifas', texto: 'Tarifas', icono: Tags },
+  { id: 'mapeo', texto: 'Plantillas Excel', icono: FileSpreadsheet },
+  { id: 'integraciones', texto: 'Integraciones', icono: Plug },
+  { id: 'webhooks', texto: 'Webhooks', icono: Webhook },
 ] as const;
 
 type Pestana = (typeof PESTANAS)[number]['id'];
@@ -33,10 +35,10 @@ export function ConfiguracionPage() {
   const [pestana, setPestana] = useState<Pestana>(pestanaInicial);
 
   return (
-    <div className="space-y-4">
-      <h1 className="font-[family-name:var(--font-display)] text-3xl tracking-wide sm:text-4xl">Configuración</h1>
+    <div className="space-y-8">
+      <EncabezadoPagina titulo="Configuración" />
       <EstadoArcaTarjeta />
-      <div role="tablist" className="flex flex-wrap gap-2">
+      <div role="tablist" aria-label="Secciones" className="-mx-4 flex gap-1 overflow-x-auto overflow-y-hidden border-b border-fk-borde px-4 [scrollbar-width:none] md:mx-0 md:px-0 [&::-webkit-scrollbar]:hidden">
         {PESTANAS.map((p) => (
           <button
             key={p.id}
@@ -44,25 +46,28 @@ export function ConfiguracionPage() {
             type="button"
             aria-selected={pestana === p.id}
             onClick={() => setPestana(p.id)}
-            className={`inline-flex items-center gap-1.5 rounded border px-3 py-1.5 font-[family-name:var(--font-ui)] text-xs uppercase tracking-wider transition-colors ${
+            className={`-mb-px inline-flex min-h-11 shrink-0 items-center gap-2 border-b-2 px-3 text-sm whitespace-nowrap transition-colors ${
               pestana === p.id
-                ? 'border-marca bg-carbon text-marca-suave'
-                : 'border-acero/40 bg-white text-acero hover:border-marca/50'
+                ? 'border-fk-fiordo font-semibold text-fk-fiordo'
+                : 'border-transparent font-medium text-fk-gris-texto hover:border-fk-borde hover:text-fk-grafito'
             }`}
           >
+            <p.icono className="h-4 w-4 shrink-0" strokeWidth={1.75} aria-hidden />
             {p.texto}
           </button>
         ))}
       </div>
-      {pestana === 'emisor' && <EmisorSeccion />}
-      {pestana === 'puntos' && <PuntosVentaSeccion />}
-      {pestana === 'certificados' && <CertificadosSeccion />}
-      {pestana === 'plantilla' && <PlantillaSeccion />}
-      {pestana === 'produccion' && <ProduccionSeccion />}
-      {pestana === 'tarifas' && <TarifasSeccion />}
-      {pestana === 'mapeo' && <PlantillasMapeoSeccion />}
-      {pestana === 'integraciones' && <IntegracionesSeccion />}
-      {pestana === 'webhooks' && <WebhooksSeccion />}
+      <div>
+        {pestana === 'emisor' && <EmisorSeccion />}
+        {pestana === 'puntos' && <PuntosVentaSeccion />}
+        {pestana === 'certificados' && <CertificadosSeccion />}
+        {pestana === 'plantilla' && <PlantillaSeccion />}
+        {pestana === 'produccion' && <ProduccionSeccion />}
+        {pestana === 'tarifas' && <TarifasSeccion />}
+        {pestana === 'mapeo' && <PlantillasMapeoSeccion />}
+        {pestana === 'integraciones' && <IntegracionesSeccion />}
+        {pestana === 'webhooks' && <WebhooksSeccion />}
+      </div>
     </div>
   );
 }

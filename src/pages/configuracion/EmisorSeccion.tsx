@@ -56,8 +56,8 @@ function FormularioEmisor({ emisor }: { emisor: Emisor }) {
 
   return (
     <Tarjeta titulo="Datos del emisor">
-      <form onSubmit={enviar} className="space-y-4">
-        <div className="grid gap-4 sm:grid-cols-2">
+      <form onSubmit={enviar} className="space-y-5">
+        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
           <Campo etiqueta="CUIT" ayuda="Se cambia desde soporte: define con qué CUIT se emite en ARCA.">
             <Entrada value={cuit(emisor.cuit)} disabled />
           </Campo>

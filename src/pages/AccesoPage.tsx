@@ -2,6 +2,9 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/auth/auth-context';
+import { MarcoPublico } from '@/components/MarcoPublico';
+import { claseBoton } from '@/components/estilos';
+import { AlertaError, Cargando } from '@/components/ui';
 import { ApiError } from '@/lib/api';
 
 /** Solo rutas internas (el backend ya valida el destino contra una lista blanca). */
@@ -39,22 +42,17 @@ export function AccesoPage() {
   }, [canjearAcceso, navigate, queryClient]);
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-carbon px-4">
-      <div className="w-full max-w-md border border-white/10 bg-grafito p-6 text-center shadow-xl">
-        <h1 className="mb-4 font-[family-name:var(--font-display)] text-2xl tracking-wide text-white">Facturador</h1>
-        {error ? (
-          <div className="space-y-4">
-            <p role="alert" className="border border-red-700/50 bg-red-900/30 px-3 py-2 text-sm text-red-200">
-              {error}
-            </p>
-            <Link to="/login" className="text-sm text-marca-suave hover:text-white">
-              Ingresar con email y contraseña
-            </Link>
-          </div>
-        ) : (
-          <p className="text-sm text-white/60">Ingresando…</p>
-        )}
-      </div>
-    </main>
+    <MarcoPublico>
+      {error ? (
+        <div className="space-y-5 text-center">
+          <AlertaError mensaje={error} />
+          <Link to="/login" className={`${claseBoton('terciario')} w-full`}>
+            Ingresar con email y contraseña
+          </Link>
+        </div>
+      ) : (
+        <Cargando texto="Ingresando…" />
+      )}
+    </MarcoPublico>
   );
 }

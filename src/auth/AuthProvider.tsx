@@ -3,7 +3,7 @@ import { api, ApiError, registrarOnNoAutorizado } from '@/lib/api';
 import { borrar, guardar, leer } from '@/lib/storage';
 import { AuthContext, type AuthState, type OpcionTenant, type TenantSesion, type Usuario } from './auth-context';
 
-const CLAVE_TOKEN = 'facturador.sesion';
+const CLAVE_TOKEN = 'faktia.sesion';
 
 interface SesionResponse {
   accessToken: string;

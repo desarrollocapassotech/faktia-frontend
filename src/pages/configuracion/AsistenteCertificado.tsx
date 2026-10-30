@@ -1,12 +1,13 @@
 import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import { Check } from 'lucide-react';
 import { AlertaError, Aviso, Boton, Campo, Entrada, Tarjeta } from '@/components/ui';
 import { descargarTexto, generarPedidoCertificado } from '@/lib/csr';
 import { cuit as formatearCuit } from '@/lib/formato';
 import { leer, guardar } from '@/lib/storage';
 import type { Emisor } from '@/lib/tipos';
 
-const CLAVE_PASOS = 'facturador.asistenteCertificado.pasos';
+const CLAVE_PASOS = 'faktia.asistenteCertificado.pasos';
 
 function pasosHechos(): string[] {
   try {
@@ -31,20 +32,27 @@ function Paso({
 }) {
   const [abierto, setAbierto] = useState(!hecho);
   return (
-    <li className={`rounded-sm border ${hecho ? 'border-emerald-200 bg-emerald-50/40' : 'border-black/10'} p-3`}>
+    <li className={`rounded-fk border p-4 ${hecho ? 'border-fk-ok-fondo bg-fk-ok-fondo/40' : 'border-fk-borde'}`}>
       <div className="flex items-center justify-between gap-2">
-        <button type="button" onClick={() => setAbierto((v) => !v)} className="flex items-center gap-2 text-left text-sm font-medium">
-          <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs ${hecho ? 'bg-emerald-600 text-white' : 'bg-carbon text-white'}`}>
-            {hecho ? '✓' : n}
+        <button
+          type="button"
+          aria-expanded={abierto}
+          onClick={() => setAbierto((v) => !v)}
+          className="flex min-h-8 items-center gap-3 rounded-fk text-left text-sm font-semibold"
+        >
+          <span
+            className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs tabular-nums text-fk-blanco ${hecho ? 'bg-fk-pino' : 'bg-fk-fiordo'}`}
+          >
+            {hecho ? <Check className="h-3.5 w-3.5" strokeWidth={2.5} aria-label="Hecho" /> : n}
           </span>
           {titulo}
         </button>
-        <label className="flex items-center gap-1 text-xs text-acero">
+        <label className="flex items-center gap-1.5 text-xs text-fk-gris-texto">
           <input type="checkbox" checked={hecho} onChange={(e) => onHecho(e.target.checked)} />
           Listo
         </label>
       </div>
-      {abierto && <div className="mt-3 space-y-2 pl-8 text-sm text-carbon">{children}</div>}
+      {abierto && <div className="mt-3 space-y-3 pl-9 text-sm">{children}</div>}
     </li>
   );
 }
@@ -55,7 +63,7 @@ function Paso({
  */
 export function AsistenteCertificado({ emisor, onClaveGenerada }: { emisor: Emisor; onClaveGenerada: (clavePem: string) => void }) {
   const [hechos, setHechos] = useState<string[]>(pasosHechos);
-  const [alias, setAlias] = useState('facturador');
+  const [alias, setAlias] = useState('faktia');
   const [generando, setGenerando] = useState(false);
   const [error, setError] = useState<unknown>(null);
   const [generado, setGenerado] = useState(false);
@@ -86,8 +94,8 @@ export function AsistenteCertificado({ emisor, onClaveGenerada }: { emisor: Emis
 
   return (
     <Tarjeta titulo="Cómo obtener el certificado de producción (paso a paso)">
-      <p className="mb-3 text-sm text-acero">
-        El certificado permite que el Facturador emita en tu nombre por Web Services. Se tramita una sola vez con tu clave fiscal (nivel 3) y
+      <p className="mb-4 text-sm text-fk-gris-texto">
+        El certificado permite que Faktia emita en tu nombre por Web Services. Se tramita una sola vez con tu clave fiscal (nivel 3) y
         dura 2 años. Tarda unos 15 minutos.
       </p>
       <ol className="space-y-2">
@@ -107,8 +115,8 @@ export function AsistenteCertificado({ emisor, onClaveGenerada }: { emisor: Emis
               <Entrada value={formatearCuit(emisor.cuit)} disabled />
             </Campo>
           </div>
-          <Boton onClick={() => void generar()} cargando={generando} disabled={!alias}>
-            Generar y descargar {alias || 'facturador'}.key y {alias || 'facturador'}.csr
+          <Boton variante="secundario" onClick={() => void generar()} cargando={generando} disabled={!alias}>
+            Generar y descargar {alias || 'faktia'}.key y {alias || 'faktia'}.csr
           </Boton>
           <AlertaError error={error} />
           {generado && (
@@ -123,7 +131,7 @@ export function AsistenteCertificado({ emisor, onClaveGenerada }: { emisor: Emis
           <ol className="list-decimal space-y-1 pl-5">
             <li>
               Entrá a{' '}
-              <a href="https://auth.afip.gob.ar/contribuyente_/login.xhtml" target="_blank" rel="noreferrer" className="underline">
+              <a href="https://auth.afip.gob.ar/contribuyente_/login.xhtml" target="_blank" rel="noreferrer" className="font-medium underline underline-offset-2">
                 ARCA con tu clave fiscal
               </a>{' '}
               (CUIT {formatearCuit(emisor.cuit)}).
@@ -132,14 +140,14 @@ export function AsistenteCertificado({ emisor, onClaveGenerada }: { emisor: Emis
               Buscá el servicio <strong>Administración de Certificados Digitales</strong>. Si no aparece: entrá a <strong>Administrador de
               Relaciones de Clave Fiscal</strong> → <strong>Adherir servicio</strong> → ARCA → Servicios interactivos → Administración de
               Certificados Digitales, confirmá y volvé a entrar.
-              <span className="mt-1 block text-xs text-acero">
+              <span className="mt-1 block text-xs text-fk-gris-texto">
                 Si ARCA responde “La autorización … arfe_certificado … ya existe”, no es un problema: el servicio ya estaba adherido.
                 Salí, volvé a entrar y buscalo en <strong>Mis servicios</strong> (o con el buscador).
               </span>
             </li>
             <li>
-              <strong>Agregar alias</strong>: escribí <code className="rounded bg-niebla px-1">{alias || 'facturador'}</code>, elegí el archivo{' '}
-              <strong>{alias || 'facturador'}.csr</strong> y tocá <strong>Agregar alias</strong>.
+              <strong>Agregar alias</strong>: escribí <code className="rounded-fk bg-fk-niebla px-1 font-mono text-[13px]">{alias || 'faktia'}</code>, elegí el archivo{' '}
+              <strong>{alias || 'faktia'}.csr</strong> y tocá <strong>Agregar alias</strong>.
             </li>
             <li>
               En la lista, tocá <strong>Ver</strong> en ese alias y descargá el certificado (<strong>.crt</strong>).
@@ -156,11 +164,11 @@ export function AsistenteCertificado({ emisor, onClaveGenerada }: { emisor: Emis
               <strong>Buscar</strong> → ARCA → <strong>WebServices</strong> → <strong>Facturación Electrónica</strong>.
             </li>
             <li>
-              En <strong>Representante</strong> tocá <strong>Buscar</strong>, elegí el alias <strong>{alias || 'facturador'}</strong> (computador
+              En <strong>Representante</strong> tocá <strong>Buscar</strong>, elegí el alias <strong>{alias || 'faktia'}</strong> (computador
               fiscal) y <strong>Confirmar</strong>.
             </li>
           </ol>
-          <p className="text-xs text-acero">Sin este paso, ARCA rechaza la conexión aunque el certificado sea válido.</p>
+          <p className="text-xs text-fk-gris-texto">Sin este paso, ARCA rechaza la conexión aunque el certificado sea válido.</p>
         </Paso>
 
         <Paso n={4} titulo="Dar de alta un punto de venta para Web Services" hecho={hechos.includes('arca-pv')} onHecho={marcar('arca-pv')}>
@@ -177,7 +185,7 @@ export function AsistenteCertificado({ emisor, onClaveGenerada }: { emisor: Emis
             <li>Asociale el domicilio fiscal y confirmá.</li>
             <li>
               Cargá ese número en{' '}
-              <Link to="/configuracion?tab=puntos" className="underline">
+              <Link to="/configuracion?tab=puntos" className="font-medium underline underline-offset-2">
                 Configuración → Puntos de venta
               </Link>{' '}
               con ambiente <strong>Producción</strong>.
@@ -185,11 +193,11 @@ export function AsistenteCertificado({ emisor, onClaveGenerada }: { emisor: Emis
           </ol>
         </Paso>
 
-        <Paso n={5} titulo="Cargar el certificado en el Facturador" hecho={hechos.includes('cargar')} onHecho={marcar('cargar')}>
+        <Paso n={5} titulo="Cargar el certificado en Faktia" hecho={hechos.includes('cargar')} onHecho={marcar('cargar')}>
           <p>
             Más abajo, en <strong>Cargar certificado</strong>: ambiente <strong>Producción</strong>, subí el <strong>.crt</strong> que bajaste
-            de ARCA y el <strong>{alias || 'facturador'}.key</strong> del paso 1
-            {generado ? ' (si lo generaste recién, ya está completado)' : ''}. El Facturador verifica que sean pareja, que no estén vencidos y
+            de ARCA y el <strong>{alias || 'faktia'}.key</strong> del paso 1
+            {generado ? ' (si lo generaste recién, ya está completado)' : ''}. Faktia verifica que sean pareja, que no estén vencidos y
             que el CUIT coincida, y los guarda cifrados.
           </p>
         </Paso>
@@ -197,7 +205,7 @@ export function AsistenteCertificado({ emisor, onClaveGenerada }: { emisor: Emis
         <Paso n={6} titulo="Probar la conexión y pasar a producción" hecho={hechos.includes('produccion')} onHecho={marcar('produccion')}>
           <p>
             En{' '}
-            <Link to="/configuracion?tab=produccion" className="underline">
+            <Link to="/configuracion?tab=produccion" className="font-medium underline underline-offset-2">
               Configuración → Producción
             </Link>{' '}
             tocá <strong>Probar conexión con ARCA producción</strong> (solo consulta, no emite nada). Si da bien, <strong>Pasar a producción</strong>
@@ -205,7 +213,7 @@ export function AsistenteCertificado({ emisor, onClaveGenerada }: { emisor: Emis
           </p>
         </Paso>
       </ol>
-      <p className="mt-3 text-xs text-acero">
+      <p className="mt-3 text-xs text-fk-gris-texto">
         Para pruebas en homologación no hace falta certificado. Si querés uno de homologación con tu CUIT, el trámite es el mismo pero en el
         servicio <strong>WSASS - Autogestión Certificados Homologación</strong>.
       </p>

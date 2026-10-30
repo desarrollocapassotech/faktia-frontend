@@ -1,5 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { EncabezadoPagina } from '@/components/ui';
 import { EditorComprobante } from './EditorComprobante';
 
 export function NuevoComprobantePage() {
@@ -7,14 +8,12 @@ export function NuevoComprobantePage() {
   const queryClient = useQueryClient();
 
   return (
-    <div className="space-y-4">
-      <div>
-        <Link to="/comprobantes" className="text-sm text-marca hover:text-marca-claro">
-          ← Comprobantes
-        </Link>
-        <h1 className="font-[family-name:var(--font-display)] text-3xl tracking-wide sm:text-4xl">Nueva factura</h1>
-        <p className="text-sm text-acero">Se guarda como borrador. Lo revisás y lo emitís en el paso siguiente.</p>
-      </div>
+    <div className="space-y-8">
+      <EncabezadoPagina
+        titulo="Nueva factura"
+        migas={[{ texto: 'Comprobantes', a: '/comprobantes' }, { texto: 'Nueva factura' }]}
+        descripcion="Se guarda como borrador. Lo revisás y lo emitís en el paso siguiente."
+      />
       <EditorComprobante
         onGuardado={(c) => {
           queryClient.setQueryData(['comprobante', c.id], c);

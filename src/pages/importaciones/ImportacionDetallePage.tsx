@@ -1,20 +1,35 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type FormEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { AlertaError, Aviso, Boton, Campo, Cargando, Entrada, EntradaNumero, Etiqueta, Modal, Selector, Tarjeta, Vacio } from '@/components/ui';
+import { Ban, CircleAlert, CircleCheck, FilePen, List, Receipt, type LucideIcon } from 'lucide-react';
+import {
+  AlertaError,
+  Aviso,
+  Boton,
+  Campo,
+  Cargando,
+  EncabezadoPagina,
+  Entrada,
+  EntradaNumero,
+  EtiquetaEstado,
+  Modal,
+  Selector,
+  Tarjeta,
+  Vacio,
+} from '@/components/ui';
 import { ALICUOTAS, cantidad, cuit, dinero, ESTADOS_IMPORTACION, ESTADOS_ITEM, fecha, fechaHora, hoy, ORIGENES, soloFecha, UNIDADES, unidadTexto } from '@/lib/formato';
 import type { Cliente, CondicionIva, EstadoItem, Importacion, ItemFacturable, Moneda, Paginado, TipoComprobante, Unidad } from '@/lib/tipos';
 import { useApi } from '@/lib/useApi';
 import { ClienteModal } from '../clientes/ClienteModal';
 import { FormularioTarifa } from '../configuracion/TarifasSeccion';
 
-const FILTROS: Array<{ id: EstadoItem | ''; texto: string }> = [
-  { id: '', texto: 'Todos' },
-  { id: 'CON_ERRORES', texto: 'Con errores' },
-  { id: 'VALIDO', texto: 'Listos' },
-  { id: 'EN_BORRADOR', texto: 'En borrador' },
-  { id: 'FACTURADO', texto: 'Facturados' },
-  { id: 'DESCARTADO', texto: 'Descartados' },
+const FILTROS: Array<{ id: EstadoItem | ''; texto: string; icono: LucideIcon }> = [
+  { id: '', texto: 'Todos', icono: List },
+  { id: 'CON_ERRORES', texto: 'Con errores', icono: CircleAlert },
+  { id: 'VALIDO', texto: 'Listos', icono: CircleCheck },
+  { id: 'EN_BORRADOR', texto: 'En borrador', icono: FilePen },
+  { id: 'FACTURADO', texto: 'Facturados', icono: Receipt },
+  { id: 'DESCARTADO', texto: 'Descartados', icono: Ban },
 ];
 
 interface ResultadoGenerar {
@@ -70,31 +85,29 @@ export function ImportacionDetallePage() {
   const n = (e: EstadoItem) => i.estadosItems?.[e] ?? 0;
 
   return (
-    <div className="space-y-4">
-      <div>
-        <Link to="/importaciones" className="text-sm text-marca hover:text-marca-claro">
-          ← Importaciones
-        </Link>
-        <div className="flex flex-wrap items-center gap-3">
-          <h1 className="font-[family-name:var(--font-display)] text-3xl tracking-wide sm:text-4xl">{i.descripcion || ORIGENES[i.origen]}</h1>
-          <Etiqueta className={ESTADOS_IMPORTACION[i.estado].clase}>{ESTADOS_IMPORTACION[i.estado].texto}</Etiqueta>
-        </div>
-        <p className="text-sm text-acero">
-          {ORIGENES[i.origen]} · {fechaHora(i.createdAt)}
-        </p>
-      </div>
+    <div className="space-y-6">
+      <EncabezadoPagina
+        titulo={i.descripcion || ORIGENES[i.origen]}
+        migas={[{ texto: 'Importaciones', a: '/importaciones' }, { texto: i.descripcion || ORIGENES[i.origen] }]}
+        junto={<EtiquetaEstado estado={ESTADOS_IMPORTACION[i.estado]} />}
+        descripcion={
+          <>
+            {ORIGENES[i.origen]} · <span className="tabular-nums">{fechaHora(i.createdAt)}</span>
+          </>
+        }
+      />
 
       <Tarjeta>
-        <dl className="grid gap-3 text-sm sm:grid-cols-3 lg:grid-cols-6">
+        <dl className="grid gap-5 text-sm sm:grid-cols-3 lg:grid-cols-6">
           <Dato titulo="Leídos" valor={i.totalItems} />
-          <Dato titulo="Listos" valor={n('VALIDO')} clase="text-emerald-700" />
-          <Dato titulo="Con errores" valor={n('CON_ERRORES')} clase={n('CON_ERRORES') ? 'text-red-700' : ''} />
+          <Dato titulo="Listos" valor={n('VALIDO')} clase="text-fk-ok-texto" />
+          <Dato titulo="Con errores" valor={n('CON_ERRORES')} clase={n('CON_ERRORES') ? 'text-fk-error-texto' : ''} />
           <Dato titulo="Repetidos (sin cambios)" valor={i.duplicados} />
           <Dato titulo="Actualizados" valor={i.actualizados} />
           <Dato titulo="En borrador / facturados" valor={`${n('EN_BORRADOR')} / ${n('FACTURADO')}`} />
         </dl>
         {i.duplicados > 0 && (
-          <p className="mt-3 text-xs text-acero">
+          <p className="mt-4 text-xs text-fk-gris-texto">
             Los repetidos ya estaban importados con los mismos datos: no se vuelven a cargar.
           </p>
         )}
@@ -126,14 +139,18 @@ export function ImportacionDetallePage() {
       <Tarjeta
         titulo="Ítems"
         acciones={
-          <div className="flex flex-wrap gap-1">
+          <div className="flex flex-wrap gap-1" role="group" aria-label="Filtrar ítems">
             {FILTROS.map((f) => (
               <button
                 key={f.id}
                 type="button"
+                aria-pressed={filtro === f.id}
                 onClick={() => setFiltro(f.id)}
-                className={`rounded-sm px-2 py-1 text-xs ${filtro === f.id ? 'bg-carbon text-white' : 'text-acero hover:bg-niebla'}`}
+                className={`inline-flex min-h-8 items-center gap-1.5 rounded-fk px-3 text-[13px] font-medium transition-colors ${
+                  filtro === f.id ? 'bg-fk-fiordo text-fk-blanco' : 'text-fk-gris-texto hover:bg-fk-niebla hover:text-fk-grafito'
+                }`}
               >
+                <f.icono className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} aria-hidden />
                 {f.texto}
               </button>
             ))}
@@ -146,7 +163,7 @@ export function ImportacionDetallePage() {
         ) : items.data.items.length === 0 ? (
           <Vacio>No hay ítems {filtro ? 'en este estado' : 'en esta importación'}.</Vacio>
         ) : (
-          <ul className="divide-y divide-black/5">
+          <ul className="divide-y divide-fk-borde">
             {items.data.items.map((item) => (
               <FilaItem
                 key={item.id}
@@ -187,9 +204,9 @@ export function ImportacionDetallePage() {
 
 function Dato({ titulo, valor, clase = '' }: { titulo: string; valor: string | number; clase?: string }) {
   return (
-    <div>
-      <dt className="text-acero">{titulo}</dt>
-      <dd className={`text-lg font-semibold tabular-nums ${clase}`}>{valor}</dd>
+    <div className="space-y-1">
+      <dt className="fk-etiqueta">{titulo}</dt>
+      <dd className={`text-xl font-semibold tabular-nums ${clase || 'text-fk-fiordo'}`}>{valor}</dd>
     </div>
   );
 }
@@ -226,12 +243,12 @@ function Acciones({
     <Tarjeta titulo={i.estado === 'EN_STAGING' ? 'Revisión' : 'Facturar'}>
       {i.estado === 'EN_STAGING' ? (
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm text-acero">
+          <p className="text-sm text-fk-gris-texto">
             Corregí los ítems con errores (o descartalos) y confirmá. Los que queden con error no se facturan.
           </p>
           <div className="flex gap-2">
             <Boton
-              variante="fantasma"
+              variante="destructivo"
               cargando={descartar.isPending}
               onClick={() => {
                 if (window.confirm('¿Descartar toda la importación? Sus ítems no se van a facturar.')) descartar.mutate();
@@ -245,7 +262,7 @@ function Acciones({
           </div>
         </div>
       ) : (
-        <form onSubmit={enviar} className="flex flex-wrap items-end gap-3">
+        <form onSubmit={enviar} className="flex flex-wrap items-end gap-4">
           <Campo etiqueta="Un borrador por">
             <Selector value={agrupacion} onChange={(e) => setAgrupacion(e.target.value as 'cliente' | 'cliente-periodo')}>
               <option value="cliente">Cliente (y moneda)</option>
@@ -258,7 +275,7 @@ function Acciones({
           <Boton type="submit" cargando={generar.isPending} disabled={listos === 0}>
             Generar borradores ({listos} ítem{listos === 1 ? '' : 's'})
           </Boton>
-          {listos === 0 && <p className="w-full text-sm text-acero">No quedan ítems listos para facturar en esta importación.</p>}
+          {listos === 0 && <p className="w-full text-sm text-fk-gris-texto">No quedan ítems listos para facturar en esta importación.</p>}
         </form>
       )}
       <div className="mt-3">
@@ -278,10 +295,10 @@ function ResultadoBorradores({ resultado }: { resultado: ResultadoGenerar }) {
       <ul className="mt-2 space-y-1">
         {resultado.comprobantes.map((c) => (
           <li key={c.id}>
-            <Link to={`/comprobantes/${c.id}`} className="underline">
+            <Link to={`/comprobantes/${c.id}`} className="font-medium underline underline-offset-2">
               {c.cliente.razonSocial}
             </Link>{' '}
-            — {c._count.lineas} línea{c._count.lineas === 1 ? '' : 's'}, {dinero(c.importeTotal, c.moneda)}
+            — {c._count.lineas} línea{c._count.lineas === 1 ? '' : 's'}, <span className="tabular-nums">{dinero(c.importeTotal, c.moneda)}</span>
           </li>
         ))}
       </ul>
@@ -315,52 +332,52 @@ function FilaItem({
     : null;
 
   return (
-    <li className="grid gap-3 py-3 text-sm lg:grid-cols-12">
+    <li className="grid gap-3 py-4 text-sm lg:grid-cols-12">
       <div className="lg:col-span-5">
         <p className="font-medium">{item.descripcion}</p>
-        <p className="text-xs text-acero">
+        <p className="text-xs text-fk-gris-texto">
           {periodo}
           {m.fila !== undefined && <> · fila {String(m.fila)}</>}
         </p>
         <p className="mt-1">
           {item.cliente ? (
-            <span className="text-carbon">{item.cliente.razonSocial}</span>
+            <span>{item.cliente.razonSocial}</span>
           ) : (
-            <span className="text-red-700">
+            <span className="text-fk-error-texto">
               Sin cliente
               {item.clienteAlta?.razonSocial && <> — “{item.clienteAlta.razonSocial}”</>}
               {doc && <> ({doc})</>}
             </span>
           )}
           {editable && (
-            <button type="button" onClick={onAsignar} className="ml-2 text-xs text-acero underline">
+            <button type="button" onClick={onAsignar} className="ml-2 text-xs font-medium text-fk-fiordo underline underline-offset-2">
               {item.cliente ? 'Cambiar' : 'Asignar cliente'}
             </button>
           )}
         </p>
       </div>
 
-      <div className="lg:col-span-3">
+      <div className="lg:col-span-3 lg:text-right">
         <p className="tabular-nums">
           {cantidad(item.cantidad)} {unidadTexto(item.unidad, item.cantidad)} × {dinero(item.precioUnitario, item.moneda)}
-          {m.precioDeTarifa && m.tarifaId && <span className="ml-1 text-xs text-acero">(tarifa)</span>}
+          {m.precioDeTarifa && m.tarifaId && <span className="ml-1 text-xs text-fk-gris-texto">(tarifa)</span>}
         </p>
-        <p className="text-xs text-acero tabular-nums">
+        <p className="text-xs text-fk-gris-texto tabular-nums">
           ≈ {dinero(totalEstimado(item), item.moneda)} con IVA {Number(item.alicuotaIva)} %
         </p>
       </div>
 
       <div className="lg:col-span-2">
-        <Etiqueta className={ESTADOS_ITEM[item.estado].clase}>{ESTADOS_ITEM[item.estado].texto}</Etiqueta>
+        <EtiquetaEstado estado={ESTADOS_ITEM[item.estado]} />
         {item.estado === 'CON_ERRORES' && item.errores && (
-          <ul className="mt-1 space-y-0.5 text-xs text-red-700">
+          <ul className="mt-1.5 space-y-0.5 text-xs text-fk-error-texto">
             {item.errores.map((e, k) => (
               <li key={k}>{e.mensaje}</li>
             ))}
           </ul>
         )}
         {item.comprobanteId && (
-          <Link to={`/comprobantes/${item.comprobanteId}`} className="mt-1 block text-xs underline">
+          <Link to={`/comprobantes/${item.comprobanteId}`} className="mt-1.5 block text-xs font-medium text-fk-fiordo underline underline-offset-2">
             Ver comprobante
           </Link>
         )}
@@ -368,7 +385,7 @@ function FilaItem({
 
       <div className="flex flex-wrap items-start justify-end gap-1 lg:col-span-2">
         {errorTarifa && item.clienteId && (
-          <Boton variante="secundario" onClick={onTarifa} disabled={ocupado}>
+          <Boton variante="terciario" onClick={onTarifa} disabled={ocupado}>
             Crear tarifa
           </Boton>
         )}
@@ -495,7 +512,7 @@ function EditarItemModal({ item, onCerrar, onGuardado }: { item: ItemFacturable;
         </div>
         <AlertaError error={guardar.error} />
         <div className="flex justify-end gap-2">
-          <Boton variante="secundario" onClick={onCerrar}>
+          <Boton variante="terciario" onClick={onCerrar}>
             Cancelar
           </Boton>
           <Boton type="submit" cargando={guardar.isPending}>
@@ -565,13 +582,13 @@ function AsignarClienteModal({ item, onCerrar, onGuardado }: { item: ItemFactura
     <Modal abierto titulo="Asignar cliente" onCerrar={onCerrar}>
       <div className="space-y-4 text-sm">
         {(alta?.razonSocial || numero) && (
-          <p className="text-acero">
+          <p className="text-fk-gris-texto">
             El origen lo identifica como <strong>{alta?.razonSocial ?? '—'}</strong>
             {numero && <> ({cuit(numero)})</>}.
             {item.clienteReferenciaExterna && ' Al asignarlo, se recuerda para las próximas importaciones y se aplica a los otros ítems de ese cliente.'}
           </p>
         )}
-        <Campo etiqueta="Cliente del Facturador">
+        <Campo etiqueta="Cliente en Faktia">
           <Selector value={clienteId} onChange={(e) => setClienteId(e.target.value)}>
             <option value="">Elegí un cliente…</option>
             {(clientes.data ?? []).map((c) => (
@@ -583,11 +600,11 @@ function AsignarClienteModal({ item, onCerrar, onGuardado }: { item: ItemFactura
         </Campo>
         <AlertaError error={asignar.error ?? clientes.error} />
         <div className="flex flex-wrap justify-between gap-2">
-          <Boton variante="secundario" onClick={() => setCreando(true)}>
+          <Boton variante="fantasma" onClick={() => setCreando(true)}>
             Crear cliente nuevo
           </Boton>
           <div className="flex gap-2">
-            <Boton variante="fantasma" onClick={onCerrar}>
+            <Boton variante="terciario" onClick={onCerrar}>
               Cancelar
             </Boton>
             <Boton onClick={() => asignar.mutate(clienteId)} disabled={!clienteId} cargando={asignar.isPending}>

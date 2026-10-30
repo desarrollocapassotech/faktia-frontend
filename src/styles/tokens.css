@@ -1,0 +1,89 @@
+/*
+ * Tokens de marca de Faktia: la única fuente de colores, tipografía, radios y sombras.
+ * El resto del código usa estas variables (o las utilidades de Tailwind que las mapean abajo,
+ * con los mismos nombres: bg-fk-fiordo, text-fk-gris-texto, rounded-fk…). Nunca hex sueltos.
+ */
+:root {
+  /* Marca */
+  --fk-fiordo: #1e3a4c; /* principal: sidebar, títulos, botón secundario */
+  --fk-terracota: #c45c3b; /* acento: pliegue, detalles sin texto. Máximo ~5% de la pantalla */
+  --fk-terracota-texto: #a84a2c; /* terracota para texto chico y fondo del CTA (AA con blanco) */
+  --fk-blanco-roto: #f2f1ec; /* fondo general */
+  --fk-blanco: #ffffff; /* cards, tablas, inputs */
+  --fk-grafito: #1b262d; /* texto principal */
+  --fk-gris-texto: #4a5258; /* texto secundario */
+  --fk-niebla: #dde3e6; /* superficies secundarias, hover de filas */
+  --fk-borde: #e4e2da; /* bordes y divisores */
+  --fk-pino: #23423a; /* estados OK */
+
+  /* Hover de los botones llenos: el mismo color oscurecido hacia grafito (sube el contraste, no agrega colores). */
+  --fk-terracota-texto-hover: color-mix(in srgb, var(--fk-terracota-texto) 85%, var(--fk-grafito));
+  --fk-fiordo-hover: color-mix(in srgb, var(--fk-fiordo) 85%, var(--fk-grafito));
+
+  /* Estados (badges y alertas): fondo / texto */
+  --fk-ok-fondo: #e3ece8;
+  --fk-ok-texto: var(--fk-pino);
+  --fk-pendiente-fondo: #f6edd8;
+  --fk-pendiente-texto: #8a6414;
+  --fk-error-fondo: #f7e2de;
+  --fk-error-texto: #a3352b;
+  --fk-info-fondo: var(--fk-niebla);
+  --fk-info-texto: var(--fk-fiordo);
+
+  /* Tipografía */
+  --fk-fuente: 'Familjen Grotesk', ui-sans-serif, system-ui, sans-serif;
+
+  /* Forma */
+  --fk-radio: 4px; /* inputs, botones, cards */
+  --fk-radio-modal: 8px;
+  --fk-radio-badge: 999px;
+  --fk-sombra-modal: 0 8px 24px rgb(27 38 45 / 0.12);
+
+  /* Foco visible. Sobre superficies fiordo se cambia a blanco roto (ver .fk-sobre-oscuro). */
+  --fk-foco: var(--fk-fiordo);
+
+  /* Layout */
+  --fk-ancho-contenido: 120rem; /* casi todo el ancho disponible; el aire lo dan los márgenes laterales */
+  --fk-ancho-formulario: 52rem;
+  --fk-sidebar: 16rem;
+  --fk-sidebar-colapsado: 4.5rem;
+}
+
+@theme inline {
+  /* Solo los colores de marca: la paleta por defecto de Tailwind queda desactivada. */
+  --color-*: initial;
+  --color-transparent: transparent;
+  --color-current: currentColor;
+  --color-fk-fiordo: var(--fk-fiordo);
+  --color-fk-fiordo-hover: var(--fk-fiordo-hover);
+  --color-fk-terracota: var(--fk-terracota);
+  --color-fk-terracota-texto: var(--fk-terracota-texto);
+  --color-fk-terracota-texto-hover: var(--fk-terracota-texto-hover);
+  --color-fk-blanco-roto: var(--fk-blanco-roto);
+  --color-fk-blanco: var(--fk-blanco);
+  --color-fk-grafito: var(--fk-grafito);
+  --color-fk-gris-texto: var(--fk-gris-texto);
+  --color-fk-niebla: var(--fk-niebla);
+  --color-fk-borde: var(--fk-borde);
+  --color-fk-pino: var(--fk-pino);
+  --color-fk-ok-fondo: var(--fk-ok-fondo);
+  --color-fk-ok-texto: var(--fk-ok-texto);
+  --color-fk-pendiente-fondo: var(--fk-pendiente-fondo);
+  --color-fk-pendiente-texto: var(--fk-pendiente-texto);
+  --color-fk-error-fondo: var(--fk-error-fondo);
+  --color-fk-error-texto: var(--fk-error-texto);
+  --color-fk-info-fondo: var(--fk-info-fondo);
+  --color-fk-info-texto: var(--fk-info-texto);
+
+  --font-sans: var(--fk-fuente);
+
+  /* Cuerpo a 15 px (text-sm), interlineado 1.5. */
+  --text-sm: 0.9375rem;
+  --text-sm--line-height: 1.5;
+
+  --radius-fk: var(--fk-radio);
+  --radius-fk-modal: var(--fk-radio-modal);
+  --radius-fk-badge: var(--fk-radio-badge);
+
+  --shadow-fk-modal: var(--fk-sombra-modal);
+}
