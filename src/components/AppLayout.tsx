@@ -47,6 +47,16 @@ const claseBotonIcono =
 const claseTooltip =
   'pointer-events-none fixed z-[200] -translate-y-1/2 whitespace-nowrap rounded-fk bg-fk-grafito px-3 py-1.5 text-sm font-medium text-fk-blanco';
 
+/** "Ana María Pérez" → "AP"; sin nombre, la primera letra del email. */
+function inicialesDe(nombre: string | null | undefined, email: string | undefined): string {
+  const palabras = (nombre ?? '').trim().split(/\s+/).filter(Boolean);
+  if (palabras.length > 0) {
+    const letras = palabras.length === 1 ? palabras[0].charAt(0) : palabras[0].charAt(0) + palabras[palabras.length - 1].charAt(0);
+    return letras.toUpperCase();
+  }
+  return (email?.charAt(0) || 'U').toUpperCase();
+}
+
 export function AppLayout() {
   const { usuario, tenant, logout } = useAuth();
   const queryClient = useQueryClient();
@@ -91,8 +101,9 @@ export function AppLayout() {
     setTooltip({ texto, top: rect.top + rect.height / 2, left: rect.right + 10 });
   }
 
-  const nombreCuenta = usuario?.nombre?.trim() || usuario?.email || 'Cuenta';
-  const inicial = nombreCuenta.charAt(0).toUpperCase() || 'U';
+  const iniciales = inicialesDe(usuario?.nombre, usuario?.email);
+  const nombreEmpresa = tenant?.nombre ?? 'Mi perfil';
+  const enPerfil = location.pathname.startsWith('/perfil');
   const enPruebas = tenant?.ambienteArca === 'HOMOLOGACION';
   // Empresa recién registrada: en Configuración ya está el formulario, ahí el aviso sobra.
   const faltanDatosFiscales = tenant?.datosFiscalesCompletos === false && !location.pathname.startsWith('/configuracion');
@@ -173,9 +184,17 @@ export function AppLayout() {
         ].join(' ')}
       >
         {renderNav(false)}
-        <div className="border-t border-fk-blanco-roto/15 px-3 pt-4 text-sm">
-          <p className="truncate font-medium">{nombreCuenta}</p>
-          {tenant && <p className="truncate text-fk-blanco-roto/75">{tenant.nombre}</p>}
+        <div className="border-t border-fk-blanco-roto/15 pt-4">
+          <Link
+            to="/perfil"
+            aria-label={`Mi perfil — ${nombreEmpresa}`}
+            className={`${claseItem} gap-3 px-3 ${enPerfil ? claseItemActivo : claseItemInactivo}`}
+          >
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-fk-blanco-roto/15 text-[13px] font-semibold" aria-hidden>
+              {iniciales}
+            </span>
+            <span className="truncate">{nombreEmpresa}</span>
+          </Link>
         </div>
       </aside>
 
@@ -225,14 +244,19 @@ export function AppLayout() {
           <div className="mx-auto flex min-h-12 w-full max-w-[var(--fk-ancho-contenido)] items-center gap-3 px-4 py-2 md:px-8 lg:min-h-16 lg:px-10">
             {enPruebas && <Etiqueta tono="pendiente">Ambiente de pruebas</Etiqueta>}
             <div className="flex-1" />
-            <div className="hidden min-w-0 items-center gap-3 lg:flex">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-fk-niebla text-[13px] font-semibold text-fk-fiordo" aria-hidden>
-                {inicial}
-              </div>
-              <div className="flex min-w-0 flex-col leading-tight">
-                <span className="max-w-[14rem] truncate text-sm font-medium text-fk-grafito">{nombreCuenta}</span>
-                {usuario?.nombre && usuario.email && <span className="max-w-[14rem] truncate text-xs text-fk-gris-texto">{usuario.email}</span>}
-              </div>
+            <div className="hidden min-w-0 items-center gap-1 lg:flex">
+              <Link
+                to="/perfil"
+                aria-label={`Mi perfil — ${nombreEmpresa}`}
+                title="Mi perfil"
+                aria-current={enPerfil ? 'page' : undefined}
+                className={`flex min-h-10 min-w-0 items-center gap-3 rounded-fk py-1 pr-3 pl-1 transition-colors hover:bg-fk-niebla ${enPerfil ? 'bg-fk-niebla' : ''}`}
+              >
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-fk-niebla text-[13px] font-semibold text-fk-fiordo" aria-hidden>
+                  {iniciales}
+                </span>
+                <span className="max-w-[14rem] truncate text-sm font-medium text-fk-grafito">{nombreEmpresa}</span>
+              </Link>
               <button
                 type="button"
                 onClick={salir}

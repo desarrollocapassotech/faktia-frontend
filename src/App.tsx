@@ -10,6 +10,7 @@ import { ConfiguracionPage } from './pages/configuracion/ConfiguracionPage';
 import { ImportacionDetallePage } from './pages/importaciones/ImportacionDetallePage';
 import { ImportacionesPage } from './pages/importaciones/ImportacionesPage';
 import { LoginPage } from './pages/LoginPage';
+import { PerfilPage } from './pages/PerfilPage';
 import { RecibosPage } from './pages/recibos/RecibosPage';
 import { RegistroPage } from './pages/RegistroPage';
 
@@ -35,6 +36,7 @@ export default function App() {
         <Route path="recibos" element={<RecibosPage />} />
         <Route path="clientes" element={<ClientesPage />} />
         <Route path="configuracion" element={<ConfiguracionPage />} />
+        <Route path="perfil" element={<PerfilPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

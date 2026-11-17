@@ -4,6 +4,8 @@ export interface Usuario {
   id: string;
   email: string;
   nombre: string | null;
+  /** false en los usuarios que creó una integración: entran por token de acceso y todavía no tienen contraseña. */
+  tienePassword?: boolean;
 }
 
 export interface TenantSesion {
@@ -42,6 +44,10 @@ export interface AuthState {
   registrar: (datos: DatosRegistro) => Promise<void>;
   /** Vuelve a pedir /auth/me (ej. después de completar los datos fiscales). */
   refrescarPerfil: () => Promise<void>;
+  /** Cambia el nombre visible del usuario. */
+  actualizarNombre: (nombre: string) => Promise<void>;
+  /** Cambia la contraseña. Cierra las demás sesiones y deja abierta la de este navegador. */
+  cambiarPassword: (datos: { passwordActual?: string; passwordNueva: string }) => Promise<void>;
   /** Canjea un token de acceso de un solo uso (ver /acceso). Devuelve a dónde ir. */
   canjearAcceso: (token: string) => Promise<{ destino: string | null }>;
   logout: () => void;

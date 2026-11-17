@@ -96,6 +96,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setTenant(perfil.tenant);
   }, []);
 
+  const actualizarNombre = useCallback<AuthState['actualizarNombre']>(async (nombre) => {
+    const token = tokenRef.current;
+    if (!token) return;
+    const perfil = await api<PerfilResponse>('/auth/me', { method: 'PATCH', token, body: { nombre } });
+    setUsuario(perfil.usuario);
+    setTenant(perfil.tenant);
+  }, []);
+
+  const cambiarPassword = useCallback<AuthState['cambiarPassword']>(
+    async (datos) => {
+      const token = tokenRef.current;
+      if (!token) return;
+      // El backend revoca las sesiones anteriores (incluida esta) y devuelve una nueva.
+      const sesion = await api<SesionResponse>('/auth/password', { method: 'POST', token, body: datos });
+      await abrirSesion(sesion.accessToken);
+    },
+    [abrirSesion],
+  );
+
   /** Entrada sin contraseña desde un sistema integrado (token de un solo uso). */
   const canjearAcceso = useCallback<AuthState['canjearAcceso']>(
     async (token) => {
@@ -110,8 +129,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const valor = useMemo<AuthState>(
-    () => ({ estado, usuario, tenant, getToken: () => tokenRef.current, login, registrar, refrescarPerfil, canjearAcceso, logout }),
-    [estado, usuario, tenant, login, registrar, refrescarPerfil, canjearAcceso, logout],
+    () => ({
+      estado,
+      usuario,
+      tenant,
+      getToken: () => tokenRef.current,
+      login,
+      registrar,
+      refrescarPerfil,
+      actualizarNombre,
+      cambiarPassword,
+      canjearAcceso,
+      logout,
+    }),
+    [estado, usuario, tenant, login, registrar, refrescarPerfil, actualizarNombre, cambiarPassword, canjearAcceso, logout],
   );
 
   return <AuthContext.Provider value={valor}>{children}</AuthContext.Provider>;

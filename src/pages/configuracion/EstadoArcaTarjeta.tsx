@@ -36,12 +36,6 @@ export function EstadoArcaTarjeta() {
           </dd>
         </div>
       </dl>
-      {data.usaCuitPrueba && (
-        <p className="mt-4 text-xs text-fk-gris-texto">
-          En pruebas, sin certificado propio, ARCA recibe el CUIT de prueba de AfipSDK y un cliente de prueba. El PDF
-          muestra tus datos reales con la marca "Comprobante de prueba – sin validez fiscal".
-        </p>
-      )}
     </Tarjeta>
   );
 }
