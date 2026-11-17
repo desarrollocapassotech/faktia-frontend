@@ -34,7 +34,7 @@ export function RegistroPage() {
     setEnviando(true);
     try {
       await registrar({ nombreEmpresa: nombreEmpresa.trim(), email: email.trim(), password });
-      navigate('/configuracion', { replace: true });
+      navigate('/primeros-pasos', { replace: true });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'No se pudo crear la cuenta.');
       setEnviando(false);

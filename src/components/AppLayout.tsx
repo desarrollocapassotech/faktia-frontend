@@ -1,14 +1,16 @@
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState, type MouseEvent as EventoMouse } from 'react';
 import { createPortal } from 'react-dom';
-import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
+  ArrowRight,
   FileSpreadsheet,
   HandCoins,
   LogOut,
   Menu,
   PanelLeftClose,
   PanelLeftOpen,
+  ShieldAlert,
   Receipt,
   Settings,
   Users,
@@ -16,7 +18,9 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { useAuth } from '@/auth/auth-context';
-import { Aviso, Etiqueta } from './ui';
+import type { Certificado } from '@/lib/tipos';
+import { useApi } from '@/lib/useApi';
+import { Aviso, Boton, Etiqueta, Modal } from './ui';
 
 type ItemNav = { a: string; texto: string; icono: LucideIcon; secundario?: boolean };
 
@@ -46,6 +50,86 @@ const claseBotonIcono =
 
 const claseTooltip =
   'pointer-events-none fixed z-[200] -translate-y-1/2 whitespace-nowrap rounded-fk bg-fk-grafito px-3 py-1.5 text-sm font-medium text-fk-blanco';
+
+/**
+ * Al ingresar con contraseña, si la empresa todavía no factura en producción: un modal que lo
+ * avisa y lleva a cargar el certificado (o antes a completar los datos, si faltan). No aparece al
+ * recargar la página ni si ya se está en esa pantalla.
+ */
+function AvisoConfiguracionPendiente() {
+  const { tenant, recienIngresado, ingresoVisto } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const yaEstaAhi = location.pathname.startsWith('/primeros-pasos') || location.search.includes('tab=certificados');
+  const abierto = recienIngresado && tenant?.ambienteArca !== 'PRODUCCION' && !yaEstaAhi;
+
+  // Si el ingreso llevó directo a esa pantalla, el aviso ya no hace falta (ni más tarde, al salir de ahí).
+  useEffect(() => {
+    if (recienIngresado && yaEstaAhi) ingresoVisto();
+  }, [recienIngresado, yaEstaAhi, ingresoVisto]);
+  const faltanDatos = tenant?.datosFiscalesCompletos === false;
+
+  function ir() {
+    ingresoVisto();
+    navigate(faltanDatos ? '/primeros-pasos' : '/configuracion?tab=certificados');
+  }
+
+  return (
+    <Modal abierto={abierto} titulo={faltanDatos ? 'Falta configurar tu empresa' : 'Falta cargar el certificado'} onCerrar={ingresoVisto}>
+      <div className="flex flex-col items-center gap-4 text-center">
+        <span className="flex h-12 w-12 items-center justify-center rounded-full bg-fk-pendiente-fondo text-fk-pendiente-texto">
+          <ShieldAlert className="h-6 w-6" strokeWidth={1.75} aria-hidden />
+        </span>
+        <p className="text-sm text-fk-gris-texto">
+          {faltanDatos
+            ? 'Completá los datos de tu empresa y cargá el certificado de ARCA para facturar de verdad.'
+            : 'Sin el certificado de ARCA, tus comprobantes salen sin validez fiscal.'}
+        </p>
+        <div className="flex w-full flex-col-reverse gap-2 sm:flex-row sm:justify-center">
+          <Boton variante="fantasma" onClick={ingresoVisto}>
+            Más tarde
+          </Boton>
+          <Boton onClick={ir}>{faltanDatos ? 'Completar ahora' : 'Cargar certificado'}</Boton>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+/**
+ * En la barra de arriba, mientras la empresa está en pruebas: qué le falta para facturar de verdad
+ * (datos fiscales, certificado o activar producción) y un click para resolverlo.
+ */
+function AdvertenciaPendiente() {
+  const { tenant } = useAuth();
+  const { pedir } = useApi();
+  const faltanDatos = tenant?.datosFiscalesCompletos === false;
+  const certificados = useQuery({
+    queryKey: ['certificados'],
+    queryFn: () => pedir<Certificado[]>('/configuracion/certificados'),
+    enabled: !faltanDatos,
+  });
+  if (!faltanDatos && !certificados.data) return null;
+
+  const tieneCertificado = certificados.data?.some((c) => c.ambiente === 'PRODUCCION') ?? false;
+  const { texto, a } = faltanDatos
+    ? { texto: 'Faltan los datos fiscales', a: '/primeros-pasos' }
+    : tieneCertificado
+      ? { texto: 'Falta activar producción', a: '/configuracion?tab=produccion' }
+      : { texto: 'Falta el certificado', a: '/configuracion?tab=certificados' };
+
+  return (
+    <Link
+      to={a}
+      title="Tus comprobantes todavía no tienen validez fiscal"
+      className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-fk-pendiente-texto/30 bg-fk-pendiente-fondo px-3 text-xs font-semibold text-fk-pendiente-texto transition-colors hover:border-fk-pendiente-texto/60"
+    >
+      <ShieldAlert className="h-4 w-4 shrink-0" strokeWidth={1.75} aria-hidden />
+      <span className="whitespace-nowrap">{texto}</span>
+      <ArrowRight className="h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden />
+    </Link>
+  );
+}
 
 /** "Ana María Pérez" → "AP"; sin nombre, la primera letra del email. */
 function inicialesDe(nombre: string | null | undefined, email: string | undefined): string {
@@ -105,8 +189,9 @@ export function AppLayout() {
   const nombreEmpresa = tenant?.nombre ?? 'Mi perfil';
   const enPerfil = location.pathname.startsWith('/perfil');
   const enPruebas = tenant?.ambienteArca === 'HOMOLOGACION';
-  // Empresa recién registrada: en Configuración ya está el formulario, ahí el aviso sobra.
-  const faltanDatosFiscales = tenant?.datosFiscalesCompletos === false && !location.pathname.startsWith('/configuracion');
+  // Empresa recién registrada: en Configuración y en Primeros pasos ya está el formulario, ahí el aviso sobra.
+  const enConfiguracion = location.pathname.startsWith('/configuracion') || location.pathname.startsWith('/primeros-pasos');
+  const faltanDatosFiscales = tenant?.datosFiscalesCompletos === false && !enConfiguracion;
 
   function renderNav(enRiel: boolean) {
     return (
@@ -242,8 +327,14 @@ export function AppLayout() {
         {/* Barra de cuenta: ambiente y usuario, sobre el fondo de la app. En mobile solo aparece si hay que avisar el ambiente. */}
         <div className={`border-b border-fk-borde ${enPruebas ? '' : 'hidden lg:block'}`}>
           <div className="mx-auto flex min-h-12 w-full max-w-[var(--fk-ancho-contenido)] items-center gap-3 px-4 py-2 md:px-8 lg:min-h-16 lg:px-10">
-            {enPruebas && <Etiqueta tono="pendiente">Ambiente de pruebas</Etiqueta>}
+            {enPruebas && (
+              // Lleva a terminar la configuración (certificado y paso a producción).
+              <Link to="/primeros-pasos" title="Terminar la configuración para facturar de verdad" className="rounded-full hover:opacity-80">
+                <Etiqueta tono="pendiente">Ambiente de pruebas</Etiqueta>
+              </Link>
+            )}
             <div className="flex-1" />
+            {enPruebas && <AdvertenciaPendiente />}
             <div className="hidden min-w-0 items-center gap-1 lg:flex">
               <Link
                 to="/perfil"
@@ -275,7 +366,7 @@ export function AppLayout() {
             <div className="mb-5">
               <Aviso tono="azul">
                 Para empezar a facturar, completá los datos fiscales de tu empresa.{' '}
-                <Link to="/configuracion" className="font-semibold text-fk-fiordo underline underline-offset-2">
+                <Link to="/primeros-pasos" className="font-semibold text-fk-fiordo underline underline-offset-2">
                   Completar ahora
                 </Link>
               </Aviso>
@@ -284,6 +375,8 @@ export function AppLayout() {
           <Outlet />
         </main>
       </div>
+
+      <AvisoConfiguracionPendiente />
 
       {tooltip &&
         createPortal(

@@ -51,6 +51,10 @@ export interface AuthState {
   /** Canjea un token de acceso de un solo uso (ver /acceso). Devuelve a dónde ir. */
   canjearAcceso: (token: string) => Promise<{ destino: string | null }>;
   logout: () => void;
+  /** true justo después de un login con contraseña (no al recargar con la sesión guardada). */
+  recienIngresado: boolean;
+  /** Ya se mostró lo que había que mostrar al ingresar (ej. el aviso de configuración pendiente). */
+  ingresoVisto: () => void;
 }
 
 export const AuthContext = createContext<AuthState | null>(null);

@@ -1,10 +1,10 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState, type ChangeEvent, type FormEvent } from 'react';
-import { AlertaError, Aviso, Boton, Campo, Cargando, Selector, Tarjeta, Vacio, claseArchivo, claseInput } from '@/components/ui';
-import { ambienteTexto, fecha } from '@/lib/formato';
-import type { Ambiente, Certificado, Emisor } from '@/lib/tipos';
+import { useQuery } from '@tanstack/react-query';
+import { ShieldAlert, ShieldCheck } from 'lucide-react';
+import { AlertaError, Ayuda, Cargando, Etiqueta } from '@/components/ui';
+import { fecha } from '@/lib/formato';
+import type { Certificado, Emisor } from '@/lib/tipos';
 import { useApi } from '@/lib/useApi';
-import { AsistenteCertificado } from './AsistenteCertificado';
+import { AsistenteCertificado, SubirCertificado } from './AsistenteCertificado';
 
 const DIAS_AVISO = 30;
 
@@ -16,7 +16,6 @@ export function CertificadosSeccion() {
   const { pedir } = useApi();
   const certificados = useQuery({ queryKey: ['certificados'], queryFn: () => pedir<Certificado[]>('/configuracion/certificados') });
   const emisor = useQuery({ queryKey: ['emisor'], queryFn: () => pedir<Emisor>('/configuracion/emisor') });
-  const [claveGenerada, setClaveGenerada] = useState<string | null>(null);
 
   if (certificados.error) return <AlertaError error={certificados.error} />;
   if (!certificados.data || !emisor.data) return <Cargando />;
@@ -24,132 +23,76 @@ export function CertificadosSeccion() {
 
   return (
     <div className="space-y-6">
-      {!tieneProduccion || claveGenerada ? (
-        <AsistenteCertificado emisor={emisor.data} onClaveGenerada={setClaveGenerada} />
+      {/* Con certificados cargados, primero se ve lo que hay; sin ninguno, directamente el asistente. */}
+      {certificados.data.length > 0 && (
+        <div className="grid gap-4 md:grid-cols-2">
+          {certificados.data.map((c) => (
+            <TarjetaCertificado key={c.id} certificado={c} />
+          ))}
+        </div>
+      )}
+      {!tieneProduccion ? (
+        <AsistenteCertificado emisor={emisor.data} />
       ) : (
         <details className="rounded-fk border border-fk-borde bg-fk-blanco px-4 py-4 text-sm sm:px-6">
           <summary className="cursor-pointer font-semibold text-fk-fiordo">Renovar el certificado de producción (paso a paso)</summary>
           <div className="mt-4">
-            <AsistenteCertificado emisor={emisor.data} onClaveGenerada={setClaveGenerada} />
+            <AsistenteCertificado emisor={emisor.data} />
           </div>
         </details>
       )}
-      <Tarjeta titulo="Certificados cargados">
-        {certificados.data.length === 0 ? (
-          <Vacio>
-            No hay certificados.
-            {emisor.data.ambienteArca === 'HOMOLOGACION' && ' En pruebas no hace falta: se usa el CUIT de prueba de AfipSDK.'}
-          </Vacio>
-        ) : (
-          <ul className="divide-y divide-fk-borde text-sm">
-            {certificados.data.map((c) => {
-              const dias = diasHasta(c.venceEl);
-              return (
-                <li key={c.id} className="flex flex-wrap items-baseline justify-between gap-2 py-3">
-                  <div>
-                    <p className="font-medium">{ambienteTexto(c.ambiente)}</p>
-                    <p className="font-mono text-xs break-all text-fk-gris-texto">SHA-256 {c.huellaSha256}</p>
-                  </div>
-                  <p className={`tabular-nums ${dias < 0 ? 'text-fk-error-texto' : dias <= DIAS_AVISO ? 'text-fk-pendiente-texto' : 'text-fk-gris-texto'}`}>
-                    {dias < 0 ? `Venció el ${fecha(c.venceEl)}` : `Vence el ${fecha(c.venceEl)}`}
-                    <span className="ml-2 text-xs text-fk-gris-texto">cargado el {fecha(c.createdAt)}</span>
-                  </p>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </Tarjeta>
-      <CargarCertificado
-        key={claveGenerada ? 'con-clave' : 'manual'}
-        ambiente={claveGenerada ? 'PRODUCCION' : emisor.data.ambienteArca}
-        claveInicial={claveGenerada ?? ''}
-      />
+      {/* Para quien ya tiene el .crt y el .key (ej. los tramitó por su cuenta). Solo producción: en
+          homologación no hace falta certificado, se emite con el CUIT de prueba de AfipSDK. */}
+      <details className="rounded-fk border border-fk-borde bg-fk-blanco px-4 py-4 text-sm sm:px-6">
+        <summary className="cursor-pointer font-semibold text-fk-fiordo">Ya tengo el certificado: subirlo directo</summary>
+        <div className="mt-4">
+          <SubirCertificado yaCargado={tieneProduccion} />
+        </div>
+      </details>
     </div>
   );
 }
 
-function CargarCertificado({ ambiente, claveInicial }: { ambiente: Ambiente; claveInicial: string }) {
-  const { pedir } = useApi();
-  const queryClient = useQueryClient();
-  const [amb, setAmb] = useState<Ambiente>(ambiente);
-  const [cert, setCert] = useState('');
-  const [clave, setClave] = useState(claveInicial);
-  const [listo, setListo] = useState(false);
+/** "en 2 años", "en 3 meses", "en 12 días", "hace 5 días". */
+function cuanto(dias: number): string {
+  const n = Math.abs(dias);
+  const texto =
+    n >= 365 ? `${Math.floor(n / 365)} ${Math.floor(n / 365) === 1 ? 'año' : 'años'}`
+    : n >= 60 ? `${Math.floor(n / 30)} meses`
+    : `${n} ${n === 1 ? 'día' : 'días'}`;
+  return dias < 0 ? `hace ${texto}` : `en ${texto}`;
+}
 
-  const cargar = useMutation({
-    mutationFn: () =>
-      pedir<Certificado>('/configuracion/certificados', 'POST', { ambiente: amb, certificadoPem: cert.trim(), clavePrivadaPem: clave.trim() }),
-    onSuccess: () => {
-      // La clave no queda en memoria del navegador más de lo necesario.
-      setCert('');
-      setClave('');
-      setListo(true);
-      void queryClient.invalidateQueries({ queryKey: ['certificados'] });
-      void queryClient.invalidateQueries({ queryKey: ['arca'] });
-    },
-  });
-
-  function leerArchivo(setter: (v: string) => void) {
-    return async (e: ChangeEvent<HTMLInputElement>) => {
-      const archivo = e.target.files?.[0];
-      e.target.value = '';
-      if (archivo) setter(await archivo.text());
-      setListo(false);
-    };
-  }
-
-  function enviar(e: FormEvent) {
-    e.preventDefault();
-    cargar.mutate();
-  }
-
+function TarjetaCertificado({ certificado: c }: { certificado: Certificado }) {
+  const dias = diasHasta(c.venceEl);
+  const estado =
+    dias < 0
+      ? { texto: 'Vencido', tono: 'error' as const, icono: ShieldAlert, color: 'bg-fk-error-fondo text-fk-error-texto' }
+      : dias <= DIAS_AVISO
+        ? { texto: 'Vence pronto', tono: 'pendiente' as const, icono: ShieldAlert, color: 'bg-fk-pendiente-fondo text-fk-pendiente-texto' }
+        : { texto: 'Vigente', tono: 'ok' as const, icono: ShieldCheck, color: 'bg-fk-ok-fondo text-fk-ok-texto' };
   return (
-    <Tarjeta titulo="Cargar certificado">
-      <form onSubmit={enviar} className="space-y-5">
-        <p className="text-sm text-fk-gris-texto">
-          El certificado (.crt) y la clave privada (.key) se validan (que sean pareja, que no estén vencidos y que el CUIT
-          coincida) y se guardan cifrados. Cargar uno nuevo reemplaza al anterior del mismo ambiente.
+    <section className="flex items-start gap-4 rounded-fk border border-fk-borde bg-fk-blanco p-5">
+      <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${estado.color}`}>
+        <estado.icono className="h-5 w-5" strokeWidth={1.75} aria-hidden />
+      </span>
+      <div className="min-w-0 flex-1 space-y-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <h3 className="font-semibold text-fk-grafito">Certificado de {c.ambiente === 'PRODUCCION' ? 'producción' : 'pruebas'}</h3>
+          <Etiqueta tono={estado.tono}>{estado.texto}</Etiqueta>
+        </div>
+        <p className="text-sm text-fk-gris-texto tabular-nums">
+          {dias < 0 ? 'Venció' : 'Vence'} el {fecha(c.venceEl)} · {cuanto(dias)}
         </p>
-        <Campo etiqueta="Ambiente" className="max-w-xs">
-          <Selector value={amb} onChange={(e) => setAmb(e.target.value as Ambiente)}>
-            <option value="HOMOLOGACION">{ambienteTexto('HOMOLOGACION')}</option>
-            <option value="PRODUCCION">{ambienteTexto('PRODUCCION')}</option>
-          </Selector>
-        </Campo>
-        <div className="grid gap-5 md:grid-cols-2">
-          <Campo etiqueta="Certificado (PEM)">
-            <textarea
-              className={`${claseInput} h-40 font-mono text-xs`}
-              value={cert}
-              onChange={(e) => setCert(e.target.value)}
-              placeholder="-----BEGIN CERTIFICATE-----"
-              spellCheck={false}
-              required
-            />
-            <input type="file" accept=".crt,.pem,.cer" onChange={leerArchivo(setCert)} className={claseArchivo} />
-          </Campo>
-          <Campo etiqueta="Clave privada (PEM)">
-            <textarea
-              className={`${claseInput} h-40 font-mono text-xs`}
-              value={clave}
-              onChange={(e) => setClave(e.target.value)}
-              placeholder="-----BEGIN PRIVATE KEY-----"
-              spellCheck={false}
-              autoComplete="off"
-              required
-            />
-            <input type="file" accept=".key,.pem" onChange={leerArchivo(setClave)} className={claseArchivo} />
-          </Campo>
-        </div>
-        <AlertaError error={cargar.error} />
-        {listo && <Aviso tono="verde">Certificado cargado.</Aviso>}
-        <div className="flex justify-end">
-          <Boton type="submit" cargando={cargar.isPending}>
-            Cargar certificado
-          </Boton>
-        </div>
-      </form>
-    </Tarjeta>
+        <p className="flex items-center gap-1 text-xs text-fk-gris-texto">
+          Cargado el {fecha(c.createdAt)}
+          <Ayuda etiqueta="Datos técnicos">
+            <span className="block font-semibold">Huella SHA-256</span>
+            <span className="block font-mono text-[11px] break-all">{c.huellaSha256}</span>
+            <span className="mt-2 block">Sirve para comparar con el certificado que ves en ARCA. Antes del vencimiento, renovalo con el paso a paso.</span>
+          </Ayuda>
+        </p>
+      </div>
+    </section>
   );
 }

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Building2, FileSpreadsheet, FileText, Plug, Rocket, ShieldCheck, Store, Tags, Webhook } from 'lucide-react';
 import { useAuth } from '@/auth/auth-context';
 import { EncabezadoPagina } from '@/components/ui';
@@ -27,14 +27,13 @@ const PESTANAS = [
 
 type Pestana = (typeof PESTANAS)[number]['id'];
 
-function pestanaInicial(): Pestana {
-  const p = new URLSearchParams(window.location.search).get('tab');
-  return PESTANAS.some((x) => x.id === p) ? (p as Pestana) : 'emisor';
-}
-
 export function ConfiguracionPage() {
   const { tenant } = useAuth();
-  const [elegida, setPestana] = useState<Pestana>(pestanaInicial);
+  // La pestaña vive en la URL (?tab=): así un link a /configuracion?tab=produccion cambia de pestaña.
+  const [params, setParams] = useSearchParams();
+  const p = params.get('tab');
+  const elegida: Pestana = PESTANAS.some((x) => x.id === p) ? (p as Pestana) : 'emisor';
+  const setPestana = (id: Pestana) => setParams(id === 'emisor' ? {} : { tab: id }, { replace: true });
   const datosCompletos = tenant?.datosFiscalesCompletos !== false;
   const visibles = PESTANAS.filter((p) => datosCompletos || !('requiereDatosFiscales' in p));
   // Si llega por ?tab=certificados sin datos fiscales, cae en Datos del emisor.

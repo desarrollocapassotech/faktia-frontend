@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { RequireAuth } from './auth/RequireAuth';
+import { PrimerosPasosPage } from './pages/PrimerosPasosPage';
 import { AppLayout } from './components/AppLayout';
 import { ClientesPage } from './pages/clientes/ClientesPage';
 import { ComprobanteDetallePage } from './pages/comprobantes/ComprobanteDetallePage';
@@ -14,6 +15,7 @@ import { PerfilPage } from './pages/PerfilPage';
 import { RecibosPage } from './pages/recibos/RecibosPage';
 import { RegistroPage } from './pages/RegistroPage';
 
+/** Al entrar (el login lleva a "/"): si la empresa no terminó de configurarse, lo primero es eso. */
 export default function App() {
   return (
     <Routes>
@@ -27,7 +29,9 @@ export default function App() {
           </RequireAuth>
         }
       >
+        {/* Si falta configurar, AppLayout lo avisa con un modal al ingresar. */}
         <Route index element={<Navigate to="/comprobantes" replace />} />
+        <Route path="primeros-pasos" element={<PrimerosPasosPage />} />
         <Route path="comprobantes" element={<ComprobantesPage />} />
         <Route path="comprobantes/nuevo" element={<NuevoComprobantePage />} />
         <Route path="comprobantes/:id" element={<ComprobanteDetallePage />} />

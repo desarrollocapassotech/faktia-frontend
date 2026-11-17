@@ -1,7 +1,7 @@
-import { useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes } from 'react';
+import { useEffect, useId, useRef, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
-import { ChevronRight, Eye, EyeOff, X } from 'lucide-react';
+import { ChevronRight, CircleHelp, Eye, EyeOff, X } from 'lucide-react';
 import { ApiError } from '@/lib/api';
 import type { Estado, Tono } from '@/lib/formato';
 import { leerNumero, numeroEditable } from '@/lib/numeros';
@@ -294,6 +294,58 @@ export function Modal({ abierto, titulo, onCerrar, children }: { abierto: boolea
       </div>
     </div>,
     document.body,
+  );
+}
+
+/**
+ * Ícono sutil de ayuda que abre un globito con la explicación. Para sacar texto de la pantalla y
+ * dejarlo a mano para quien lo necesite. Se cierra con Escape, con un click afuera o tocándolo de nuevo.
+ */
+export function Ayuda({ children, etiqueta = 'Ayuda', className = '' }: { children: ReactNode; etiqueta?: string; className?: string }) {
+  const [abierta, setAbierta] = useState(false);
+  const ref = useRef<HTMLSpanElement>(null);
+  const id = useId();
+
+  useEffect(() => {
+    if (!abierta) return;
+    function fuera(e: MouseEvent) {
+      if (!ref.current?.contains(e.target as Node)) setAbierta(false);
+    }
+    function tecla(e: KeyboardEvent) {
+      if (e.key === 'Escape') setAbierta(false);
+    }
+    document.addEventListener('mousedown', fuera);
+    document.addEventListener('keydown', tecla);
+    return () => {
+      document.removeEventListener('mousedown', fuera);
+      document.removeEventListener('keydown', tecla);
+    };
+  }, [abierta]);
+
+  return (
+    <span ref={ref} className={`relative inline-flex align-middle ${className}`}>
+      <button
+        type="button"
+        onClick={() => setAbierta((v) => !v)}
+        aria-label={etiqueta}
+        aria-expanded={abierta}
+        aria-controls={id}
+        className={`inline-flex h-6 w-6 items-center justify-center rounded-full transition-colors hover:bg-fk-niebla hover:text-fk-fiordo ${
+          abierta ? 'bg-fk-niebla text-fk-fiordo' : 'text-fk-gris-texto'
+        }`}
+      >
+        <CircleHelp className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+      </button>
+      {abierta && (
+        <span
+          id={id}
+          role="tooltip"
+          className="absolute top-full left-1/2 z-40 mt-1.5 block w-72 max-w-[80vw] -translate-x-1/2 rounded-fk border border-fk-borde bg-fk-blanco p-3 text-left text-[13px] leading-relaxed font-normal text-fk-grafito shadow-fk-modal"
+        >
+          {children}
+        </span>
+      )}
+    </span>
   );
 }
 

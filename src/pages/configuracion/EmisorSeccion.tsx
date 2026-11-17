@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { CircleCheck } from 'lucide-react';
 import { useAuth } from '@/auth/auth-context';
-import { AlertaError, Aviso, Boton, Campo, Cargando, Entrada, Selector, Tarjeta } from '@/components/ui';
+import { AlertaError, Aviso, Ayuda, Boton, Campo, Cargando, Entrada, Selector, Tarjeta } from '@/components/ui';
 import { CONDICIONES_IVA, cuit, soloFecha } from '@/lib/formato';
 import type { CampoArca, CondicionIva, Emisor } from '@/lib/tipos';
 import { useApi } from '@/lib/useApi';
@@ -149,11 +149,18 @@ function FormularioEmisor({ emisor }: { emisor: Emisor }) {
   }
 
   return (
-    <Tarjeta titulo="Datos del emisor">
+    <Tarjeta
+      titulo={
+        <span className="inline-flex items-center gap-1.5">
+          Datos del emisor
+          <Ayuda etiqueta="Para qué son">
+            Salen impresos en cada comprobante y son obligatorios para facturar. Con el CUIT, Faktia completa el resto con lo registrado en
+            ARCA.
+          </Ayuda>
+        </span>
+      }
+    >
       <form onSubmit={enviar} className="space-y-5">
-        {!emisor.datosFiscalesCompletos && (
-          <Aviso tono="azul">Completá los datos fiscales de tu empresa para empezar a facturar. Salen impresos en cada comprobante.</Aviso>
-        )}
         {/* Con el CUIT ya guardado la consulta es solo una sugerencia: si falla, no se avisa. */}
         {cuitEditable && <AlertaError error={padron.error} />}
         {avisoPadron && <Aviso>{avisoPadron}</Aviso>}

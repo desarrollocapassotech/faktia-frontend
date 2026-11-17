@@ -21,6 +21,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [estado, setEstado] = useState<AuthState['estado']>(tokenRef.current ? 'cargando' : 'anonimo');
   const [usuario, setUsuario] = useState<Usuario | null>(null);
   const [tenant, setTenant] = useState<TenantSesion | null>(null);
+  const [recienIngresado, setRecienIngresado] = useState(false);
+  const ingresoVisto = useCallback(() => setRecienIngresado(false), []);
 
   const logout = useCallback(() => {
     tokenRef.current = null;
@@ -70,6 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: { email, password, ...(tenantSlug ? { tenantSlug } : {}) },
       });
       await abrirSesion(sesion.accessToken);
+      setRecienIngresado(true);
       return { ok: true };
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) {
@@ -141,8 +144,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       cambiarPassword,
       canjearAcceso,
       logout,
+      recienIngresado,
+      ingresoVisto,
     }),
-    [estado, usuario, tenant, login, registrar, refrescarPerfil, actualizarNombre, cambiarPassword, canjearAcceso, logout],
+    [estado, usuario, tenant, login, registrar, refrescarPerfil, actualizarNombre, cambiarPassword, canjearAcceso, logout, recienIngresado, ingresoVisto],
   );
 
   return <AuthContext.Provider value={valor}>{children}</AuthContext.Provider>;
