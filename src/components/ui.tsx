@@ -1,7 +1,7 @@
 import { useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
-import { ChevronRight, X } from 'lucide-react';
+import { ChevronRight, Eye, EyeOff, X } from 'lucide-react';
 import { ApiError } from '@/lib/api';
 import type { Estado, Tono } from '@/lib/formato';
 import { leerNumero, numeroEditable } from '@/lib/numeros';
@@ -58,6 +58,28 @@ export function Campo({
 
 export function Entrada(props: InputHTMLAttributes<HTMLInputElement>) {
   return <input {...props} className={`${claseInput} ${props.className ?? ''}`} />;
+}
+
+/** Contraseña con botón para mostrarla u ocultarla (login y registro). */
+export function EntradaPassword(props: Omit<InputHTMLAttributes<HTMLInputElement>, 'type'>) {
+  const [ver, setVer] = useState(false);
+  const texto = ver ? 'Ocultar contraseña' : 'Mostrar contraseña';
+  return (
+    <span className="relative block">
+      <Entrada {...props} type={ver ? 'text' : 'password'} className={`pr-11 ${props.className ?? ''}`} />
+      <button
+        type="button"
+        onClick={() => setVer((v) => !v)}
+        disabled={props.disabled}
+        aria-label={texto}
+        aria-pressed={ver}
+        title={texto}
+        className="absolute inset-y-0 right-0 flex w-11 items-center justify-center rounded-fk text-fk-gris-texto hover:text-fk-fiordo disabled:opacity-50"
+      >
+        {ver ? <EyeOff className="h-[18px] w-[18px]" strokeWidth={1.75} /> : <Eye className="h-[18px] w-[18px]" strokeWidth={1.75} />}
+      </button>
+    </span>
+  );
 }
 
 /**

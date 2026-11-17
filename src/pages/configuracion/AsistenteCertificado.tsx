@@ -62,12 +62,30 @@ function Paso({
  * electrónica). La clave y el pedido (CSR) se generan en el navegador.
  */
 export function AsistenteCertificado({ emisor, onClaveGenerada }: { emisor: Emisor; onClaveGenerada: (clavePem: string) => void }) {
+  // El certificado se pide a nombre de la empresa: sin CUIT y razón social no hay con qué armarlo.
+  if (!emisor.cuit || !emisor.razonSocial) {
+    return (
+      <Tarjeta titulo="Cómo obtener el certificado de producción (paso a paso)">
+        <Aviso tono="azul">Primero completá el CUIT y la razón social en Datos del emisor.</Aviso>
+      </Tarjeta>
+    );
+  }
+  return <Asistente emisor={{ ...emisor, cuit: emisor.cuit, razonSocial: emisor.razonSocial }} onClaveGenerada={onClaveGenerada} />;
+}
+
+function Asistente({
+  emisor,
+  onClaveGenerada,
+}: {
+  emisor: Emisor & { cuit: string; razonSocial: string };
+  onClaveGenerada: (clavePem: string) => void;
+}) {
   const [hechos, setHechos] = useState<string[]>(pasosHechos);
   const [alias, setAlias] = useState('faktia');
   const [generando, setGenerando] = useState(false);
   const [error, setError] = useState<unknown>(null);
   const [generado, setGenerado] = useState(false);
-  const monotributo = emisor.condicionIva.startsWith('MONOTRIBUTO');
+  const monotributo = emisor.condicionIva?.startsWith('MONOTRIBUTO') ?? false;
 
   const marcar = (id: string) => (v: boolean) => {
     const nuevos = v ? [...new Set([...hechos, id])] : hechos.filter((x) => x !== id);

@@ -11,11 +11,13 @@ import { ImportacionDetallePage } from './pages/importaciones/ImportacionDetalle
 import { ImportacionesPage } from './pages/importaciones/ImportacionesPage';
 import { LoginPage } from './pages/LoginPage';
 import { RecibosPage } from './pages/recibos/RecibosPage';
+import { RegistroPage } from './pages/RegistroPage';
 
 export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/registro" element={<RegistroPage />} />
       <Route path="/acceso" element={<AccesoPage />} />
       <Route
         element={

@@ -11,6 +11,14 @@ export interface TenantSesion {
   slug: string;
   nombre: string;
   ambienteArca?: 'HOMOLOGACION' | 'PRODUCCION';
+  /** false en una empresa recién registrada hasta que cargue sus datos fiscales en Configuración. */
+  datosFiscalesCompletos?: boolean;
+}
+
+export interface DatosRegistro {
+  nombreEmpresa: string;
+  email: string;
+  password: string;
 }
 
 export interface OpcionTenant {
@@ -30,6 +38,10 @@ export interface AuthState {
   tenant: TenantSesion | null;
   getToken: () => string | null;
   login: (email: string, password: string, tenantSlug?: string) => Promise<ResultadoLogin>;
+  /** Crea una empresa nueva con su primer usuario y deja la sesión abierta. */
+  registrar: (datos: DatosRegistro) => Promise<void>;
+  /** Vuelve a pedir /auth/me (ej. después de completar los datos fiscales). */
+  refrescarPerfil: () => Promise<void>;
   /** Canjea un token de acceso de un solo uso (ver /acceso). Devuelve a dónde ir. */
   canjearAcceso: (token: string) => Promise<{ destino: string | null }>;
   logout: () => void;

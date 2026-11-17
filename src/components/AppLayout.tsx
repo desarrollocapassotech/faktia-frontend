@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState, type MouseEvent as EventoMouse } from 'react';
 import { createPortal } from 'react-dom';
-import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import {
   FileSpreadsheet,
   HandCoins,
@@ -16,7 +16,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { useAuth } from '@/auth/auth-context';
-import { Etiqueta } from './ui';
+import { Aviso, Etiqueta } from './ui';
 
 type ItemNav = { a: string; texto: string; icono: LucideIcon; secundario?: boolean };
 
@@ -94,6 +94,8 @@ export function AppLayout() {
   const nombreCuenta = usuario?.nombre?.trim() || usuario?.email || 'Cuenta';
   const inicial = nombreCuenta.charAt(0).toUpperCase() || 'U';
   const enPruebas = tenant?.ambienteArca === 'HOMOLOGACION';
+  // Empresa recién registrada: en Configuración ya está el formulario, ahí el aviso sobra.
+  const faltanDatosFiscales = tenant?.datosFiscalesCompletos === false && !location.pathname.startsWith('/configuracion');
 
   function renderNav(enRiel: boolean) {
     return (
@@ -245,6 +247,16 @@ export function AppLayout() {
         </div>
 
         <main className="mx-auto w-full max-w-[var(--fk-ancho-contenido)] min-w-0 flex-1 px-4 pt-5 pb-8 md:px-8 lg:px-10 lg:pt-6 lg:pb-10">
+          {faltanDatosFiscales && (
+            <div className="mb-5">
+              <Aviso tono="azul">
+                Para empezar a facturar, completá los datos fiscales de tu empresa.{' '}
+                <Link to="/configuracion" className="font-semibold text-fk-fiordo underline underline-offset-2">
+                  Completar ahora
+                </Link>
+              </Aviso>
+            </div>
+          )}
           <Outlet />
         </main>
       </div>

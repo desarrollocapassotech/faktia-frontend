@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type FormEvent } from 'react';
+import { useAuth } from '@/auth/auth-context';
 import { AlertaError, Aviso, Boton, Campo, Cargando, Entrada, Selector, Tarjeta } from '@/components/ui';
 import { ambienteTexto, CONDICIONES_IVA, cuit, soloFecha } from '@/lib/formato';
 import type { CondicionIva, Emisor } from '@/lib/tipos';
@@ -16,12 +17,16 @@ export function EmisorSeccion() {
 
 function FormularioEmisor({ emisor }: { emisor: Emisor }) {
   const { pedir } = useApi();
+  const { refrescarPerfil } = useAuth();
   const queryClient = useQueryClient();
+  // Empresa recién registrada: el CUIT se carga acá una sola vez; después solo se cambia desde soporte.
+  const cuitEditable = !emisor.cuit;
   const [form, setForm] = useState({
     nombreFantasia: emisor.nombreFantasia,
-    razonSocial: emisor.razonSocial,
-    condicionIva: emisor.condicionIva,
-    domicilioFiscal: emisor.domicilioFiscal,
+    cuit: emisor.cuit ?? '',
+    razonSocial: emisor.razonSocial ?? '',
+    condicionIva: emisor.condicionIva ?? ('' as CondicionIva | ''),
+    domicilioFiscal: emisor.domicilioFiscal ?? '',
     ingresosBrutos: emisor.ingresosBrutos ?? '',
     inicioActividades: soloFecha(emisor.inicioActividades),
   });
@@ -30,9 +35,10 @@ function FormularioEmisor({ emisor }: { emisor: Emisor }) {
   const guardar = useMutation({
     mutationFn: () =>
       pedir<Emisor>('/configuracion/emisor', 'PATCH', {
+        ...(cuitEditable ? { cuit: form.cuit.trim() } : {}),
         nombreFantasia: form.nombreFantasia.trim(),
         razonSocial: form.razonSocial.trim(),
-        condicionIva: form.condicionIva,
+        condicionIva: form.condicionIva || undefined,
         domicilioFiscal: form.domicilioFiscal.trim(),
         ingresosBrutos: form.ingresosBrutos.trim() || null,
         inicioActividades: form.inicioActividades || null,
@@ -40,6 +46,8 @@ function FormularioEmisor({ emisor }: { emisor: Emisor }) {
     onSuccess: (emisor) => {
       queryClient.setQueryData(['emisor'], emisor);
       void queryClient.invalidateQueries({ queryKey: ['arca'] });
+      // El aviso de "completá tus datos" sale del perfil de la sesión.
+      void refrescarPerfil().catch(() => undefined);
       setGuardado(true);
     },
   });
@@ -57,10 +65,29 @@ function FormularioEmisor({ emisor }: { emisor: Emisor }) {
   return (
     <Tarjeta titulo="Datos del emisor">
       <form onSubmit={enviar} className="space-y-5">
+        {!emisor.datosFiscalesCompletos && (
+          <Aviso tono="azul">Completá los datos fiscales de tu empresa para empezar a facturar. Salen impresos en cada comprobante.</Aviso>
+        )}
         <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-          <Campo etiqueta="CUIT" ayuda="Se cambia desde soporte: define con qué CUIT se emite en ARCA.">
-            <Entrada value={cuit(emisor.cuit)} disabled />
-          </Campo>
+          {cuitEditable ? (
+            <Campo etiqueta="CUIT" ayuda="Revisalo bien: después solo se cambia desde soporte.">
+              <Entrada
+                value={form.cuit}
+                onChange={(e) => cambiar('cuit', e.target.value)}
+                required
+                inputMode="numeric"
+                placeholder="30-12345678-9"
+                pattern="\d{2}-?\d{8}-?\d"
+                title="11 dígitos, con o sin guiones."
+                maxLength={13}
+                className="tabular-nums"
+              />
+            </Campo>
+          ) : (
+            <Campo etiqueta="CUIT" ayuda="Se cambia desde soporte: define con qué CUIT se emite en ARCA.">
+              <Entrada value={cuit(emisor.cuit ?? '')} disabled className="tabular-nums" />
+            </Campo>
+          )}
           <Campo etiqueta="Ambiente ARCA">
             <Entrada value={ambienteTexto(emisor.ambienteArca)} disabled />
           </Campo>
@@ -71,7 +98,12 @@ function FormularioEmisor({ emisor }: { emisor: Emisor }) {
             <Entrada value={form.nombreFantasia} onChange={(e) => cambiar('nombreFantasia', e.target.value)} required maxLength={120} />
           </Campo>
           <Campo etiqueta="Condición frente al IVA">
-            <Selector value={form.condicionIva} onChange={(e) => cambiar('condicionIva', e.target.value as CondicionIva)}>
+            <Selector value={form.condicionIva} onChange={(e) => cambiar('condicionIva', e.target.value as CondicionIva)} required>
+              {!form.condicionIva && (
+                <option value="" disabled>
+                  Elegí una opción
+                </option>
+              )}
               {Object.entries(CONDICIONES_IVA).map(([v, t]) => (
                 <option key={v} value={v}>
                   {t}

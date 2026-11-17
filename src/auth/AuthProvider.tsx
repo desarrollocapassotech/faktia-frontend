@@ -80,6 +80,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [abrirSesion]);
 
+  const registrar = useCallback<AuthState['registrar']>(
+    async (datos) => {
+      const sesion = await api<SesionResponse>('/auth/registro', { method: 'POST', body: datos });
+      await abrirSesion(sesion.accessToken);
+    },
+    [abrirSesion],
+  );
+
+  const refrescarPerfil = useCallback(async () => {
+    const token = tokenRef.current;
+    if (!token) return;
+    const perfil = await api<PerfilResponse>('/auth/me', { token });
+    setUsuario(perfil.usuario);
+    setTenant(perfil.tenant);
+  }, []);
+
   /** Entrada sin contraseña desde un sistema integrado (token de un solo uso). */
   const canjearAcceso = useCallback<AuthState['canjearAcceso']>(
     async (token) => {
@@ -94,8 +110,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const valor = useMemo<AuthState>(
-    () => ({ estado, usuario, tenant, getToken: () => tokenRef.current, login, canjearAcceso, logout }),
-    [estado, usuario, tenant, login, canjearAcceso, logout],
+    () => ({ estado, usuario, tenant, getToken: () => tokenRef.current, login, registrar, refrescarPerfil, canjearAcceso, logout }),
+    [estado, usuario, tenant, login, registrar, refrescarPerfil, canjearAcceso, logout],
   );
 
   return <AuthContext.Provider value={valor}>{children}</AuthContext.Provider>;

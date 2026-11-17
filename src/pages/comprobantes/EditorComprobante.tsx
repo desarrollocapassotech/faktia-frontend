@@ -170,7 +170,7 @@ export function EditorComprobante({
 
   const cliente = listaClientes.find((c) => c.id === form.clienteId) ?? null;
   const puntoVentaId = form.puntoVentaId || puntosDisponibles[0]?.id || '';
-  const letraSugerida = emisor.data && cliente ? sugerirLetra(emisor.data.condicionIva, cliente.condicionIva) : null;
+  const letraSugerida = emisor.data?.condicionIva && cliente ? sugerirLetra(emisor.data.condicionIva, cliente.condicionIva) : null;
   // Sin cliente todavía: la del emisor (un Responsable Inscripto no emite C).
   const letraPorEmisor: Letra = emisor.data?.condicionIva === 'RESPONSABLE_INSCRIPTO' ? 'A' : 'C';
   const letra: Letra = form.letra ?? letraSugerida ?? letraPorEmisor;

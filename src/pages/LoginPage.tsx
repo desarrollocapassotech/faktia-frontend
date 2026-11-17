@@ -1,9 +1,8 @@
 import { useState, type FormEvent } from 'react';
-import { Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff } from 'lucide-react';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth, type OpcionTenant } from '@/auth/auth-context';
 import { MarcoPublico } from '@/components/MarcoPublico';
-import { AlertaError, Boton, Campo, Entrada } from '@/components/ui';
+import { AlertaError, Boton, Campo, Entrada, EntradaPassword } from '@/components/ui';
 import { ApiError } from '@/lib/api';
 
 /** Solo se vuelve a rutas internas (evita redirecciones abiertas). */
@@ -19,7 +18,6 @@ export function LoginPage() {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [verPassword, setVerPassword] = useState(false);
   const [tenants, setTenants] = useState<OpcionTenant[] | null>(null);
   const [tenantSlug, setTenantSlug] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -66,28 +64,13 @@ export function LoginPage() {
         </Campo>
 
         <Campo etiqueta="Contraseña">
-          <span className="relative block">
-            <Entrada
-              type={verPassword ? 'text' : 'password'}
-              autoComplete="current-password"
-              required
-              value={password}
-              disabled={tenants !== null}
-              onChange={(e) => setPassword(e.target.value)}
-              className="pr-11"
-            />
-            <button
-              type="button"
-              onClick={() => setVerPassword((v) => !v)}
-              disabled={tenants !== null}
-              aria-label={verPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-              aria-pressed={verPassword}
-              title={verPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-              className="absolute inset-y-0 right-0 flex w-11 items-center justify-center rounded-fk text-fk-gris-texto hover:text-fk-fiordo disabled:opacity-50"
-            >
-              {verPassword ? <EyeOff className="h-[18px] w-[18px]" strokeWidth={1.75} /> : <Eye className="h-[18px] w-[18px]" strokeWidth={1.75} />}
-            </button>
-          </span>
+          <EntradaPassword
+            autoComplete="current-password"
+            required
+            value={password}
+            disabled={tenants !== null}
+            onChange={(e) => setPassword(e.target.value)}
+          />
         </Campo>
 
         {tenants && (
@@ -116,6 +99,13 @@ export function LoginPage() {
         <Boton type="submit" cargando={enviando} className="w-full">
           {enviando ? 'Ingresando…' : 'Ingresar'}
         </Boton>
+
+        <p className="text-center text-sm text-fk-gris-texto">
+          ¿No tenés cuenta?{' '}
+          <Link to="/registro" className="font-semibold text-fk-fiordo underline-offset-2 hover:underline">
+            Creá tu cuenta
+          </Link>
+        </p>
       </form>
     </MarcoPublico>
   );

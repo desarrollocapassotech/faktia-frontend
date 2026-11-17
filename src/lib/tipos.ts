@@ -39,13 +39,16 @@ export interface Emisor {
   id: string;
   slug: string;
   nombreFantasia: string;
-  razonSocial: string;
-  cuit: string;
-  condicionIva: CondicionIva;
-  domicilioFiscal: string;
+  /** Los datos fiscales llegan en null en una empresa recién registrada. */
+  razonSocial: string | null;
+  cuit: string | null;
+  condicionIva: CondicionIva | null;
+  domicilioFiscal: string | null;
   ingresosBrutos: string | null;
   inicioActividades: string | null;
   ambienteArca: Ambiente;
+  /** Razón social, CUIT, condición IVA y domicilio cargados: sin esto no se puede facturar. */
+  datosFiscalesCompletos: boolean;
 }
 
 export interface EstadoArca {
