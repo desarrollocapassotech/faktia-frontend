@@ -4,7 +4,7 @@ import { CircleCheck } from 'lucide-react';
 import { useAuth } from '@/auth/auth-context';
 import { AlertaError, Aviso, Boton, Campo, Cargando, Entrada, Selector, Tarjeta } from '@/components/ui';
 import { CONDICIONES_IVA, cuit, soloFecha } from '@/lib/formato';
-import type { CondicionIva, Emisor } from '@/lib/tipos';
+import type { CampoArca, CondicionIva, Emisor } from '@/lib/tipos';
 import { useApi } from '@/lib/useApi';
 
 /** Mismo aspecto que un campo deshabilitado, pero readOnly: se puede seleccionar y copiar. */
@@ -55,11 +55,6 @@ function FormularioEmisor({ emisor }: { emisor: Emisor }) {
     onSuccess: (d, cuitBuscado) => {
       // Si mientras tanto cambió el CUIT, esta respuesta ya no corresponde.
       if (cuitBuscado !== ultimoCuitBuscado.current) return;
-      if (!cuitEditable) {
-        // CUIT ya guardado: solo se completa lo que falta, sin tocar lo que cargó la empresa.
-        setForm((f) => ({ ...f, inicioActividades: f.inicioActividades || d.inicioActividadesSugerido || '' }));
-        return;
-      }
       setForm((f) => ({
         ...f,
         razonSocial: d.razonSocial || f.razonSocial,
@@ -72,23 +67,40 @@ function FormularioEmisor({ emisor }: { emisor: Emisor }) {
     },
   });
   const digitosCuit = form.cuit.replace(/\D/g, '');
-  // Lo que vino de ARCA no se edita a mano. Si cambia el CUIT, padron se resetea y se libera.
-  // Con el CUIT ya guardado no se bloquea nada: solo se consultó para sugerir el inicio de actividades.
   const deArca = padron.isSuccess ? padron.data : null;
-  const bloqueado = {
-    razonSocial: cuitEditable && Boolean(deArca?.razonSocial),
-    condicionIva: cuitEditable && Boolean(deArca?.condicionIva),
-    domicilioFiscal: cuitEditable && Boolean(deArca?.domicilio),
-  };
 
-  // CUIT guardado sin inicio de actividades (ej. cargado antes de que se sugiriera): se pide a ARCA una vez.
+  // CUIT ya guardado: lo bloqueado está guardado en camposDeArca. Si falta algo (empresas que
+  // cargaron el CUIT antes), el backend compara con ARCA, bloquea lo que coincide sin pisar nada
+  // y sugiere el inicio de actividades.
+  const [camposArca, setCamposArca] = useState<CampoArca[]>(emisor.camposDeArca ?? []);
+  const sincronizar = useMutation({
+    mutationFn: () =>
+      pedir<{ camposDeArca: CampoArca[]; inicioActividadesSugerido: string | null }>('/configuracion/emisor/sincronizar-arca', 'POST'),
+    onSuccess: (r) => {
+      setCamposArca(r.camposDeArca);
+      setForm((f) => ({ ...f, inicioActividades: f.inicioActividades || r.inicioActividadesSugerido || '' }));
+    },
+  });
+  const sincronizado = useRef(false);
   useEffect(() => {
-    if (cuitEditable || !consultaPadron || !emisor.cuit || emisor.inicioActividades || ultimoCuitBuscado.current) return;
-    ultimoCuitBuscado.current = emisor.cuit;
-    padron.mutate(emisor.cuit);
+    if (sincronizado.current || cuitEditable || !consultaPadron) return;
+    if (emisor.inicioActividades && (emisor.camposDeArca ?? []).length > 0) return;
+    sincronizado.current = true;
+    sincronizar.mutate();
     // Solo al montar: el formulario se vuelve a montar (key) cuando cambian los datos guardados.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Lo que vino de ARCA no se edita a mano. Mientras se carga el CUIT, sale de la consulta (si
+  // cambia el CUIT se libera); después, de lo guardado.
+  const bloqueado = cuitEditable
+    ? { razonSocial: Boolean(deArca?.razonSocial), condicionIva: Boolean(deArca?.condicionIva), domicilioFiscal: Boolean(deArca?.domicilio) }
+    : {
+        razonSocial: camposArca.includes('razonSocial'),
+        condicionIva: camposArca.includes('condicionIva'),
+        domicilioFiscal: camposArca.includes('domicilioFiscal'),
+      };
+  const inicioSugerido = deArca?.inicioActividadesSugerido ?? sincronizar.data?.inicioActividadesSugerido ?? null;
   const AYUDA_ARCA = 'Completado con lo registrado en ARCA.';
 
   function cambiarCuit(valor: string) {
@@ -240,7 +252,7 @@ function FormularioEmisor({ emisor }: { emisor: Emisor }) {
           <Campo
             etiqueta="Inicio de actividades"
             ayuda={
-              deArca?.inicioActividadesSugerido && form.inicioActividades === deArca.inicioActividadesSugerido
+              inicioSugerido && form.inicioActividades === inicioSugerido
                 ? 'Sugerido según ARCA (mes de alta del primer impuesto). Revisalo: se imprime en el PDF.'
                 : 'Obligatorio para emitir. Se imprime en el PDF.'
             }

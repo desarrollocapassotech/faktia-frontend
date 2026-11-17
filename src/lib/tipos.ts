@@ -35,6 +35,8 @@ export type EstadoComprobante =
   | 'RECHAZADO'
   | 'ANULADO';
 
+export type CampoArca = 'razonSocial' | 'condicionIva' | 'domicilioFiscal';
+
 export interface Emisor {
   id: string;
   slug: string;
@@ -49,6 +51,8 @@ export interface Emisor {
   ambienteArca: Ambiente;
   /** Razón social, CUIT, condición IVA y domicilio cargados: sin esto no se puede facturar. */
   datosFiscalesCompletos: boolean;
+  /** Campos que salieron del padrón de ARCA: no se editan. */
+  camposDeArca: CampoArca[];
   /** Solo en GET /configuracion/emisor: si el servidor puede validar el CUIT en el padrón real de ARCA. */
   padronDisponible?: boolean;
 }
