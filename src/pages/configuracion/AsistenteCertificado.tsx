@@ -7,11 +7,13 @@ import { cuit as formatearCuit } from '@/lib/formato';
 import { leer, guardar } from '@/lib/storage';
 import type { Emisor } from '@/lib/tipos';
 
-const CLAVE_PASOS = 'faktia.asistenteCertificado.pasos';
+// Por empresa: en un mismo navegador se puede entrar a varias, y el progreso es de cada una.
+// (La clave vieja, sin empresa, se ignora.)
+const clavePasos = (tenantId: string) => `faktia.asistenteCertificado.pasos.${tenantId}`;
 
-function pasosHechos(): string[] {
+function pasosHechos(tenantId: string): string[] {
   try {
-    return JSON.parse(leer(CLAVE_PASOS) ?? '[]') as string[];
+    return JSON.parse(leer(clavePasos(tenantId)) ?? '[]') as string[];
   } catch {
     return [];
   }
@@ -80,7 +82,7 @@ function Asistente({
   emisor: Emisor & { cuit: string; razonSocial: string };
   onClaveGenerada: (clavePem: string) => void;
 }) {
-  const [hechos, setHechos] = useState<string[]>(pasosHechos);
+  const [hechos, setHechos] = useState<string[]>(() => pasosHechos(emisor.id));
   const [alias, setAlias] = useState('faktia');
   const [generando, setGenerando] = useState(false);
   const [error, setError] = useState<unknown>(null);
@@ -90,7 +92,7 @@ function Asistente({
   const marcar = (id: string) => (v: boolean) => {
     const nuevos = v ? [...new Set([...hechos, id])] : hechos.filter((x) => x !== id);
     setHechos(nuevos);
-    guardar(CLAVE_PASOS, JSON.stringify(nuevos));
+    guardar(clavePasos(emisor.id), JSON.stringify(nuevos));
   };
 
   async function generar() {

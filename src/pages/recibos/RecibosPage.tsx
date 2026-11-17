@@ -5,6 +5,7 @@ import { AlertaError, Aviso, Boton, Campo, Cargando, claseInput, EncabezadoPagin
 import { cuit, dinero, fecha, hoy, numeroComprobante, tipoLargo } from '@/lib/formato';
 import type { Cliente, ComprobanteResumen, Moneda, Paginado } from '@/lib/tipos';
 import { useApi } from '@/lib/useApi';
+import { useAuth } from '@/auth/auth-context';
 
 type Tipo = 'COBRO' | 'PAGO';
 
@@ -51,20 +52,20 @@ function documentoDe(c: Cliente): string {
 }
 
 // Numeración: la lleva el usuario (no se guardan recibos). Recordamos el último número por tipo en
-// este navegador solo para sugerir el siguiente.
-const CLAVE_NUMERO = (t: Tipo) => `faktia.recibo.ultimoNumero.${t}`;
+// este navegador solo para sugerir el siguiente. Por empresa: cada una lleva su numeración.
+const CLAVE_NUMERO = (tenantId: string, t: Tipo) => `faktia.recibo.ultimoNumero.${tenantId}.${t}`;
 
-function leerUltimo(t: Tipo): string {
+function leerUltimo(tenantId: string, t: Tipo): string {
   try {
-    return localStorage.getItem(CLAVE_NUMERO(t)) ?? '';
+    return localStorage.getItem(CLAVE_NUMERO(tenantId, t)) ?? '';
   } catch {
     return '';
   }
 }
 
-function guardarUltimo(t: Tipo, numero: string) {
+function guardarUltimo(tenantId: string, t: Tipo, numero: string) {
   try {
-    localStorage.setItem(CLAVE_NUMERO(t), numero);
+    localStorage.setItem(CLAVE_NUMERO(tenantId, t), numero);
   } catch {
     // almacenamiento no disponible: no pasa nada
   }
@@ -80,8 +81,9 @@ function siguienteNumero(ultimo: string): string {
 
 export function RecibosPage() {
   const { pedir, descargar } = useApi();
+  const tenantId = useAuth().tenant?.id ?? 'sin-empresa';
   const [tipo, setTipo] = useState<Tipo>('COBRO');
-  const [numero, setNumero] = useState(() => siguienteNumero(leerUltimo('COBRO')));
+  const [numero, setNumero] = useState(() => siguienteNumero(leerUltimo(tenantId, 'COBRO')));
   const [fechaRecibo, setFechaRecibo] = useState(hoy());
   const [moneda, setMoneda] = useState<Moneda>('ARS');
   const [clienteId, setClienteId] = useState('');
@@ -111,7 +113,7 @@ export function RecibosPage() {
 
   function cambiarTipo(t: Tipo) {
     setTipo(t);
-    setNumero(siguienteNumero(leerUltimo(t)));
+    setNumero(siguienteNumero(leerUltimo(tenantId, t)));
     setClienteId('');
     setContraparte({ nombre: '', documento: '', domicilio: '' });
     setAplicados([]);
@@ -189,7 +191,7 @@ export function RecibosPage() {
     try {
       await descargar('/recibos/pdf', tipo === 'COBRO' ? 'Recibo-Cobro.pdf' : 'Recibo-Pago.pdf', body);
       if (numero.trim()) {
-        guardarUltimo(tipo, numero.trim());
+        guardarUltimo(tenantId, tipo, numero.trim());
         setNumero(siguienteNumero(numero.trim()));
       }
       setListo(numero.trim() ? `Recibo ${numero.trim()} generado.` : 'Recibo generado.');
