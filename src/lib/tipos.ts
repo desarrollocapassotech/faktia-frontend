@@ -49,6 +49,8 @@ export interface Emisor {
   ambienteArca: Ambiente;
   /** Razón social, CUIT, condición IVA y domicilio cargados: sin esto no se puede facturar. */
   datosFiscalesCompletos: boolean;
+  /** Solo en GET /configuracion/emisor: si el servidor puede validar el CUIT en el padrón real de ARCA. */
+  padronDisponible?: boolean;
 }
 
 export interface EstadoArca {
