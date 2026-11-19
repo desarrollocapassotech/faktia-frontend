@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type ChangeEvent, type FormEvent } from 'react';
-import { AlertaError, Aviso, Boton, Campo, Cargando, claseArchivo, Entrada, Etiqueta, Selector, Tarjeta, Vacio } from '@/components/ui';
+import { Pencil } from 'lucide-react';
+import { AlertaError, Aviso, Boton, BotonIcono, Campo, Cargando, claseArchivo, Entrada, Etiqueta, Selector, Tarjeta, Vacio } from '@/components/ui';
 import { ALICUOTAS, UNIDADES } from '@/lib/formato';
 import type { CampoMapeo, ColumnaMapeo, Moneda, PlantillaMapeo, PlantillaMapeoConfig, Unidad } from '@/lib/tipos';
 import { useApi } from '@/lib/useApi';
@@ -52,9 +53,7 @@ export function PlantillasMapeoSeccion() {
                 {!p.activa && <Etiqueta className="ml-1">Inactiva</Etiqueta>}
                 <span className="block text-xs text-fk-gris-texto">{p.config.columnas.map((c) => c.encabezado).join(' · ')}</span>
               </span>
-              <Boton variante="fantasma" onClick={() => setEditando(p)}>
-                Editar
-              </Boton>
+              <BotonIcono etiqueta="Editar plantilla" icono={Pencil} onClick={() => setEditando(p)} />
             </li>
           ))}
         </ul>

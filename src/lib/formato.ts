@@ -179,6 +179,12 @@ export function cuit(v: string): string {
   return /^\d{11}$/.test(v) ? `${v.slice(0, 2)}-${v.slice(2, 10)}-${v.slice(10)}` : v;
 }
 
+/** "CUIT 20-12345678-9", "DNI 12345678" o "Consumidor final". */
+export function documentoCliente(c: { tipoDocumento: TipoDocumento; numeroDocumento: string }): string {
+  if (c.tipoDocumento === 'CONSUMIDOR_FINAL') return TIPOS_DOCUMENTO.CONSUMIDOR_FINAL;
+  return `${c.tipoDocumento} ${c.tipoDocumento === 'CUIT' || c.tipoDocumento === 'CUIL' ? cuit(c.numeroDocumento) : c.numeroDocumento}`;
+}
+
 export function hoy(): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' }).format(new Date());
 }

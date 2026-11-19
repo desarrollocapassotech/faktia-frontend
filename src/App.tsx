@@ -2,6 +2,8 @@ import { Navigate, Route, Routes, useParams } from 'react-router-dom';
 import { RequireAuth } from './auth/RequireAuth';
 import { PrimerosPasosPage } from './pages/PrimerosPasosPage';
 import { AppLayout } from './components/AppLayout';
+import { ClienteDetallePage } from './pages/clientes/ClienteDetallePage';
+import { ClientePage } from './pages/clientes/ClientePage';
 import { ClientesPage } from './pages/clientes/ClientesPage';
 import { ComprobanteDetallePage } from './pages/comprobantes/ComprobanteDetallePage';
 import { ComprobantesPage } from './pages/comprobantes/ComprobantesPage';
@@ -50,6 +52,9 @@ export default function App() {
         <Route path="importaciones/:id" element={<RedirigirImportacion />} />
         <Route path="recibos" element={<Navigate to={RUTA_RECIBO} replace />} />
         <Route path="clientes" element={<ClientesPage />} />
+        <Route path="clientes/nuevo" element={<ClientePage />} />
+        <Route path="clientes/:id" element={<ClienteDetallePage />} />
+        <Route path="clientes/:id/editar" element={<ClientePage />} />
         <Route path="configuracion" element={<ConfiguracionPage />} />
         <Route path="perfil" element={<PerfilPage />} />
       </Route>

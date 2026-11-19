@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type FormEvent } from 'react';
-import { Trash2 } from 'lucide-react';
+import { History, KeyRound, Pause, Play, RotateCw, Send, Trash2 } from 'lucide-react';
 import { AlertaError, Aviso, Boton, BotonIcono, Campo, Cargando, Entrada, Etiqueta, Modal, Tarjeta, Vacio } from '@/components/ui';
 import { API_URL } from '@/lib/api';
 import { fechaHora, type Tono } from '@/lib/formato';
@@ -92,28 +92,31 @@ export function WebhooksSeccion() {
                   )}
                 </div>
                 <div className="flex flex-wrap gap-1">
-                  <Boton variante="terciario" cargando={probar.isPending && probar.variables?.id === s.id} onClick={() => probar.mutate(s)}>
-                    Probar
-                  </Boton>
-                  <Boton variante="fantasma" onClick={() => setViendo(s)}>
-                    Envíos
-                  </Boton>
-                  <Boton variante="fantasma" onClick={() => alternar.mutate(s)}>
-                    {s.activa ? 'Pausar' : 'Reanudar'}
-                  </Boton>
-                  <Boton
-                    variante="fantasma"
+                  <BotonIcono
+                    etiqueta="Enviar una prueba"
+                    icono={Send}
+                    cargando={probar.isPending && probar.variables?.id === s.id}
+                    onClick={() => probar.mutate(s)}
+                  />
+                  <BotonIcono etiqueta="Ver envíos" icono={History} onClick={() => setViendo(s)} />
+                  <BotonIcono
+                    etiqueta={s.activa ? 'Pausar' : 'Reanudar'}
+                    icono={s.activa ? Pause : Play}
+                    cargando={alternar.isPending && alternar.variables?.id === s.id}
+                    onClick={() => alternar.mutate(s)}
+                  />
+                  <BotonIcono
+                    etiqueta="Generar un secreto nuevo"
+                    icono={KeyRound}
+                    cargando={rotar.isPending && rotar.variables?.id === s.id}
                     onClick={() => {
                       if (window.confirm('¿Generar un secreto nuevo? El anterior deja de valer en el acto.')) rotar.mutate(s);
                     }}
-                  >
-                    Nuevo secreto
-                  </Boton>
+                  />
                   <BotonIcono
                     etiqueta="Eliminar webhook"
                     icono={Trash2}
                     peligro
-                    className="h-10 w-10"
                     cargando={eliminar.isPending && eliminar.variables?.id === s.id}
                     onClick={() => {
                       if (window.confirm('¿Eliminar este webhook y su historial de envíos?')) eliminar.mutate(s);
@@ -244,9 +247,12 @@ function EntregasModal({ suscripcion, onCerrar }: { suscripcion: Suscripcion; on
                 {e.ultimoError && <p className="text-xs text-fk-error-texto">{e.ultimoError}</p>}
               </div>
               {e.estado !== 'ENTREGADA' && (
-                <Boton variante="fantasma" cargando={reenviar.isPending && reenviar.variables?.id === e.id} onClick={() => reenviar.mutate(e)}>
-                  Reenviar
-                </Boton>
+                <BotonIcono
+                  etiqueta="Reenviar"
+                  icono={RotateCw}
+                  cargando={reenviar.isPending && reenviar.variables?.id === e.id}
+                  onClick={() => reenviar.mutate(e)}
+                />
               )}
             </li>
           ))}

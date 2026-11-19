@@ -28,7 +28,10 @@ function formInicial(c?: Cliente | null) {
 
 export type ValoresInicialesCliente = Partial<Pick<Cliente, 'razonSocial' | 'tipoDocumento' | 'numeroDocumento' | 'condicionIva' | 'domicilio' | 'email'>>;
 
-/** Alta o edición de un cliente. Montarlo con `key` distinta por cliente para reiniciar el formulario. */
+/**
+ * Alta o edición de un cliente en un modal (para darlo de alta sin salir de otra pantalla, como el
+ * staging de una importación). Montarlo con `key` distinta por cliente para reiniciar el formulario.
+ */
 export function ClienteModal({
   abierto,
   cliente,
@@ -42,6 +45,33 @@ export function ClienteModal({
   valoresIniciales?: ValoresInicialesCliente;
   onCerrar: () => void;
   onGuardado?: (c: Cliente) => void;
+}) {
+  return (
+    <Modal abierto={abierto} titulo={cliente ? 'Editar cliente' : 'Nuevo cliente'} onCerrar={onCerrar}>
+      <FormularioCliente
+        cliente={cliente}
+        valoresIniciales={valoresIniciales}
+        onCancelar={onCerrar}
+        onGuardado={(c) => {
+          onGuardado?.(c);
+          onCerrar();
+        }}
+      />
+    </Modal>
+  );
+}
+
+/** El formulario de alta o edición (lo usan el modal y la página de cliente). */
+export function FormularioCliente({
+  cliente,
+  valoresIniciales,
+  onCancelar,
+  onGuardado,
+}: {
+  cliente?: Cliente | null;
+  valoresIniciales?: ValoresInicialesCliente;
+  onCancelar: () => void;
+  onGuardado: (c: Cliente) => void;
 }) {
   const { pedir } = useApi();
   const queryClient = useQueryClient();
@@ -91,8 +121,8 @@ export function ClienteModal({
     },
     onSuccess: (c) => {
       void queryClient.invalidateQueries({ queryKey: ['clientes'] });
-      onGuardado?.(c);
-      onCerrar();
+      queryClient.setQueryData(['cliente', c.id], c);
+      onGuardado(c);
     },
   });
 
@@ -105,8 +135,7 @@ export function ClienteModal({
   const sinDocumento = form.tipoDocumento === 'CONSUMIDOR_FINAL';
 
   return (
-    <Modal abierto={abierto} titulo={cliente ? 'Editar cliente' : 'Nuevo cliente'} onCerrar={onCerrar}>
-      <form onSubmit={enviar} className="space-y-4">
+    <form onSubmit={enviar} className="space-y-4">
         <div className="grid gap-4 sm:grid-cols-5">
           <Campo etiqueta="Tipo de documento" className="sm:col-span-2">
             <Selector value={form.tipoDocumento} onChange={(e) => cambiar('tipoDocumento', e.target.value as TipoDocumento)}>
@@ -187,14 +216,13 @@ export function ClienteModal({
         )}
         <AlertaError error={guardar.error} />
         <div className="flex justify-end gap-2">
-          <Boton variante="terciario" onClick={onCerrar}>
+          <Boton variante="terciario" onClick={onCancelar}>
             Cancelar
           </Boton>
           <Boton type="submit" cargando={guardar.isPending}>
             Guardar
           </Boton>
         </div>
-      </form>
-    </Modal>
+    </form>
   );
 }

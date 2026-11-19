@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type FormEvent } from 'react';
-import { AlertaError, Aviso, Boton, Campo, Cargando, ContenedorTabla, Entrada, Etiqueta, Selector, Tarjeta, Vacio } from '@/components/ui';
+import { Power, PowerOff } from 'lucide-react';
+import { AlertaError, Aviso, Boton, BotonIcono, Campo, Cargando, ContenedorTabla, Entrada, Etiqueta, Selector, Tarjeta, Vacio } from '@/components/ui';
 import { ambienteTexto } from '@/lib/formato';
 import type { Ambiente, Emisor, PuntoVenta } from '@/lib/tipos';
 import { useApi } from '@/lib/useApi';
@@ -42,7 +43,7 @@ export function PuntosVentaSeccion() {
                   <th>Ambiente</th>
                   <th>Descripción</th>
                   <th>Estado</th>
-                  <th />
+                  <th className="text-right">Acciones</th>
                 </tr>
               </thead>
               <tbody>
@@ -54,14 +55,16 @@ export function PuntosVentaSeccion() {
                     <td>
                       <Etiqueta tono={pv.activo ? 'ok' : 'info'}>{pv.activo ? 'Activo' : 'Inactivo'}</Etiqueta>
                     </td>
-                    <td className="text-right">
-                      <Boton
-                        variante="fantasma"
-                        cargando={cambiarActivo.isPending && cambiarActivo.variables?.id === pv.id}
-                        onClick={() => cambiarActivo.mutate(pv)}
-                      >
-                        {pv.activo ? 'Desactivar' : 'Activar'}
-                      </Boton>
+                    <td className="py-1">
+                      <div className="flex justify-end gap-1">
+                        <BotonIcono
+                          etiqueta={pv.activo ? 'Desactivar punto de venta' : 'Activar punto de venta'}
+                          icono={pv.activo ? PowerOff : Power}
+                          peligro={pv.activo}
+                          cargando={cambiarActivo.isPending && cambiarActivo.variables?.id === pv.id}
+                          onClick={() => cambiarActivo.mutate(pv)}
+                        />
+                      </div>
                     </td>
                   </tr>
                 ))}
