@@ -24,7 +24,7 @@ import {
 } from '@/components/ui';
 import { dinero, esFactura, ESTADOS, fecha, numeroComprobante, tipoLargo } from '@/lib/formato';
 import { useOrdenColumna } from '@/lib/orden';
-import type { Cliente, Comprobante, ComprobanteResumen, Paginado } from '@/lib/tipos';
+import type { Cliente, Comprobante, ComprobanteResumen, FilaComprobantes, Paginado } from '@/lib/tipos';
 import { useApi } from '@/lib/useApi';
 import { EmitirModal, NotaModal, type ClaseNota } from './modalesComprobante';
 
@@ -32,13 +32,29 @@ const POR_PAGINA = 25;
 /** Mismo formato que acepta el backend: "15" o "00002-00000015". */
 const NUMERO_VALIDO = /^\s*\d{1,8}(\s*-\s*\d{1,8})?\s*$/;
 
-/** Filtro por tipo, cualquier letra. Espejo de `CLASES_COMPROBANTE` del backend. */
-type ClaseFiltro = 'FACTURA' | 'NOTA_CREDITO' | 'NOTA_DEBITO';
+/** Filtro por tipo, cualquier letra. Espejo de `CLASES_COMPROBANTE` del backend (más RECIBO). */
+type ClaseFiltro = 'FACTURA' | 'NOTA_CREDITO' | 'NOTA_DEBITO' | 'RECIBO';
 const CLASES_FILTRO: Array<{ value: ClaseFiltro; label: string }> = [
   { value: 'FACTURA', label: 'Factura' },
   { value: 'NOTA_CREDITO', label: 'Nota de crédito' },
   { value: 'NOTA_DEBITO', label: 'Nota de débito' },
+  { value: 'RECIBO', label: 'Recibo' },
 ];
+
+const TIPOS_RECIBO = { RECIBO_COBRO: 'Recibo de cobro', RECIBO_PAGO: 'Recibo de pago' } as const;
+
+function tipoFila(f: FilaComprobantes): string {
+  return f.clase === 'recibo' ? TIPOS_RECIBO[f.tipo] : tipoLargo(f.tipo);
+}
+
+function numeroFila(f: FilaComprobantes): string {
+  return f.clase === 'recibo' ? (f.numeroTexto ?? '—') : numeroComprobante(f.puntoVenta.numero, f.numero);
+}
+
+/** Ruta del PDF: los recibos se regeneran desde lo guardado. */
+function rutaPdf(f: FilaComprobantes): string {
+  return f.clase === 'recibo' ? `/recibos/${f.id}/pdf` : `/comprobantes/${f.id}/pdf`;
+}
 
 /** Columnas ordenables. Espejo de `ORDENES_COMPROBANTES` del backend. */
 type OrdenComprobantes = 'comprobante' | 'numero' | 'fecha' | 'cliente' | 'total' | 'estado';
@@ -71,43 +87,51 @@ export function ComprobantesPage() {
   });
   const [accion, setAccion] = useState<Accion | null>(null);
   // Fila clickeada: modal con todas sus acciones disponibles.
-  const [menu, setMenu] = useState<ComprobanteResumen | null>(null);
+  const [menu, setMenu] = useState<FilaComprobantes | null>(null);
 
-  /** Acciones de una fila: las mismas en los íconos de la columna y en el modal. */
-  function accionesDe(c: ComprobanteResumen): AccionFila[] {
+  /** Acciones de una fila: las mismas en los íconos de la columna y en el modal. Los recibos solo tienen el PDF. */
+  function accionesDe(f: FilaComprobantes): AccionFila[] {
+    const c = f.clase === 'comprobante' ? f : null;
     return [
-      { id: 'ver', texto: 'Ver detalle', noDisponible: '', icono: Eye, disponible: true, ejecutar: () => navigate(`/comprobantes/${c.id}`) },
+      {
+        id: 'ver',
+        texto: 'Ver detalle',
+        noDisponible: 'Los recibos no tienen detalle: abrí el PDF',
+        icono: Eye,
+        disponible: Boolean(c),
+        ejecutar: () => navigate(`/comprobantes/${f.id}`),
+      },
       {
         id: 'reemitir',
         texto: 'Volver a emitir',
         noDisponible: 'Volver a emitir (solo rechazados)',
         icono: RotateCw,
-        disponible: c.estado === 'RECHAZADO',
-        ejecutar: () => setAccion({ tipo: 'emitir', id: c.id }),
+        disponible: c?.estado === 'RECHAZADO',
+        ejecutar: () => setAccion({ tipo: 'emitir', id: f.id }),
       },
       {
         id: 'nc',
         texto: 'Emitir nota de crédito',
         noDisponible: 'Nota de crédito (solo facturas emitidas)',
         icono: FileMinus,
-        disponible: puedeNota(c),
-        ejecutar: () => setAccion({ tipo: 'nota', clase: 'NOTA_CREDITO', comprobante: c }),
+        disponible: Boolean(c && puedeNota(c)),
+        ejecutar: () => c && setAccion({ tipo: 'nota', clase: 'NOTA_CREDITO', comprobante: c }),
       },
       {
         id: 'nd',
         texto: 'Emitir nota de débito',
         noDisponible: 'Nota de débito (solo facturas emitidas)',
         icono: FilePlus,
-        disponible: puedeNota(c),
-        ejecutar: () => setAccion({ tipo: 'nota', clase: 'NOTA_DEBITO', comprobante: c }),
+        disponible: Boolean(c && puedeNota(c)),
+        ejecutar: () => c && setAccion({ tipo: 'nota', clase: 'NOTA_DEBITO', comprobante: c }),
       },
       {
         id: 'pdf',
         texto: 'Ver PDF',
         noDisponible: 'PDF (solo comprobantes autorizados)',
         icono: FileText,
-        disponible: tienePdf(c),
-        ejecutar: () => void verPdf(c.id),
+        disponible: !c || tienePdf(c),
+        ejecutar: () => void verPdf(f),
       },
     ];
   }
@@ -187,10 +211,10 @@ export function ComprobantesPage() {
   }
   const [errorAccion, setErrorAccion] = useState<unknown>(null);
 
-  async function verPdf(id: string) {
+  async function verPdf(f: FilaComprobantes) {
     setErrorAccion(null);
     try {
-      await verEnPestana(`/comprobantes/${id}/pdf`);
+      await verEnPestana(rutaPdf(f));
     } catch (err) {
       setErrorAccion(err);
     }
@@ -199,7 +223,7 @@ export function ComprobantesPage() {
   const { data, error, isFetching } = useQuery({
     queryKey: ['comprobantes', { pagina, clase, numeroBuscado, fechaDesde, fechaHasta, clienteId, orden }],
     queryFn: () => {
-      const params = new URLSearchParams({ pagina: String(pagina), porPagina: String(POR_PAGINA) });
+      const params = new URLSearchParams({ pagina: String(pagina), porPagina: String(POR_PAGINA), incluirRecibos: 'true' });
       if (clase) params.set('clase', clase);
       if (numeroBuscado) params.set('numero', numeroBuscado);
       if (fechaDesde) params.set('fechaDesde', fechaDesde);
@@ -209,7 +233,7 @@ export function ComprobantesPage() {
         params.set('ordenarPor', orden.por);
         params.set('dir', orden.dir);
       }
-      return pedir<Paginado<ComprobanteResumen>>(`/comprobantes?${params.toString()}`);
+      return pedir<Paginado<FilaComprobantes>>(`/comprobantes?${params.toString()}`);
     },
     placeholderData: keepPreviousData,
   });
@@ -345,22 +369,36 @@ export function ComprobantesPage() {
                       className="cursor-pointer transition-colors hover:bg-fk-niebla/50"
                     >
                       <td className="whitespace-nowrap">
-                        <Link
-                          to={`/comprobantes/${c.id}`}
-                          onClick={(e) => e.stopPropagation()}
-                          className="font-medium text-fk-fiordo underline-offset-2 hover:underline"
-                        >
-                          {tipoLargo(c.tipo)}
-                        </Link>
+                        {c.clase === 'comprobante' ? (
+                          <Link
+                            to={`/comprobantes/${c.id}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="font-medium text-fk-fiordo underline-offset-2 hover:underline"
+                          >
+                            {tipoFila(c)}
+                          </Link>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              void verPdf(c);
+                            }}
+                            title="Ver PDF"
+                            className="font-medium text-fk-fiordo underline-offset-2 hover:underline"
+                          >
+                            {tipoFila(c)}
+                          </button>
+                        )}
                       </td>
-                      <td className="fk-num">{numeroComprobante(c.puntoVenta.numero, c.numero)}</td>
+                      <td className="fk-num">{numeroFila(c)}</td>
                       <td className="whitespace-nowrap tabular-nums">{fecha(c.fechaEmision)}</td>
                       <td>{c.cliente.razonSocial}</td>
                       <td className="fk-num">{dinero(c.importeTotal, c.moneda)}</td>
                       <td className="whitespace-nowrap">
                         <span className="inline-flex items-center gap-1.5">
                           <EtiquetaEstado estado={ESTADOS[c.estado]} />
-                          <EtiquetaPrueba ambiente={c.ambiente} soloIcono />
+                          <EtiquetaPrueba ambiente={c.ambiente ?? ''} soloIcono />
                         </span>
                       </td>
                       {/* Los íconos hacen su acción; no abren el modal de la fila. */}
@@ -400,14 +438,14 @@ export function ComprobantesPage() {
       </Tarjeta>
 
       {menu && (
-        <Modal abierto titulo={`${tipoLargo(menu.tipo)} ${numeroComprobante(menu.puntoVenta.numero, menu.numero)}`} onCerrar={() => setMenu(null)}>
+        <Modal abierto titulo={`${tipoFila(menu)} ${numeroFila(menu)}`} onCerrar={() => setMenu(null)}>
           <div className="space-y-4">
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-fk-gris-texto">
               <span className="font-medium text-fk-grafito">{menu.cliente.razonSocial}</span>
               <span className="tabular-nums">{fecha(menu.fechaEmision)}</span>
               <span className="tabular-nums">{dinero(menu.importeTotal, menu.moneda)}</span>
               <EtiquetaEstado estado={ESTADOS[menu.estado]} />
-              <EtiquetaPrueba ambiente={menu.ambiente} />
+              <EtiquetaPrueba ambiente={menu.ambiente ?? ''} />
             </div>
             <ul className="divide-y divide-fk-borde overflow-hidden rounded-fk border border-fk-borde">
               {accionesDe(menu)

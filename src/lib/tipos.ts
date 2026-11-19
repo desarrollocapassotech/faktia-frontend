@@ -138,6 +138,21 @@ export interface ComprobanteResumen {
   puntoVenta: { numero: number };
 }
 
+/**
+ * Fila del listado de comprobantes (`/comprobantes?incluirRecibos=true`): comprobantes de ARCA y
+ * recibos guardados. Los recibos no tienen punto de venta, CAE ni ambiente; su número es texto.
+ */
+export type FilaComprobantes =
+  | (ComprobanteResumen & { clase: 'comprobante'; numeroTexto: null })
+  | (Omit<ComprobanteResumen, 'tipo' | 'ambiente' | 'puntoVenta' | 'cliente'> & {
+      clase: 'recibo';
+      tipo: 'RECIBO_COBRO' | 'RECIBO_PAGO';
+      ambiente: null;
+      puntoVenta: null;
+      numeroTexto: string | null;
+      cliente: { id: string | null; razonSocial: string };
+    });
+
 export interface Comprobante {
   id: string;
   tipo: TipoComprobante;

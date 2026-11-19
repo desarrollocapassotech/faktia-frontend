@@ -1,11 +1,11 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState, type FormEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus, Trash2 } from 'lucide-react';
-import { AlertaError, Aviso, Boton, BotonIcono, Campo, Cargando, claseInput, Entrada, EntradaNumero, Selector, SelectorBuscable, Tarjeta } from '@/components/ui';
+import { AlertaError, Boton, BotonIcono, Campo, Cargando, claseInput, Entrada, EntradaNumero, Selector, SelectorBuscable, Tarjeta } from '@/components/ui';
 import { cuit, dinero, fecha, hoy, numeroComprobante, tipoLargo } from '@/lib/formato';
 import type { Cliente, ComprobanteResumen, Moneda, Paginado } from '@/lib/tipos';
 import { useApi } from '@/lib/useApi';
-import { useAuth } from '@/auth/auth-context';
 
 export type TipoRecibo = 'COBRO' | 'PAGO';
 type Tipo = TipoRecibo;
@@ -60,48 +60,25 @@ function documentoDe(c: Cliente): string {
   return `${c.tipoDocumento} ${c.tipoDocumento === 'CUIT' || c.tipoDocumento === 'CUIL' ? cuit(c.numeroDocumento) : c.numeroDocumento}`;
 }
 
-// Numeración: la lleva el usuario (no se guardan recibos). Recordamos el último número por tipo en
-// este navegador solo para sugerir el siguiente. Por empresa: cada una lleva su numeración.
-const CLAVE_NUMERO = (tenantId: string, t: Tipo) => `faktia.recibo.ultimoNumero.${tenantId}.${t}`;
-
-function leerUltimo(tenantId: string, t: Tipo): string {
-  try {
-    return localStorage.getItem(CLAVE_NUMERO(tenantId, t)) ?? '';
-  } catch {
-    return '';
-  }
-}
-
-function guardarUltimo(tenantId: string, t: Tipo, numero: string) {
-  try {
-    localStorage.setItem(CLAVE_NUMERO(tenantId, t), numero);
-  } catch {
-    // almacenamiento no disponible: no pasa nada
-  }
-}
-
 const PRIMER_NUMERO = '0001-00000001';
 
 /**
- * "0001-00000041" → "0001-00000042"; "R-7" → "R-8". Sin recibos anteriores, el primero
- * (0001-00000001). Si el último no termina en número, no sugiere.
- */
-function siguienteNumero(ultimo: string): string {
-  if (!ultimo.trim()) return PRIMER_NUMERO;
-  const m = /^(.*?)(\d+)$/.exec(ultimo);
-  if (!m) return '';
-  const siguiente = String(Number(m[2]) + 1).padStart(m[2].length, '0');
-  return `${m[1]}${siguiente}`;
-}
-
-/**
- * Formulario de un recibo (PDF; no se guarda ni va a ARCA). Vive en Nuevo comprobante → Recibo.
- * Cambiar de tipo es montarlo de nuevo (con `key`): arranca vacío, con el número sugerido de ese tipo.
+ * Formulario de un recibo. "Crear recibo" lo guarda (aparece en el listado de comprobantes) y baja el PDF.
+ * No va a ARCA. Vive en Nuevo comprobante → Recibo. Cambiar de tipo es montarlo de nuevo (con `key`):
+ * arranca vacío, con el número sugerido de ese tipo.
  */
 export function FormularioRecibo({ tipo }: { tipo: Tipo }) {
-  const { pedir, descargar } = useApi();
-  const tenantId = useAuth().tenant?.id ?? 'sin-empresa';
-  const [numero, setNumero] = useState(() => siguienteNumero(leerUltimo(tenantId, tipo)));
+  const { pedir } = useApi();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  // El número sugerido lo calcula el backend a partir del último recibo guardado de ese tipo.
+  // null = el usuario todavía no lo tocó: se muestra el sugerido.
+  const sugerido = useQuery({
+    queryKey: ['recibos', 'siguiente-numero', tipo],
+    queryFn: () => pedir<{ numero: string }>(`/recibos/siguiente-numero?tipo=${tipo}`),
+  });
+  const [numeroEditado, setNumero] = useState<string | null>(null);
+  const numero = numeroEditado ?? sugerido.data?.numero ?? '';
   const [fechaRecibo, setFechaRecibo] = useState(hoy());
   const [moneda, setMoneda] = useState<Moneda>('ARS');
   const [clienteId, setClienteId] = useState('');
@@ -113,7 +90,6 @@ export function FormularioRecibo({ tipo }: { tipo: Tipo }) {
   const [observaciones, setObservaciones] = useState('');
   const [error, setError] = useState<unknown>(null);
   const [generando, setGenerando] = useState(false);
-  const [listo, setListo] = useState<string | null>(null);
 
   const clientes = useQuery({
     queryKey: ['clientes', { q: '', inactivos: false }],
@@ -177,7 +153,6 @@ export function FormularioRecibo({ tipo }: { tipo: Tipo }) {
   async function generar(e: FormEvent) {
     e.preventDefault();
     setError(null);
-    setListo(null);
     if (!contraparte.nombre.trim()) {
       setError(new Error(tipo === 'COBRO' ? 'Indicá quién paga.' : 'Indicá a quién le pagás.'));
       return;
@@ -217,12 +192,11 @@ export function FormularioRecibo({ tipo }: { tipo: Tipo }) {
     };
     setGenerando(true);
     try {
-      await descargar('/recibos/pdf', tipo === 'COBRO' ? 'Recibo-Cobro.pdf' : 'Recibo-Pago.pdf', body);
-      if (numero.trim()) {
-        guardarUltimo(tenantId, tipo, numero.trim());
-        setNumero(siguienteNumero(numero.trim()));
-      }
-      setListo(numero.trim() ? `Recibo ${numero.trim()} generado.` : 'Recibo generado.');
+      // Solo se guarda: el PDF se abre desde el listado de comprobantes.
+      await pedir<{ id: string }>('/recibos', 'POST', { ...body, ...(tipo === 'COBRO' && clienteId ? { clienteId } : {}) });
+      void queryClient.invalidateQueries({ queryKey: ['comprobantes'] });
+      void queryClient.invalidateQueries({ queryKey: ['recibos'] });
+      navigate('/comprobantes');
     } catch (err) {
       setError(err);
     } finally {
@@ -238,7 +212,7 @@ export function FormularioRecibo({ tipo }: { tipo: Tipo }) {
       <Tarjeta>
         <div className="grid gap-x-5 gap-y-4 sm:grid-cols-2 lg:grid-cols-12">
           <Campo etiqueta="Número" className="lg:col-span-2">
-            <Entrada value={numero} onChange={(e) => setNumero(e.target.value)} maxLength={30} placeholder={PRIMER_NUMERO} title="El siguiente al último que generaste" />
+            <Entrada value={numero} onChange={(e) => setNumero(e.target.value)} maxLength={30} placeholder={PRIMER_NUMERO} title="El siguiente al último recibo de este tipo" />
           </Campo>
           <Campo etiqueta="Fecha" className="lg:col-span-2">
             <Entrada type="date" value={fechaRecibo} onChange={(e) => setFechaRecibo(e.target.value)} required />
@@ -422,10 +396,9 @@ export function FormularioRecibo({ tipo }: { tipo: Tipo }) {
       </Tarjeta>
 
       <AlertaError error={error} />
-      {listo && <Aviso tono="verde">{listo}</Aviso>}
       <div className="flex justify-end">
         <Boton type="submit" cargando={generando} disabled={total === null || total <= 0}>
-          Generar PDF
+          Crear recibo
         </Boton>
       </div>
     </form>
