@@ -22,11 +22,7 @@ export function NuevoComprobantePage() {
         titulo="Nueva factura"
         tituloEnBarra
         migas={[{ texto: 'Comprobantes', a: '/comprobantes' }, { texto: masiva ? 'Creación masiva' : 'Nueva factura' }]}
-        descripcion={
-          masiva
-            ? 'Traé lo que hay que facturar desde una planilla (o desde otro sistema por la API), revisalo y generá los borradores en un paso.'
-            : 'Se guarda como borrador. Lo revisás y lo emitís en el paso siguiente.'
-        }
+        descripcion=""
       />
       <div role="tablist" aria-label="Forma de crear" className="flex gap-1 overflow-x-auto border-b border-fk-borde">
         {MODOS.map((m) => {

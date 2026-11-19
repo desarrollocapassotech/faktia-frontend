@@ -1,9 +1,22 @@
-import { useEffect, useId, useRef, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes } from 'react';
+import {
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ButtonHTMLAttributes,
+  type InputHTMLAttributes,
+  type KeyboardEvent as EventoTeclado,
+  type ReactNode,
+  type SelectHTMLAttributes,
+} from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
-import { ChevronRight, CircleHelp, Eye, EyeOff, FlaskConical, X, type LucideIcon } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown, ChevronDown, ChevronRight, CircleHelp, Eye, EyeOff, FlaskConical, X, type LucideIcon } from 'lucide-react';
 import { ApiError } from '@/lib/api';
 import type { Estado, Tono } from '@/lib/formato';
+import { etiquetaDirOrden, type OrdenColumna } from '@/lib/orden';
 import { leerNumero, numeroEditable } from '@/lib/numeros';
 import { claseBoton, type Variante } from './estilos';
 
@@ -148,6 +161,226 @@ export function Selector(props: SelectHTMLAttributes<HTMLSelectElement>) {
   return <select {...props} className={`${claseInput} ${props.className ?? ''}`} />;
 }
 
+/** Sin acentos ni mayúsculas: "Martín" se encuentra escribiendo "martin". */
+const normalizarBusqueda = (texto: string) =>
+  texto
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase();
+
+/**
+ * Select con buscador (combobox) para listas largas, como el de Vialto. `value: ""` es "sin elegir"
+ * (la primera opción, con el texto de `placeholder`). Flechas para moverse, Enter elige, Escape cierra.
+ */
+export function SelectorBuscable({
+  value,
+  onChange,
+  opciones,
+  placeholder = 'Todos',
+  placeholderBusqueda = 'Buscar…',
+  'aria-label': ariaLabel,
+  className = '',
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  opciones: Array<{ value: string; label: string }>;
+  placeholder?: string;
+  placeholderBusqueda?: string;
+  'aria-label'?: string;
+  className?: string;
+}) {
+  const [abierto, setAbierto] = useState(false);
+  const [busqueda, setBusqueda] = useState('');
+  const [activa, setActiva] = useState(0);
+  const botonRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const listaRef = useRef<HTMLUListElement>(null);
+  const [pos, setPos] = useState<{ top: number; left: number; width: number } | null>(null);
+  const idLista = useId();
+
+  // La primera fila es "sin elegir"; después, las opciones que coinciden con lo buscado.
+  const filas = useMemo(() => {
+    const q = normalizarBusqueda(busqueda.trim());
+    const filtradas = q ? opciones.filter((o) => normalizarBusqueda(o.label).includes(q)) : opciones;
+    return [{ value: '', label: placeholder }, ...filtradas];
+  }, [opciones, busqueda, placeholder]);
+
+  useLayoutEffect(() => {
+    if (!abierto) return;
+    function ubicar() {
+      const r = botonRef.current?.getBoundingClientRect();
+      if (r) setPos({ top: r.bottom + 4, left: r.left, width: Math.max(r.width, 240) });
+    }
+    ubicar();
+    window.addEventListener('resize', ubicar);
+    window.addEventListener('scroll', ubicar, true);
+    return () => {
+      window.removeEventListener('resize', ubicar);
+      window.removeEventListener('scroll', ubicar, true);
+    };
+  }, [abierto]);
+
+  useEffect(() => {
+    if (!abierto) return;
+    function onMouseDown(e: MouseEvent) {
+      const t = e.target as Node;
+      if (botonRef.current?.contains(t) || panelRef.current?.contains(t)) return;
+      cerrar();
+    }
+    document.addEventListener('mousedown', onMouseDown);
+    return () => document.removeEventListener('mousedown', onMouseDown);
+  }, [abierto]);
+
+  // Mantener visible la opción marcada con el teclado.
+  useEffect(() => {
+    listaRef.current?.querySelector<HTMLElement>(`[data-indice="${activa}"]`)?.scrollIntoView({ block: 'nearest' });
+  }, [activa]);
+
+  function abrir() {
+    setBusqueda('');
+    setActiva(Math.max(0, filas.findIndex((f) => f.value === value)));
+    setAbierto(true);
+  }
+
+  function cerrar(devolverFoco = false) {
+    setAbierto(false);
+    setPos(null);
+    if (devolverFoco) botonRef.current?.focus();
+  }
+
+  function elegir(v: string) {
+    onChange(v);
+    cerrar(true);
+  }
+
+  function onTecla(e: EventoTeclado<HTMLInputElement>) {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setActiva((i) => Math.min(filas.length - 1, i + 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActiva((i) => Math.max(0, i - 1));
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      const fila = filas[activa];
+      if (fila) elegir(fila.value);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      cerrar(true);
+    }
+  }
+
+  const elegida = opciones.find((o) => o.value === value);
+
+  return (
+    <>
+      <button
+        ref={botonRef}
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={abierto}
+        aria-label={ariaLabel}
+        onClick={() => (abierto ? cerrar() : abrir())}
+        className={`${claseInput} flex items-center justify-between gap-2 text-left ${className}`}
+      >
+        <span className={`min-w-0 truncate ${elegida ? '' : 'text-fk-gris-texto'}`}>{elegida?.label ?? placeholder}</span>
+        <ChevronDown className="h-4 w-4 shrink-0 text-fk-gris-texto" strokeWidth={2} aria-hidden />
+      </button>
+      {abierto &&
+        pos &&
+        createPortal(
+          <div
+            ref={panelRef}
+            className="fixed z-[300] rounded-fk border border-fk-borde bg-fk-blanco py-1 shadow-lg"
+            style={{ top: pos.top, left: pos.left, width: pos.width }}
+          >
+            <div className="border-b border-fk-borde px-2 pt-1 pb-2">
+              <input
+                type="search"
+                autoFocus
+                value={busqueda}
+                onChange={(e) => {
+                  setBusqueda(e.target.value);
+                  setActiva(0);
+                }}
+                onKeyDown={onTecla}
+                placeholder={placeholderBusqueda}
+                aria-label={placeholderBusqueda}
+                role="combobox"
+                aria-expanded
+                aria-controls={idLista}
+                aria-activedescendant={`${idLista}-${activa}`}
+                className={`${claseInput} min-h-9 py-1.5`}
+              />
+            </div>
+            <ul ref={listaRef} id={idLista} role="listbox" className="max-h-64 overflow-y-auto py-1">
+              {filas.map((f, i) => (
+                <li
+                  key={f.value || '__todos'}
+                  id={`${idLista}-${i}`}
+                  data-indice={i}
+                  role="option"
+                  aria-selected={f.value === value}
+                  onMouseEnter={() => setActiva(i)}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => elegir(f.value)}
+                  className={`cursor-pointer px-3 py-2 text-sm ${i === activa ? 'bg-fk-niebla' : ''} ${
+                    f.value === value ? 'font-semibold text-fk-fiordo' : 'text-fk-grafito'
+                  } ${f.value === '' ? 'text-fk-gris-texto' : ''}`}
+                >
+                  {f.label}
+                </li>
+              ))}
+              {filas.length === 1 && busqueda.trim() && <li className="px-3 py-2 text-xs text-fk-gris-texto">No hay resultados.</li>}
+            </ul>
+          </div>,
+          document.body,
+        )}
+    </>
+  );
+}
+
+export type FiltroAplicado = { id: string; titulo: string; valor: string; quitar: () => void };
+
+/**
+ * Un badge por filtro aplicado ("Herman Alexis Nahuel ✕"; el nombre del filtro va en el tooltip) y,
+ * al final, "Limpiar filtros". Sin filtros no ocupa lugar.
+ */
+export function FiltrosAplicados({ filtros, onLimpiar }: { filtros: FiltroAplicado[]; onLimpiar: () => void }) {
+  if (filtros.length === 0) return null;
+  return (
+    <div className="flex flex-wrap items-center gap-2" aria-label="Filtros aplicados">
+      {filtros.map((f) => (
+        <span
+          key={f.id}
+          className="inline-flex max-w-full items-center gap-1 rounded-fk-badge border border-fk-terracota-texto/30 bg-fk-terracota-texto/[0.06] py-1 pr-1 pl-3 text-xs text-fk-grafito"
+        >
+          <span className="truncate" title={f.titulo}>
+            <span className="text-fk-gris-texto">{f.titulo}:</span> <span className="font-medium">{f.valor}</span>
+          </span>
+          <button
+            type="button"
+            onClick={f.quitar}
+            aria-label={`Quitar filtro: ${f.titulo} ${f.valor}`}
+            title="Quitar filtro"
+            className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-fk-gris-texto transition-colors hover:bg-fk-terracota-texto hover:text-fk-blanco"
+          >
+            <X className="h-3 w-3" strokeWidth={2.5} aria-hidden />
+          </button>
+        </span>
+      ))}
+      <button
+        type="button"
+        onClick={onLimpiar}
+        className="inline-flex h-7 shrink-0 items-center gap-1 px-2 text-xs text-fk-gris-texto underline-offset-4 transition-colors hover:text-fk-fiordo hover:underline"
+      >
+        <X className="h-3.5 w-3.5" aria-hidden />
+        Limpiar filtros
+      </button>
+    </div>
+  );
+}
+
 /** Ruta de navegación: los ítems con `a` son links; el último es la página actual. */
 export function Migas({ items }: { items: Array<{ texto: ReactNode; a?: string }> }) {
   return (
@@ -251,6 +484,46 @@ export function Tarjeta({ titulo, acciones, children, className = '' }: { titulo
       )}
       <div className="px-4 py-5 sm:px-6 sm:py-6">{children}</div>
     </section>
+  );
+}
+
+/**
+ * Título de columna que ordena al hacer click (1ro ascendente, 2do descendente). La columna activa lleva la
+ * flecha en terracota y una ✕ para quitar el orden; las demás, las dos flechas tenues.
+ */
+export function TituloOrdenable({ titulo, orden }: { titulo: string; orden: OrdenColumna }) {
+  const Flecha = orden.dir === 'desc' ? ArrowDown : orden.dir === 'asc' ? ArrowUp : ArrowUpDown;
+  // El tooltip describe lo que hace el próximo click.
+  const siguiente = etiquetaDirOrden(orden.tipo ?? 'texto', orden.dir === 'asc' ? 'desc' : 'asc');
+  const texto = `Ordenar por ${titulo.toLowerCase()} (${siguiente})`;
+  return (
+    <span className="inline-flex items-center gap-1">
+      <button
+        type="button"
+        onClick={orden.onClick}
+        title={texto}
+        aria-label={texto}
+        className="group inline-flex items-center gap-1 uppercase hover:text-fk-fiordo"
+      >
+        <span>{titulo}</span>
+        <Flecha
+          className={`h-3.5 w-3.5 shrink-0 ${orden.dir ? 'text-fk-terracota-texto' : 'text-fk-gris-texto/30 group-hover:text-fk-gris-texto/70'}`}
+          strokeWidth={2}
+          aria-hidden
+        />
+      </button>
+      {orden.dir && orden.onClear && (
+        <button
+          type="button"
+          onClick={orden.onClear}
+          title={`Quitar orden: ${titulo.toLowerCase()}`}
+          aria-label={`Quitar orden: ${titulo.toLowerCase()}`}
+          className="rounded p-0.5 text-fk-gris-texto transition-colors hover:bg-fk-niebla hover:text-fk-terracota-texto"
+        >
+          <X className="h-3.5 w-3.5" strokeWidth={2.5} aria-hidden />
+        </button>
+      )}
+    </span>
   );
 }
 

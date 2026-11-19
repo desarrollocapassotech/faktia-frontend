@@ -1,36 +1,170 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { Eye, FileMinus, FilePlus, FileText, RotateCw } from 'lucide-react';
-import { useState } from 'react';
+import { Eye, FileMinus, FilePlus, FileText, RotateCw, type LucideIcon } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   AlertaError,
   Boton,
   BotonIcono,
+  Campo,
   Cargando,
   ContenedorTabla,
   EncabezadoPagina,
+  Entrada,
   EtiquetaEstado,
   EtiquetaPrueba,
+  FiltrosAplicados,
   Modal,
-  Selector,
+  SelectorBuscable,
   Tarjeta,
+  TituloOrdenable,
   Vacio,
+  type FiltroAplicado,
 } from '@/components/ui';
 import { dinero, esFactura, ESTADOS, fecha, numeroComprobante, tipoLargo } from '@/lib/formato';
-import type { Comprobante, ComprobanteResumen, EstadoComprobante, Paginado } from '@/lib/tipos';
+import { useOrdenColumna } from '@/lib/orden';
+import type { Cliente, Comprobante, ComprobanteResumen, Paginado } from '@/lib/tipos';
 import { useApi } from '@/lib/useApi';
 import { EmitirModal, NotaModal, type ClaseNota } from './modalesComprobante';
 
 const POR_PAGINA = 25;
+/** Mismo formato que acepta el backend: "15" o "00002-00000015". */
+const NUMERO_VALIDO = /^\s*\d{1,8}(\s*-\s*\d{1,8})?\s*$/;
 
-type Accion = { tipo: 'emitir'; id: string } | { tipo: 'nota'; clase: ClaseNota; comprobante: ComprobanteResumen };
+/** Columnas ordenables. Espejo de `ORDENES_COMPROBANTES` del backend. */
+type OrdenComprobantes = 'comprobante' | 'numero' | 'fecha' | 'cliente' | 'total' | 'estado';
+
+type AccionFila = {
+  id: string;
+  texto: string;
+  /** Tooltip del ícono deshabilitado: cuándo se puede usar. */
+  noDisponible: string;
+  icono: LucideIcon;
+  disponible: boolean;
+  ejecutar: () => void;
+};
+
+type Accion ={ tipo: 'emitir'; id: string } | { tipo: 'nota'; clase: ClaseNota; comprobante: ComprobanteResumen };
 
 export function ComprobantesPage() {
   const { pedir, verEnPestana } = useApi();
   const navigate = useNavigate();
-  const [estado, setEstado] = useState<EstadoComprobante | ''>('');
   const [pagina, setPagina] = useState(1);
+  const [numero, setNumero] = useState('');
+  const [fechaDesde, setFechaDesde] = useState('');
+  const [fechaHasta, setFechaHasta] = useState('');
+  const [clienteId, setClienteId] = useState('');
+  const { orden, ordenColumna } = useOrdenColumna<OrdenComprobantes>(() => setPagina(1), {
+    numero: 'numero',
+    fecha: 'fecha',
+    total: 'numero',
+  });
   const [accion, setAccion] = useState<Accion | null>(null);
+  // Fila clickeada: modal con todas sus acciones disponibles.
+  const [menu, setMenu] = useState<ComprobanteResumen | null>(null);
+
+  /** Acciones de una fila: las mismas en los íconos de la columna y en el modal. */
+  function accionesDe(c: ComprobanteResumen): AccionFila[] {
+    return [
+      { id: 'ver', texto: 'Ver detalle', noDisponible: '', icono: Eye, disponible: true, ejecutar: () => navigate(`/comprobantes/${c.id}`) },
+      {
+        id: 'reemitir',
+        texto: 'Volver a emitir',
+        noDisponible: 'Volver a emitir (solo rechazados)',
+        icono: RotateCw,
+        disponible: c.estado === 'RECHAZADO',
+        ejecutar: () => setAccion({ tipo: 'emitir', id: c.id }),
+      },
+      {
+        id: 'nc',
+        texto: 'Emitir nota de crédito',
+        noDisponible: 'Nota de crédito (solo facturas emitidas)',
+        icono: FileMinus,
+        disponible: puedeNota(c),
+        ejecutar: () => setAccion({ tipo: 'nota', clase: 'NOTA_CREDITO', comprobante: c }),
+      },
+      {
+        id: 'nd',
+        texto: 'Emitir nota de débito',
+        noDisponible: 'Nota de débito (solo facturas emitidas)',
+        icono: FilePlus,
+        disponible: puedeNota(c),
+        ejecutar: () => setAccion({ tipo: 'nota', clase: 'NOTA_DEBITO', comprobante: c }),
+      },
+      {
+        id: 'pdf',
+        texto: 'Ver PDF',
+        noDisponible: 'PDF (solo comprobantes autorizados)',
+        icono: FileText,
+        disponible: tienePdf(c),
+        ejecutar: () => void verPdf(c.id),
+      },
+    ];
+  }
+
+  // El número se busca al dejar de tipear, y solo si tiene forma de número ("15" o "00002-00000015").
+  const [numeroBuscado, setNumeroBuscado] = useState('');
+  useEffect(() => {
+    const valido = NUMERO_VALIDO.test(numero) ? numero.trim() : '';
+    if (valido === numeroBuscado) return;
+    const t = setTimeout(() => {
+      setNumeroBuscado(valido);
+      setPagina(1);
+    }, 350);
+    return () => clearTimeout(t);
+  }, [numero, numeroBuscado]);
+  const numeroInvalido = numero.trim() !== '' && !NUMERO_VALIDO.test(numero);
+
+  const clientes = useQuery({
+    queryKey: ['clientes', { q: '', inactivos: true }],
+    queryFn: () => pedir<Cliente[]>('/clientes?incluirInactivos=true'),
+  });
+
+  const opcionesClientes = useMemo(
+    () =>
+      (clientes.data ?? [])
+        .map((cl) => ({ value: cl.id, label: cl.activo ? cl.razonSocial : `${cl.razonSocial} (inactivo)` }))
+        .sort((a, b) => a.label.localeCompare(b.label, 'es', { sensitivity: 'base' })),
+    [clientes.data],
+  );
+
+  const filtrosAplicados: FiltroAplicado[] = [];
+  if (numeroBuscado) {
+    filtrosAplicados.push({
+      id: 'numero',
+      titulo: 'Número',
+      valor: numeroBuscado,
+      quitar: () => {
+        setNumero('');
+        setNumeroBuscado('');
+        setPagina(1);
+      },
+    });
+  }
+  if (fechaDesde) {
+    filtrosAplicados.push({ id: 'desde', titulo: 'Desde', valor: fecha(fechaDesde), quitar: () => (setFechaDesde(''), setPagina(1)) });
+  }
+  if (fechaHasta) {
+    filtrosAplicados.push({ id: 'hasta', titulo: 'Hasta', valor: fecha(fechaHasta), quitar: () => (setFechaHasta(''), setPagina(1)) });
+  }
+  if (clienteId) {
+    filtrosAplicados.push({
+      id: 'cliente',
+      titulo: 'Cliente',
+      valor: opcionesClientes.find((o) => o.value === clienteId)?.label ?? 'Cliente',
+      quitar: () => (setClienteId(''), setPagina(1)),
+    });
+  }
+  const hayFiltros = filtrosAplicados.length > 0;
+
+  function limpiarFiltros() {
+    setNumero('');
+    setNumeroBuscado('');
+    setFechaDesde('');
+    setFechaHasta('');
+    setClienteId('');
+    setPagina(1);
+  }
   const [errorAccion, setErrorAccion] = useState<unknown>(null);
 
   async function verPdf(id: string) {
@@ -43,10 +177,17 @@ export function ComprobantesPage() {
   }
 
   const { data, error, isFetching } = useQuery({
-    queryKey: ['comprobantes', { estado, pagina }],
+    queryKey: ['comprobantes', { pagina, numeroBuscado, fechaDesde, fechaHasta, clienteId, orden }],
     queryFn: () => {
       const params = new URLSearchParams({ pagina: String(pagina), porPagina: String(POR_PAGINA) });
-      if (estado) params.set('estado', estado);
+      if (numeroBuscado) params.set('numero', numeroBuscado);
+      if (fechaDesde) params.set('fechaDesde', fechaDesde);
+      if (fechaHasta) params.set('fechaHasta', fechaHasta);
+      if (clienteId) params.set('clienteId', clienteId);
+      if (orden) {
+        params.set('ordenarPor', orden.por);
+        params.set('dir', orden.dir);
+      }
       return pedir<Paginado<ComprobanteResumen>>(`/comprobantes?${params.toString()}`);
     },
     placeholderData: keepPreviousData,
@@ -58,28 +199,61 @@ export function ComprobantesPage() {
     <div className="space-y-8">
       <EncabezadoPagina titulo="Comprobantes" tituloEnBarra />
       <Tarjeta>
-        <div className="mb-5 flex flex-wrap items-center gap-3">
-          <Selector
-            value={estado}
-            onChange={(e) => {
-              setEstado(e.target.value as EstadoComprobante | '');
-              setPagina(1);
-            }}
-            className="max-w-xs"
-            aria-label="Filtrar por estado"
-          >
-            <option value="">Todos los estados</option>
-            {Object.entries(ESTADOS).map(([v, { texto }]) => (
-              <option key={v} value={v}>
-                {texto}
-              </option>
-            ))}
-          </Selector>
-          {isFetching && <span className="text-xs text-fk-gris-texto">Actualizando…</span>}
+        <div className="mb-5 flex flex-wrap items-end gap-3">
+          <Campo etiqueta="Número" className="w-44" error={numeroInvalido ? 'Ej.: 15 o 00002-00000015' : null}>
+            <Entrada
+              type="search"
+              inputMode="numeric"
+              placeholder="00002-00000015"
+              value={numero}
+              onChange={(e) => setNumero(e.target.value)}
+              aria-invalid={numeroInvalido}
+            />
+          </Campo>
+          <Campo etiqueta="Desde" className="w-40">
+            <Entrada
+              type="date"
+              value={fechaDesde}
+              max={fechaHasta || undefined}
+              onChange={(e) => {
+                setFechaDesde(e.target.value);
+                setPagina(1);
+              }}
+            />
+          </Campo>
+          <Campo etiqueta="Hasta" className="w-40">
+            <Entrada
+              type="date"
+              value={fechaHasta}
+              min={fechaDesde || undefined}
+              onChange={(e) => {
+                setFechaHasta(e.target.value);
+                setPagina(1);
+              }}
+            />
+          </Campo>
+          <Campo etiqueta="Cliente" className="w-64">
+            <SelectorBuscable
+              value={clienteId}
+              onChange={(v) => {
+                setClienteId(v);
+                setPagina(1);
+              }}
+              opciones={opcionesClientes}
+              placeholder="Todos los clientes"
+              placeholderBusqueda="Buscar cliente…"
+            />
+          </Campo>
+          {isFetching && <span className="self-center text-xs text-fk-gris-texto">Actualizando…</span>}
           <Boton className="ml-auto" onClick={() => navigate('/comprobantes/nuevo')}>
             Nueva factura
           </Boton>
         </div>
+        {filtrosAplicados.length > 0 && (
+          <div className="mb-5">
+            <FiltrosAplicados filtros={filtrosAplicados} onLimpiar={limpiarFiltros} />
+          </div>
+        )}
         {errorAccion != null && (
           <div className="mb-4">
             <AlertaError error={errorAccion} />
@@ -90,8 +264,10 @@ export function ComprobantesPage() {
         ) : !data ? (
           <Cargando />
         ) : data.items.length === 0 ? (
-          estado ? (
-            <Vacio>No hay comprobantes en ese estado.</Vacio>
+          hayFiltros ? (
+            <Vacio accion={<Boton variante="terciario" onClick={limpiarFiltros}>Limpiar filtros</Boton>}>
+              No hay comprobantes con esos filtros.
+            </Vacio>
           ) : (
             <Vacio accion={<Boton onClick={() => navigate('/comprobantes/nuevo')}>Nueva factura</Boton>}>Todavía no hay comprobantes.</Vacio>
           )
@@ -101,20 +277,41 @@ export function ComprobantesPage() {
               <table className="fk-tabla">
                 <thead>
                   <tr>
-                    <th>Comprobante</th>
-                    <th className="fk-num">Número</th>
-                    <th>Fecha</th>
-                    <th>Cliente</th>
-                    <th className="fk-num">Total</th>
-                    <th>Estado</th>
+                    <th>
+                      <TituloOrdenable titulo="Comprobante" orden={ordenColumna('comprobante')} />
+                    </th>
+                    <th className="fk-num">
+                      <TituloOrdenable titulo="Número" orden={ordenColumna('numero')} />
+                    </th>
+                    <th>
+                      <TituloOrdenable titulo="Fecha" orden={ordenColumna('fecha')} />
+                    </th>
+                    <th>
+                      <TituloOrdenable titulo="Cliente" orden={ordenColumna('cliente')} />
+                    </th>
+                    <th className="fk-num">
+                      <TituloOrdenable titulo="Total" orden={ordenColumna('total')} />
+                    </th>
+                    <th>
+                      <TituloOrdenable titulo="Estado" orden={ordenColumna('estado')} />
+                    </th>
                     <th className="text-right">Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
                   {data.items.map((c) => (
-                    <tr key={c.id}>
+                    <tr
+                      key={c.id}
+                      onClick={() => setMenu(c)}
+                      title="Click para ver las acciones"
+                      className="cursor-pointer transition-colors hover:bg-fk-niebla/50"
+                    >
                       <td className="whitespace-nowrap">
-                        <Link to={`/comprobantes/${c.id}`} className="font-medium text-fk-fiordo underline-offset-2 hover:underline">
+                        <Link
+                          to={`/comprobantes/${c.id}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="font-medium text-fk-fiordo underline-offset-2 hover:underline"
+                        >
                           {tipoLargo(c.tipo)}
                         </Link>
                       </td>
@@ -128,33 +325,18 @@ export function ComprobantesPage() {
                           <EtiquetaPrueba ambiente={c.ambiente} soloIcono />
                         </span>
                       </td>
-                      <td className="py-1">
+                      {/* Los íconos hacen su acción; no abren el modal de la fila. */}
+                      <td className="py-1" onClick={(e) => e.stopPropagation()}>
                         <div className="flex justify-end gap-1">
-                          <BotonIcono etiqueta="Ver detalle" icono={Eye} onClick={() => navigate(`/comprobantes/${c.id}`)} />
-                          <BotonIcono
-                            etiqueta={c.estado === 'RECHAZADO' ? 'Volver a emitir' : 'Volver a emitir (solo rechazados)'}
-                            icono={RotateCw}
-                            disabled={c.estado !== 'RECHAZADO'}
-                            onClick={() => setAccion({ tipo: 'emitir', id: c.id })}
-                          />
-                          <BotonIcono
-                            etiqueta={puedeNota(c) ? 'Emitir nota de crédito' : 'Nota de crédito (solo facturas emitidas)'}
-                            icono={FileMinus}
-                            disabled={!puedeNota(c)}
-                            onClick={() => setAccion({ tipo: 'nota', clase: 'NOTA_CREDITO', comprobante: c })}
-                          />
-                          <BotonIcono
-                            etiqueta={puedeNota(c) ? 'Emitir nota de débito' : 'Nota de débito (solo facturas emitidas)'}
-                            icono={FilePlus}
-                            disabled={!puedeNota(c)}
-                            onClick={() => setAccion({ tipo: 'nota', clase: 'NOTA_DEBITO', comprobante: c })}
-                          />
-                          <BotonIcono
-                            etiqueta={tienePdf(c) ? 'Ver PDF' : 'PDF (solo comprobantes autorizados)'}
-                            icono={FileText}
-                            disabled={!tienePdf(c)}
-                            onClick={() => void verPdf(c.id)}
-                          />
+                          {accionesDe(c).map((a) => (
+                            <BotonIcono
+                              key={a.id}
+                              etiqueta={a.disponible ? a.texto : a.noDisponible}
+                              icono={a.icono}
+                              disabled={!a.disponible}
+                              onClick={a.ejecutar}
+                            />
+                          ))}
                         </div>
                       </td>
                     </tr>
@@ -179,6 +361,38 @@ export function ComprobantesPage() {
         )}
       </Tarjeta>
 
+      {menu && (
+        <Modal abierto titulo={`${tipoLargo(menu.tipo)} ${numeroComprobante(menu.puntoVenta.numero, menu.numero)}`} onCerrar={() => setMenu(null)}>
+          <div className="space-y-4">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-fk-gris-texto">
+              <span className="font-medium text-fk-grafito">{menu.cliente.razonSocial}</span>
+              <span className="tabular-nums">{fecha(menu.fechaEmision)}</span>
+              <span className="tabular-nums">{dinero(menu.importeTotal, menu.moneda)}</span>
+              <EtiquetaEstado estado={ESTADOS[menu.estado]} />
+              <EtiquetaPrueba ambiente={menu.ambiente} />
+            </div>
+            <ul className="divide-y divide-fk-borde overflow-hidden rounded-fk border border-fk-borde">
+              {accionesDe(menu)
+                .filter((a) => a.disponible)
+                .map((a) => (
+                  <li key={a.id}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMenu(null);
+                        a.ejecutar();
+                      }}
+                      className="flex min-h-12 w-full items-center gap-3 px-4 text-left text-sm font-medium text-fk-grafito transition-colors hover:bg-fk-niebla"
+                    >
+                      <a.icono className="h-[18px] w-[18px] shrink-0 text-fk-fiordo" strokeWidth={1.75} aria-hidden />
+                      {a.texto}
+                    </button>
+                  </li>
+                ))}
+            </ul>
+          </div>
+        </Modal>
+      )}
       {accion?.tipo === 'emitir' && <ReemitirDesdeLista id={accion.id} onCerrar={() => setAccion(null)} />}
       {accion?.tipo === 'nota' && <NotaModal factura={accion.comprobante} clase={accion.clase} onCerrar={() => setAccion(null)} />}
     </div>
