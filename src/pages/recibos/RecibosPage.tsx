@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Trash2 } from 'lucide-react';
 import { AlertaError, Boton, BotonIcono, Campo, Cargando, claseInput, Entrada, EntradaNumero, Selector, SelectorBuscable, Tarjeta } from '@/components/ui';
@@ -67,7 +67,7 @@ const PRIMER_NUMERO = '0001-00000001';
  * No va a ARCA. Vive en Nuevo comprobante → Recibo. Cambiar de tipo es montarlo de nuevo (con `key`):
  * arranca vacío, con el número sugerido de ese tipo.
  */
-export function FormularioRecibo({ tipo }: { tipo: Tipo }) {
+export function FormularioRecibo({ tipo, clienteInicial, volverACuenta }: { tipo: Tipo; clienteInicial?: string; volverACuenta?: boolean }) {
   const { pedir } = useApi();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -130,6 +130,15 @@ export function FormularioRecibo({ tipo }: { tipo: Tipo }) {
     }
   }
 
+  // Cliente que llega elegido (Cuenta corriente → Registrar cobro): se aplica una vez, cuando cargan los clientes.
+  const clienteInicialAplicado = useRef(false);
+  useEffect(() => {
+    if (!clienteInicial || clienteInicialAplicado.current || !clientes.data) return;
+    clienteInicialAplicado.current = true;
+    if (clientes.data.some((c) => c.id === clienteInicial)) elegirCliente(clienteInicial);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clienteInicial, clientes.data]);
+
   function alternarFactura(f: ComprobanteResumen) {
     const descripcion = `${tipoLargo(f.tipo)} ${numeroComprobante(f.puntoVenta.numero, f.numero)}`;
     if (aplicados.some((a) => a.id === f.id)) {
@@ -187,7 +196,8 @@ export function FormularioRecibo({ tipo }: { tipo: Tipo }) {
       medioPago: medioPago.trim() || undefined,
       observaciones: observaciones.trim() || undefined,
       ...(tipo === 'COBRO'
-        ? { comprobantesAplicados: aplicados.map(({ descripcion, importe }) => ({ descripcion, importe })) }
+        ? // Con el id, el cobro se imputa solo a esas facturas en la cuenta corriente.
+          { comprobantesAplicados: aplicados.map(({ id, descripcion, importe }) => ({ descripcion, importe, comprobanteId: id })) }
         : { periodo: periodo.trim() || undefined }),
     };
     setGenerando(true);
@@ -196,7 +206,8 @@ export function FormularioRecibo({ tipo }: { tipo: Tipo }) {
       await pedir<{ id: string }>('/recibos', 'POST', { ...body, ...(tipo === 'COBRO' && clienteId ? { clienteId } : {}) });
       void queryClient.invalidateQueries({ queryKey: ['comprobantes'] });
       void queryClient.invalidateQueries({ queryKey: ['recibos'] });
-      navigate('/comprobantes');
+      void queryClient.invalidateQueries({ queryKey: ['cuenta-corriente'] });
+      navigate(volverACuenta && clienteId ? `/cuenta-corriente/${clienteId}` : '/comprobantes');
     } catch (err) {
       setError(err);
     } finally {

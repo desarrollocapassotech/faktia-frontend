@@ -12,6 +12,7 @@ import {
   Receipt,
   Settings,
   Users,
+  Wallet,
   X,
   type LucideIcon,
 } from 'lucide-react';
@@ -25,6 +26,7 @@ type ItemNav = { a: string; texto: string; icono: LucideIcon; secundario?: boole
 const NAV: ItemNav[] = [
   { a: '/comprobantes', texto: 'Comprobantes', icono: Receipt },
   { a: '/clientes', texto: 'Clientes', icono: Users },
+  { a: '/cuenta-corriente', texto: 'Cuenta corriente', icono: Wallet },
   // Secundario: va pegado al fondo del menú.
   { a: '/configuracion', texto: 'Configuración', icono: Settings, secundario: true },
 ];

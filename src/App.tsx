@@ -10,6 +10,8 @@ import { ComprobantesPage } from './pages/comprobantes/ComprobantesPage';
 import { NuevoComprobantePage } from './pages/comprobantes/NuevoComprobantePage';
 import { AccesoPage } from './pages/AccesoPage';
 import { ConfiguracionPage } from './pages/configuracion/ConfiguracionPage';
+import { CuentaClientePage } from './pages/cuenta-corriente/CuentaClientePage';
+import { CuentaCorrientePage } from './pages/cuenta-corriente/CuentaCorrientePage';
 import { ImportacionDetallePage } from './pages/importaciones/ImportacionDetallePage';
 import { RUTA_CREACION_MASIVA, RUTA_RECIBO, rutaImportacion } from './lib/rutas';
 import { LoginPage } from './pages/LoginPage';
@@ -55,6 +57,8 @@ export default function App() {
         <Route path="clientes/nuevo" element={<ClientePage />} />
         <Route path="clientes/:id" element={<ClienteDetallePage />} />
         <Route path="clientes/:id/editar" element={<ClientePage />} />
+        <Route path="cuenta-corriente" element={<CuentaCorrientePage />} />
+        <Route path="cuenta-corriente/:clienteId" element={<CuentaClientePage />} />
         <Route path="configuracion" element={<ConfiguracionPage />} />
         <Route path="perfil" element={<PerfilPage />} />
       </Route>

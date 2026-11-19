@@ -4,12 +4,14 @@ import type {
   Concepto,
   EstadoComprobante,
   EstadoImportacion,
+  EstadoMovimientoCc,
   EstadoItem,
   Moneda,
   OrigenItem,
   Scope,
   TipoComprobante,
   TipoDocumento,
+  TipoMovimientoCc,
   Unidad,
 } from './tipos';
 
@@ -86,6 +88,28 @@ export const ESTADOS_IMPORTACION: Record<EstadoImportacion, Estado> = {
   DESCARTADA: { texto: 'Descartada', tono: 'info' },
   FALLIDA: { texto: 'Fallida', tono: 'error' },
 };
+
+/** Estado de un movimiento de cuenta corriente: una factura se cobra; un cobro se imputa. */
+export const ESTADOS_CC: Record<TipoMovimientoCc, Record<EstadoMovimientoCc, Estado>> = {
+  DEBE: {
+    PENDIENTE: { texto: 'Pendiente', tono: 'pendiente' },
+    PARCIAL: { texto: 'Cobrado en parte', tono: 'pendiente' },
+    CANCELADO: { texto: 'Cobrado', tono: 'ok' },
+  },
+  HABER: {
+    PENDIENTE: { texto: 'A cuenta', tono: 'info' },
+    PARCIAL: { texto: 'Imputado en parte', tono: 'info' },
+    CANCELADO: { texto: 'Imputado', tono: 'ok' },
+  },
+};
+
+export const VENCIDO: Estado = { texto: 'Vencido', tono: 'error' };
+
+/** Saldos por moneda en una línea: "$ 1.200,00 · US$ 50,00"; sin saldos, "$ 0,00". */
+export function saldosTexto(saldos: Array<{ moneda: Moneda; saldo?: string; total?: string }>): string {
+  if (saldos.length === 0) return dinero(0);
+  return saldos.map((s) => dinero(s.saldo ?? s.total ?? 0, s.moneda)).join(' · ');
+}
 
 /** "2026-09-28T13:04:00Z" → "28/09/2026 10:04" (hora de Argentina). */
 export function fechaHora(v: string | null | undefined): string {

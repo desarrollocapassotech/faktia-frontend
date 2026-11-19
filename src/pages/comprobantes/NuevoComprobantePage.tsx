@@ -89,7 +89,15 @@ export function NuevoComprobantePage() {
             />
           )}
           {modo === 'masiva' && <CreacionMasiva />}
-          {(modo === 'cobro' || modo === 'pago') && <FormularioRecibo key={modo} tipo={modo === 'cobro' ? 'COBRO' : 'PAGO'} />}
+          {(modo === 'cobro' || modo === 'pago') && (
+            <FormularioRecibo
+              key={modo}
+              tipo={modo === 'cobro' ? 'COBRO' : 'PAGO'}
+              // Desde Cuenta corriente → Registrar cobro: el cliente ya elegido y, al guardar, vuelve a su cuenta.
+              clienteInicial={modo === 'cobro' ? (params.get('cliente') ?? undefined) : undefined}
+              volverACuenta={params.get('volver') === 'cuenta'}
+            />
+          )}
         </>
       )}
     </div>

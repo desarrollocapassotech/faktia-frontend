@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Pencil, Plus } from 'lucide-react';
+import { Pencil, Plus, Wallet } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { AlertaError, Boton, Cargando, ContenedorTabla, EncabezadoPagina, Etiqueta, EtiquetaEstado, EtiquetaPrueba, Tarjeta, Vacio } from '@/components/ui';
@@ -37,10 +37,16 @@ export function ClienteDetallePage() {
       <Tarjeta
         titulo="Datos"
         acciones={
-          <Boton variante="terciario" onClick={() => navigate(`/clientes/${c.id}/editar`)}>
-            <Pencil className="h-4 w-4" strokeWidth={2} aria-hidden />
-            Editar
-          </Boton>
+          <div className="flex flex-wrap gap-2">
+            <Boton variante="terciario" onClick={() => navigate(`/cuenta-corriente/${c.id}`)}>
+              <Wallet className="h-4 w-4" strokeWidth={2} aria-hidden />
+              Cuenta corriente
+            </Boton>
+            <Boton variante="terciario" onClick={() => navigate(`/clientes/${c.id}/editar`)}>
+              <Pencil className="h-4 w-4" strokeWidth={2} aria-hidden />
+              Editar
+            </Boton>
+          </div>
         }
       >
         <dl className="grid gap-5 text-sm sm:grid-cols-2 lg:grid-cols-4">

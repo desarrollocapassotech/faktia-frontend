@@ -165,7 +165,7 @@ export interface Recibo {
   contraparteNombre: string;
   contraparte: { nombre: string; documento?: string; domicilio?: string };
   items: Array<{ descripcion: string; cantidad?: string; importe: string }>;
-  comprobantesAplicados: Array<{ descripcion: string; importe: string }> | null;
+  comprobantesAplicados: Array<{ descripcion: string; importe: string; comprobanteId?: string }> | null;
   periodo: string | null;
   medioPago: string | null;
   observaciones: string | null;
@@ -347,4 +347,97 @@ export interface Paginado<T> {
   pagina: number;
   porPagina: number;
   items: T[];
+}
+
+// ── Cuenta corriente ─────────────────────────────────────────────────────────
+// Importes como string decimal ("1234.50"); fechas "YYYY-MM-DD". DEBE suma al saldo (lo que el
+// cliente debe) y HABER resta (cobros, notas de crédito, ajustes a su favor).
+
+export type TipoMovimientoCc = 'DEBE' | 'HABER';
+export type OrigenMovimientoCc = 'COMPROBANTE' | 'RECIBO' | 'MANUAL';
+export type EstadoMovimientoCc = 'PENDIENTE' | 'PARCIAL' | 'CANCELADO';
+
+export interface SaldoCc {
+  moneda: Moneda;
+  saldo: string;
+}
+
+export interface TotalCc {
+  moneda: Moneda;
+  total: string;
+}
+
+/** Fila del listado de cuentas (`GET /cuenta-corriente/cuentas`). */
+export interface CuentaCc {
+  clienteId: string;
+  razonSocial: string;
+  tipoDocumento: TipoDocumento;
+  numeroDocumento: string;
+  activo: boolean;
+  tieneMovimientos: boolean;
+  saldos: SaldoCc[];
+  comprobantesPendientes: number;
+  proximoVencimiento: string | null;
+  vencido: boolean;
+}
+
+/** Comprobante con saldo pendiente en el resumen (vencidos y próximos a vencer). */
+export interface PendienteCc {
+  id: string;
+  clienteId: string;
+  razonSocial: string;
+  concepto: string;
+  numero: string | null;
+  moneda: Moneda;
+  importe: string;
+  pendiente: string;
+  fecha: string;
+  fechaVencimiento: string;
+}
+
+export interface ResumenCc {
+  diasProximos: number;
+  porCobrar: TotalCc[];
+  vencido: TotalCc[];
+  proximo: TotalCc[];
+  vencidos: PendienteCc[];
+  proximos: PendienteCc[];
+}
+
+/** El otro lado de una imputación: el cobro (en un DEBE) o la factura (en un HABER). */
+export interface ImputacionCc {
+  id: string;
+  importe: string;
+  automatica: boolean;
+  movimiento: { id: string; concepto: string; numero: string | null; fecha: string; comprobanteId: string | null; reciboId: string | null };
+}
+
+export interface MovimientoCc {
+  id: string;
+  tipo: TipoMovimientoCc;
+  origen: OrigenMovimientoCc;
+  concepto: string;
+  numero: string | null;
+  comprobanteId: string | null;
+  reciboId: string | null;
+  moneda: Moneda;
+  importe: string;
+  fecha: string;
+  fechaVencimiento: string | null;
+  vencido: boolean;
+  observaciones: string | null;
+  /** DEBE: lo que falta cobrar. HABER: lo que queda sin imputar (a cuenta). */
+  pendiente: string;
+  estado: EstadoMovimientoCc;
+  /** Saldo de su moneda después de este movimiento. */
+  saldo: string;
+  imputaciones: ImputacionCc[];
+  createdAt: string;
+}
+
+/** `GET /cuenta-corriente/cuentas/:clienteId`. Movimientos del más nuevo al más viejo. */
+export interface CuentaClienteCc {
+  cliente: Pick<Cliente, 'id' | 'razonSocial' | 'tipoDocumento' | 'numeroDocumento' | 'condicionIva' | 'activo' | 'diasVencimiento' | 'monedaPreferida'>;
+  saldos: SaldoCc[];
+  movimientos: MovimientoCc[];
 }
