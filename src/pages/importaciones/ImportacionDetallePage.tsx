@@ -18,6 +18,7 @@ import {
   Vacio,
 } from '@/components/ui';
 import { ALICUOTAS, cantidad, cuit, dinero, ESTADOS_IMPORTACION, ESTADOS_ITEM, fecha, fechaHora, hoy, ORIGENES, soloFecha, UNIDADES, unidadTexto } from '@/lib/formato';
+import { RUTA_CREACION_MASIVA } from '@/lib/rutas';
 import type { Cliente, CondicionIva, EstadoItem, Importacion, ItemFacturable, Moneda, Paginado, TipoComprobante, Unidad } from '@/lib/tipos';
 import { useApi } from '@/lib/useApi';
 import { ClienteModal } from '../clientes/ClienteModal';
@@ -88,7 +89,12 @@ export function ImportacionDetallePage() {
     <div className="space-y-6">
       <EncabezadoPagina
         titulo={i.descripcion || ORIGENES[i.origen]}
-        migas={[{ texto: 'Importaciones', a: '/importaciones' }, { texto: i.descripcion || ORIGENES[i.origen] }]}
+        migas={[
+          { texto: 'Comprobantes', a: '/comprobantes' },
+          { texto: 'Creación masiva', a: RUTA_CREACION_MASIVA },
+          { texto: i.descripcion || ORIGENES[i.origen] },
+        ]}
+        tituloEnBarra
         junto={<EtiquetaEstado estado={ESTADOS_IMPORTACION[i.estado]} />}
         descripcion={
           <>

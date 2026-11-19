@@ -208,6 +208,7 @@ export function RecibosPage() {
     <form onSubmit={generar} className="space-y-6">
       <EncabezadoPagina
         titulo="Recibos"
+        tituloEnBarra
         descripcion="Se generan en PDF con tus datos y tu logo. No se guardan ni son comprobantes de ARCA: llevá tu propia numeración."
       />
 

@@ -9,17 +9,18 @@ import {
   Cargando,
   claseArchivo,
   ContenedorTabla,
-  EncabezadoPagina,
   EtiquetaEstado,
   Selector,
   Tarjeta,
   Vacio,
 } from '@/components/ui';
 import { ESTADOS_IMPORTACION, fechaHora, ORIGENES } from '@/lib/formato';
+import { rutaImportacion } from '@/lib/rutas';
 import type { Importacion, Paginado, PlantillaMapeo } from '@/lib/tipos';
 import { useApi } from '@/lib/useApi';
 
-export function ImportacionesPage() {
+/** Pestaña "Crear de forma masiva" de Nueva factura: subir una planilla y el historial de lotes. */
+export function CreacionMasiva() {
   const { pedir } = useApi();
   const [pagina, setPagina] = useState(1);
   const { data, error } = useQuery({
@@ -31,10 +32,6 @@ export function ImportacionesPage() {
 
   return (
     <div className="space-y-8">
-      <EncabezadoPagina
-        titulo="Importaciones"
-        descripcion="Traé lo que hay que facturar desde una planilla (o desde otro sistema por la API), revisalo y generá los borradores en un paso."
-      />
       <div className="grid gap-6 lg:grid-cols-2">
         <ImportarExcel />
       </div>
@@ -61,7 +58,7 @@ export function ImportacionesPage() {
                   {data.items.map((i) => (
                     <tr key={i.id}>
                       <td>
-                        <Link to={`/importaciones/${i.id}`} className="font-medium text-fk-fiordo underline-offset-2 hover:underline">
+                        <Link to={rutaImportacion(i.id)}className="font-medium text-fk-fiordo underline-offset-2 hover:underline">
                           {i.descripcion || ORIGENES[i.origen]}
                         </Link>
                         <span className="block text-xs text-fk-gris-texto">{ORIGENES[i.origen]}</span>
@@ -111,7 +108,7 @@ function ImportarExcel() {
 
   const importar = useMutation({
     mutationFn: (f: File) => subir<Importacion>('/importaciones/excel', 'archivo', f, { method: 'POST', campos: { plantillaMapeoId: elegida } }),
-    onSuccess: (imp) => navigate(`/importaciones/${imp.id}`),
+    onSuccess: (imp) => navigate(rutaImportacion(imp.id)),
   });
 
   function elegirArchivo(e: ChangeEvent<HTMLInputElement>) {

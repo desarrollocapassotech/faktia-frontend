@@ -27,7 +27,7 @@ export function ClientesPage() {
 
   return (
     <div className="space-y-8">
-      <EncabezadoPagina titulo="Clientes" acciones={<Boton onClick={() => setEditando(null)}>Nuevo cliente</Boton>} />
+      <EncabezadoPagina titulo="Clientes" tituloEnBarra />
       <Tarjeta>
         <div className="mb-5 flex flex-wrap items-center gap-4">
           <Entrada
@@ -42,6 +42,9 @@ export function ClientesPage() {
             Mostrar inactivos
           </label>
           {isFetching && <span className="text-xs text-fk-gris-texto">Buscando…</span>}
+          <Boton className="ml-auto" onClick={() => setEditando(null)}>
+            Nuevo cliente
+          </Boton>
         </div>
         {error ? (
           <AlertaError error={error} />

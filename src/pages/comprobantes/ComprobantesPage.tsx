@@ -1,18 +1,46 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { Eye, FileMinus, FilePlus, FileText, RotateCw } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { AlertaError, Boton, Cargando, ContenedorTabla, EncabezadoPagina, EtiquetaEstado, Selector, Tarjeta, Vacio } from '@/components/ui';
-import { dinero, ESTADOS, fecha, numeroComprobante, tipoLargo } from '@/lib/formato';
-import type { ComprobanteResumen, EstadoComprobante, Paginado } from '@/lib/tipos';
+import {
+  AlertaError,
+  Boton,
+  BotonIcono,
+  Cargando,
+  ContenedorTabla,
+  EncabezadoPagina,
+  EtiquetaEstado,
+  EtiquetaPrueba,
+  Modal,
+  Selector,
+  Tarjeta,
+  Vacio,
+} from '@/components/ui';
+import { dinero, esFactura, ESTADOS, fecha, numeroComprobante, tipoLargo } from '@/lib/formato';
+import type { Comprobante, ComprobanteResumen, EstadoComprobante, Paginado } from '@/lib/tipos';
 import { useApi } from '@/lib/useApi';
+import { EmitirModal, NotaModal, type ClaseNota } from './modalesComprobante';
 
 const POR_PAGINA = 25;
 
+type Accion = { tipo: 'emitir'; id: string } | { tipo: 'nota'; clase: ClaseNota; comprobante: ComprobanteResumen };
+
 export function ComprobantesPage() {
-  const { pedir } = useApi();
+  const { pedir, verEnPestana } = useApi();
   const navigate = useNavigate();
   const [estado, setEstado] = useState<EstadoComprobante | ''>('');
   const [pagina, setPagina] = useState(1);
+  const [accion, setAccion] = useState<Accion | null>(null);
+  const [errorAccion, setErrorAccion] = useState<unknown>(null);
+
+  async function verPdf(id: string) {
+    setErrorAccion(null);
+    try {
+      await verEnPestana(`/comprobantes/${id}/pdf`);
+    } catch (err) {
+      setErrorAccion(err);
+    }
+  }
 
   const { data, error, isFetching } = useQuery({
     queryKey: ['comprobantes', { estado, pagina }],
@@ -28,7 +56,7 @@ export function ComprobantesPage() {
 
   return (
     <div className="space-y-8">
-      <EncabezadoPagina titulo="Comprobantes" acciones={<Boton onClick={() => navigate('/comprobantes/nuevo')}>Nueva factura</Boton>} />
+      <EncabezadoPagina titulo="Comprobantes" tituloEnBarra />
       <Tarjeta>
         <div className="mb-5 flex flex-wrap items-center gap-3">
           <Selector
@@ -48,7 +76,15 @@ export function ComprobantesPage() {
             ))}
           </Selector>
           {isFetching && <span className="text-xs text-fk-gris-texto">Actualizando…</span>}
+          <Boton className="ml-auto" onClick={() => navigate('/comprobantes/nuevo')}>
+            Nueva factura
+          </Boton>
         </div>
+        {errorAccion != null && (
+          <div className="mb-4">
+            <AlertaError error={errorAccion} />
+          </div>
+        )}
         {error ? (
           <AlertaError error={error} />
         ) : !data ? (
@@ -71,6 +107,7 @@ export function ComprobantesPage() {
                     <th>Cliente</th>
                     <th className="fk-num">Total</th>
                     <th>Estado</th>
+                    <th className="text-right">Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -86,8 +123,39 @@ export function ComprobantesPage() {
                       <td>{c.cliente.razonSocial}</td>
                       <td className="fk-num">{dinero(c.importeTotal, c.moneda)}</td>
                       <td className="whitespace-nowrap">
-                        <EtiquetaEstado estado={ESTADOS[c.estado]} />
-                        {c.ambiente === 'HOMOLOGACION' && <span className="ml-2 text-xs text-fk-pendiente-texto">Prueba</span>}
+                        <span className="inline-flex items-center gap-1.5">
+                          <EtiquetaEstado estado={ESTADOS[c.estado]} />
+                          <EtiquetaPrueba ambiente={c.ambiente} soloIcono />
+                        </span>
+                      </td>
+                      <td className="py-1">
+                        <div className="flex justify-end gap-1">
+                          <BotonIcono etiqueta="Ver detalle" icono={Eye} onClick={() => navigate(`/comprobantes/${c.id}`)} />
+                          <BotonIcono
+                            etiqueta={c.estado === 'RECHAZADO' ? 'Volver a emitir' : 'Volver a emitir (solo rechazados)'}
+                            icono={RotateCw}
+                            disabled={c.estado !== 'RECHAZADO'}
+                            onClick={() => setAccion({ tipo: 'emitir', id: c.id })}
+                          />
+                          <BotonIcono
+                            etiqueta={puedeNota(c) ? 'Emitir nota de crédito' : 'Nota de crédito (solo facturas emitidas)'}
+                            icono={FileMinus}
+                            disabled={!puedeNota(c)}
+                            onClick={() => setAccion({ tipo: 'nota', clase: 'NOTA_CREDITO', comprobante: c })}
+                          />
+                          <BotonIcono
+                            etiqueta={puedeNota(c) ? 'Emitir nota de débito' : 'Nota de débito (solo facturas emitidas)'}
+                            icono={FilePlus}
+                            disabled={!puedeNota(c)}
+                            onClick={() => setAccion({ tipo: 'nota', clase: 'NOTA_DEBITO', comprobante: c })}
+                          />
+                          <BotonIcono
+                            etiqueta={tienePdf(c) ? 'Ver PDF' : 'PDF (solo comprobantes autorizados)'}
+                            icono={FileText}
+                            disabled={!tienePdf(c)}
+                            onClick={() => void verPdf(c.id)}
+                          />
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -110,6 +178,54 @@ export function ComprobantesPage() {
           </>
         )}
       </Tarjeta>
+
+      {accion?.tipo === 'emitir' && <ReemitirDesdeLista id={accion.id} onCerrar={() => setAccion(null)} />}
+      {accion?.tipo === 'nota' && <NotaModal factura={accion.comprobante} clase={accion.clase} onCerrar={() => setAccion(null)} />}
     </div>
+  );
+}
+
+function puedeNota(c: ComprobanteResumen) {
+  return esFactura(c.tipo) && c.estado === 'EMITIDO';
+}
+
+function tienePdf(c: ComprobanteResumen) {
+  return Boolean(c.cae) && (c.estado === 'EMITIDO' || c.estado === 'ANULADO');
+}
+
+/** El listado no trae la versión ni la advertencia de letra: se pide el comprobante completo antes de confirmar. */
+function ReemitirDesdeLista({ id, onCerrar }: { id: string; onCerrar: () => void }) {
+  const { pedir } = useApi();
+  const navigate = useNavigate();
+  const { data, error } = useQuery({
+    queryKey: ['comprobante', id],
+    queryFn: () => pedir<Comprobante>(`/comprobantes/${id}`),
+  });
+
+  if (error) {
+    return (
+      <Modal abierto titulo="Volver a emitir" onCerrar={onCerrar}>
+        <AlertaError error={error} />
+      </Modal>
+    );
+  }
+  if (!data) {
+    return (
+      <Modal abierto titulo="Volver a emitir" onCerrar={onCerrar}>
+        <Cargando />
+      </Modal>
+    );
+  }
+  // Si no quedó emitido (rechazo de ARCA o respuesta pendiente), el detalle es donde se ve qué pasó.
+  const alDetalle = () => navigate(`/comprobantes/${id}`);
+  return (
+    <EmitirModal
+      comprobante={data}
+      onCerrar={onCerrar}
+      onActualizado={(n) => {
+        if (n.estado !== 'EMITIDO') alDetalle();
+      }}
+      onRechazado={alDetalle}
+    />
   );
 }

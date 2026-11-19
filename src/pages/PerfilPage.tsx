@@ -7,7 +7,7 @@ import { AlertaError, Aviso, Boton, Campo, EncabezadoPagina, Entrada, EntradaPas
 export function PerfilPage() {
   return (
     <div className="space-y-8">
-      <EncabezadoPagina titulo="Mi perfil" />
+      <EncabezadoPagina titulo="Mi perfil" tituloEnBarra />
       <div className="max-w-[var(--fk-ancho-formulario)] space-y-6">
         <DatosPersonales />
         <CambiarPassword />

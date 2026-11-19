@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes, useParams } from 'react-router-dom';
 import { RequireAuth } from './auth/RequireAuth';
 import { PrimerosPasosPage } from './pages/PrimerosPasosPage';
 import { AppLayout } from './components/AppLayout';
@@ -9,11 +9,16 @@ import { NuevoComprobantePage } from './pages/comprobantes/NuevoComprobantePage'
 import { AccesoPage } from './pages/AccesoPage';
 import { ConfiguracionPage } from './pages/configuracion/ConfiguracionPage';
 import { ImportacionDetallePage } from './pages/importaciones/ImportacionDetallePage';
-import { ImportacionesPage } from './pages/importaciones/ImportacionesPage';
+import { RUTA_CREACION_MASIVA, rutaImportacion } from './lib/rutas';
 import { LoginPage } from './pages/LoginPage';
 import { PerfilPage } from './pages/PerfilPage';
 import { RecibosPage } from './pages/recibos/RecibosPage';
 import { RegistroPage } from './pages/RegistroPage';
+
+function RedirigirImportacion() {
+  const { id = '' } = useParams();
+  return <Navigate to={rutaImportacion(id)} replace />;
+}
 
 /** Al entrar (el login lleva a "/"): si la empresa no terminó de configurarse, lo primero es eso. */
 export default function App() {
@@ -34,9 +39,11 @@ export default function App() {
         <Route path="primeros-pasos" element={<PrimerosPasosPage />} />
         <Route path="comprobantes" element={<ComprobantesPage />} />
         <Route path="comprobantes/nuevo" element={<NuevoComprobantePage />} />
+        <Route path="comprobantes/importaciones/:id" element={<ImportacionDetallePage />} />
         <Route path="comprobantes/:id" element={<ComprobanteDetallePage />} />
-        <Route path="importaciones" element={<ImportacionesPage />} />
-        <Route path="importaciones/:id" element={<ImportacionDetallePage />} />
+        {/* Importaciones pasó a ser "Crear de forma masiva" dentro de Nueva factura: las URLs viejas redirigen. */}
+        <Route path="importaciones" element={<Navigate to={RUTA_CREACION_MASIVA} replace />} />
+        <Route path="importaciones/:id" element={<RedirigirImportacion />} />
         <Route path="recibos" element={<RecibosPage />} />
         <Route path="clientes" element={<ClientesPage />} />
         <Route path="configuracion" element={<ConfiguracionPage />} />

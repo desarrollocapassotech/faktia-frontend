@@ -41,7 +41,7 @@ export function ConfiguracionPage() {
 
   return (
     <div className="space-y-8">
-      <EncabezadoPagina titulo="Configuración" />
+      <EncabezadoPagina titulo="Configuración" tituloEnBarra />
       {/* Desktop: pestañas en columna a la izquierda. Mobile: fila con scroll horizontal arriba del contenido. */}
       <div className="grid gap-6 lg:grid-cols-[13.5rem_minmax(0,1fr)] lg:items-start lg:gap-8">
         <div

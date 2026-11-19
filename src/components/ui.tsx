@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
-import { ChevronRight, CircleHelp, Eye, EyeOff, X } from 'lucide-react';
+import { ChevronRight, CircleHelp, Eye, EyeOff, FlaskConical, X, type LucideIcon } from 'lucide-react';
 import { ApiError } from '@/lib/api';
 import type { Estado, Tono } from '@/lib/formato';
 import { leerNumero, numeroEditable } from '@/lib/numeros';
@@ -25,6 +25,26 @@ export function Boton({
     <button type="button" {...props} disabled={props.disabled || cargando} className={`${claseBoton(variante)} ${className}`}>
       {cargando && <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />}
       {children}
+    </button>
+  );
+}
+
+/** Botón cuadrado con solo un ícono (acciones de una fila). `etiqueta` va como tooltip y para lectores de pantalla. */
+export function BotonIcono({
+  etiqueta,
+  icono: Icono,
+  className = '',
+  ...props
+}: Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'> & { etiqueta: string; icono: LucideIcon }) {
+  return (
+    <button
+      type="button"
+      title={etiqueta}
+      aria-label={etiqueta}
+      {...props}
+      className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-fk border border-fk-borde text-fk-fiordo transition-colors hover:bg-fk-niebla disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-transparent ${className}`}
+    >
+      <Icono className="h-4 w-4" strokeWidth={1.75} />
     </button>
   );
 }
@@ -132,27 +152,45 @@ export function Selector(props: SelectHTMLAttributes<HTMLSelectElement>) {
 export function Migas({ items }: { items: Array<{ texto: ReactNode; a?: string }> }) {
   return (
     <nav aria-label="Ruta de navegación">
-      <ol className="flex flex-wrap items-center gap-1.5 text-[13px] text-fk-gris-texto">
+      <ol className="flex flex-wrap items-center gap-2 text-sm text-fk-gris-texto">
         {items.map((m, i) => {
           const ultima = i === items.length - 1;
           return (
-            <li key={i} className="flex items-center gap-1.5">
+            <li key={i} className="flex items-center gap-2">
               {m.a && !ultima ? (
                 <Link to={m.a} className="font-medium underline-offset-2 hover:text-fk-fiordo hover:underline">
                   {m.texto}
                 </Link>
               ) : (
-                <span aria-current={ultima ? 'page' : undefined} className={ultima ? 'text-fk-grafito' : ''}>
+                <span aria-current={ultima ? 'page' : undefined} className={ultima ? 'text-base font-semibold text-fk-fiordo tabular-nums' : ''}>
                   {m.texto}
                 </span>
               )}
-              {!ultima && <ChevronRight className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden />}
+              {!ultima && <ChevronRight className="h-4 w-4" strokeWidth={1.75} aria-hidden />}
             </li>
           );
         })}
       </ol>
     </nav>
   );
+}
+
+/** Id del lugar en la barra superior (AppLayout) donde se muestran las migas de la página. */
+export const ID_BARRA_MIGAS = 'fk-barra-migas';
+
+/** Las migas van en la barra superior; si la página no está dentro del AppLayout, quedan arriba del título. */
+function MigasEnBarra({ items, extra }: { items: Array<{ texto: ReactNode; a?: string }>; extra?: ReactNode }) {
+  // undefined: todavía no se buscó el destino (no se pinta nada, para no saltar de lugar).
+  const [destino, setDestino] = useState<HTMLElement | null | undefined>(undefined);
+  useEffect(() => setDestino(document.getElementById(ID_BARRA_MIGAS)), []);
+  if (destino === undefined) return null;
+  const contenido = (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+      <Migas items={items} />
+      {extra}
+    </div>
+  );
+  return destino ? createPortal(contenido, destino) : contenido;
 }
 
 /** Título de página con migas, descripción y acciones opcionales. */
@@ -162,6 +200,7 @@ export function EncabezadoPagina({
   descripcion,
   acciones,
   junto,
+  tituloEnBarra,
 }: {
   titulo: ReactNode;
   migas?: Array<{ texto: ReactNode; a?: string }>;
@@ -169,10 +208,26 @@ export function EncabezadoPagina({
   acciones?: ReactNode;
   /** Algo chico al lado del título (número, badge de estado). */
   junto?: ReactNode;
+  /**
+   * La última miga ya dice qué es la página (ej. "Factura C 00002-00000002"): el título no se repite
+   * en la página (queda solo para lectores de pantalla) y `junto` va en la barra, al lado de las migas.
+   */
+  tituloEnBarra?: boolean;
 }) {
+  if (tituloEnBarra) {
+    return (
+      <header className={descripcion || acciones ? 'flex flex-wrap items-center justify-between gap-4' : 'contents'}>
+        {/* Sin migas (página de primer nivel), el título solo es la "miga". */}
+        <MigasEnBarra items={migas ?? [{ texto: titulo }]} extra={junto} />
+        <h1 className="sr-only">{titulo}</h1>
+        {descripcion && <p className="max-w-[var(--fk-ancho-formulario)] text-fk-gris-texto">{descripcion}</p>}
+        {acciones && <div className="ml-auto flex flex-wrap gap-2">{acciones}</div>}
+      </header>
+    );
+  }
   return (
     <header className="space-y-2">
-      {migas && <Migas items={migas} />}
+      {migas && <MigasEnBarra items={migas} />}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2">
           <h1 className="fk-titulo">{titulo}</h1>
@@ -227,6 +282,39 @@ export function EtiquetaEstado({ estado, className }: { estado: Estado; classNam
     <Etiqueta tono={estado.tono} tachado={estado.tachado} className={className}>
       {estado.texto}
     </Etiqueta>
+  );
+}
+
+/** Badge ámbar con matraz para lo emitido en homologación (sin validez fiscal). No muestra nada en producción. */
+export function EtiquetaPrueba({
+  ambiente,
+  texto = 'Prueba',
+  soloIcono,
+  className = '',
+}: {
+  ambiente: string;
+  texto?: string;
+  /** Solo el matraz, con tooltip (grillas). */
+  soloIcono?: boolean;
+  className?: string;
+}) {
+  if (ambiente !== 'HOMOLOGACION') return null;
+  const titulo = 'Emitido en el ambiente de pruebas de ARCA (homologación): sin validez fiscal.';
+  if (soloIcono) {
+    return (
+      <span title={titulo} aria-label="Ambiente de pruebas" role="img" className={`inline-flex shrink-0 items-center text-fk-pendiente-texto ${className}`}>
+        <FlaskConical className="h-4 w-4" strokeWidth={2} aria-hidden />
+      </span>
+    );
+  }
+  return (
+    <span
+      title={titulo}
+      className={`inline-flex items-center gap-1 whitespace-nowrap rounded-fk-badge border border-fk-pendiente-texto/30 bg-fk-pendiente-fondo px-2 py-0.5 text-xs font-semibold text-fk-pendiente-texto ${className}`}
+    >
+      <FlaskConical className="h-3 w-3 shrink-0" strokeWidth={2} aria-hidden />
+      {texto}
+    </span>
   );
 }
 

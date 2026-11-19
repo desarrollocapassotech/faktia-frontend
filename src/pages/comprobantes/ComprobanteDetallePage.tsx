@@ -1,8 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState, type FormEvent, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { AlertaError, Aviso, Boton, Campo, Cargando, ContenedorTabla, EncabezadoPagina, Entrada, EtiquetaEstado, Modal, Tarjeta } from '@/components/ui';
-import { ApiError } from '@/lib/api';
+import { AlertaError, Aviso, Boton, Cargando, ContenedorTabla, EncabezadoPagina, EtiquetaEstado, EtiquetaPrueba, Tarjeta } from '@/components/ui';
 import {
   CONCEPTOS,
   CONDICIONES_IVA,
@@ -18,6 +17,7 @@ import {
 import type { Comprobante } from '@/lib/tipos';
 import { useApi } from '@/lib/useApi';
 import { EditorComprobante } from './EditorComprobante';
+import { EmitirModal, NotaModal, type ClaseNota } from './modalesComprobante';
 
 const EDITABLES = ['BORRADOR', 'RECHAZADO'];
 
@@ -51,10 +51,11 @@ export function ComprobanteDetallePage() {
           { texto: 'Comprobantes', a: '/comprobantes' },
           { texto: `${tipoLargo(c.tipo)} ${numeroComprobante(c.puntoVenta.numero, c.numero)}` },
         ]}
+        tituloEnBarra
         junto={
           <>
-            <span className="text-xl text-fk-gris-texto tabular-nums">{numeroComprobante(c.puntoVenta.numero, c.numero)}</span>
             <EtiquetaEstado estado={ESTADOS[c.estado]} />
+            <EtiquetaPrueba ambiente={c.ambiente} texto="Ambiente de pruebas" />
           </>
         }
         descripcion={
@@ -132,71 +133,14 @@ function EmitirBoton({
   deshabilitado: boolean;
   onActualizado: (c: Comprobante) => void;
 }) {
-  const { pedir } = useApi();
-  const queryClient = useQueryClient();
   const [abierto, setAbierto] = useState(false);
-  // Una clave por confirmación. Solo se reusa si la request no llegó a tener respuesta (corte de red):
-  // así reintentar no puede emitir dos veces.
-  const [clave, setClave] = useState('');
-
-  const emitir = useMutation({
-    mutationFn: () =>
-      pedir<Comprobante>(`/comprobantes/${c.id}/emitir`, 'POST', { version: c.version }, { 'Idempotency-Key': clave }),
-    onSuccess: (nuevo) => {
-      setAbierto(false);
-      onActualizado(nuevo);
-    },
-    onError: (err) => {
-      const huboRespuesta = err instanceof ApiError && err.status !== 0;
-      if (huboRespuesta) setClave(crypto.randomUUID());
-      // Rechazo de ARCA (422): el comprobante ya tiene el error guardado y se muestra arriba.
-      if (err instanceof ApiError && err.status === 422) setAbierto(false);
-      void queryClient.invalidateQueries({ queryKey: ['comprobante', c.id] });
-      void queryClient.invalidateQueries({ queryKey: ['comprobantes'] });
-    },
-  });
-
-  function abrir() {
-    setClave(crypto.randomUUID());
-    emitir.reset();
-    setAbierto(true);
-  }
-
-  const sinRespuesta = emitir.error instanceof ApiError && emitir.error.status === 0;
 
   return (
     <>
-      <Boton onClick={abrir} disabled={deshabilitado} title={deshabilitado ? 'Guardá los cambios antes de emitir' : undefined}>
+      <Boton onClick={() => setAbierto(true)} disabled={deshabilitado} title={deshabilitado ? 'Guardá los cambios antes de emitir' : undefined}>
         {c.estado === 'RECHAZADO' ? 'Reintentar emisión' : 'Emitir'}
       </Boton>
-      <Modal abierto={abierto} titulo={`Emitir ${tipoLargo(c.tipo)}`} onCerrar={() => !emitir.isPending && setAbierto(false)}>
-        <div className="space-y-4 text-sm">
-          <p>
-            Vas a pedir el CAE a ARCA para una <strong>{tipoLargo(c.tipo)}</strong> a <strong>{c.cliente.razonSocial}</strong> por{' '}
-            <strong>{dinero(c.importeTotal, c.moneda)}</strong>.
-          </p>
-          <p className="text-fk-gris-texto">
-            Una vez autorizado no se puede modificar ni borrar: para corregirlo hay que hacer una nota de crédito.
-          </p>
-          {c.ambiente === 'HOMOLOGACION' && (
-            <Aviso>Estás en el ambiente de pruebas: el comprobante no va a tener validez fiscal.</Aviso>
-          )}
-          {c.advertenciaLetra && <Aviso>{c.advertenciaLetra}</Aviso>}
-          {sinRespuesta ? (
-            <AlertaError mensaje="No hubo respuesta del servidor. Reintentá: si la primera vez llegó a emitirse, no se duplica." />
-          ) : (
-            <AlertaError error={emitir.error} />
-          )}
-          <div className="flex justify-end gap-2">
-            <Boton variante="terciario" onClick={() => setAbierto(false)} disabled={emitir.isPending}>
-              Cancelar
-            </Boton>
-            <Boton cargando={emitir.isPending} onClick={() => emitir.mutate()}>
-              {sinRespuesta ? 'Reintentar' : 'Emitir'}
-            </Boton>
-          </div>
-        </div>
-      </Modal>
+      {abierto && <EmitirModal comprobante={c} onCerrar={() => setAbierto(false)} onActualizado={onActualizado} />}
     </>
   );
 }
@@ -236,7 +180,7 @@ function VistaComprobante({ comprobante: c }: { comprobante: Comprobante }) {
   const { descargar } = useApi();
   const [errorPdf, setErrorPdf] = useState<unknown>(null);
   const [bajando, setBajando] = useState(false);
-  const [nota, setNota] = useState<'NOTA_CREDITO' | 'NOTA_DEBITO' | null>(null);
+  const [nota, setNota] = useState<ClaseNota | null>(null);
   const discriminaIva = letraDe(c.tipo) !== 'C';
   const conCae = Boolean(c.cae) && (c.estado === 'EMITIDO' || c.estado === 'ANULADO');
 
@@ -368,64 +312,6 @@ function VistaComprobante({ comprobante: c }: { comprobante: Comprobante }) {
 
       {nota && <NotaModal key={nota} factura={c} clase={nota} onCerrar={() => setNota(null)} />}
     </div>
-  );
-}
-
-function NotaModal({
-  factura,
-  clase,
-  onCerrar,
-}: {
-  factura: Comprobante;
-  clase: 'NOTA_CREDITO' | 'NOTA_DEBITO';
-  onCerrar: () => void;
-}) {
-  const { pedir } = useApi();
-  const queryClient = useQueryClient();
-  const navigate = useNavigate();
-  const [motivo, setMotivo] = useState('');
-  const texto = clase === 'NOTA_CREDITO' ? 'nota de crédito' : 'nota de débito';
-
-  const crear = useMutation({
-    mutationFn: () => pedir<Comprobante>(`/comprobantes/${factura.id}/notas`, 'POST', { clase, motivo: motivo.trim() }),
-    onSuccess: (n) => {
-      queryClient.setQueryData(['comprobante', n.id], n);
-      void queryClient.invalidateQueries({ queryKey: ['comprobante', factura.id] });
-      void queryClient.invalidateQueries({ queryKey: ['comprobantes'] });
-      navigate(`/comprobantes/${n.id}`);
-    },
-  });
-
-  function enviar(e: FormEvent) {
-    e.preventDefault();
-    crear.mutate();
-  }
-
-  return (
-    <Modal abierto titulo={`Nueva ${texto}`} onCerrar={onCerrar}>
-      <form onSubmit={enviar} className="space-y-4 text-sm">
-        <p>
-          Se crea un borrador de {texto} {letraDe(factura.tipo)} sobre {tipoLargo(factura.tipo)}{' '}
-          {numeroComprobante(factura.puntoVenta.numero, factura.numero)}, con las mismas líneas. Podés ajustar los importes antes de
-          emitirla.
-        </p>
-        {clase === 'NOTA_CREDITO' && (
-          <p className="text-fk-gris-texto">Si la nota de crédito es por el total, la factura queda anulada al emitirla.</p>
-        )}
-        <Campo etiqueta="Motivo">
-          <Entrada value={motivo} onChange={(e) => setMotivo(e.target.value)} required maxLength={500} autoFocus />
-        </Campo>
-        <AlertaError error={crear.error} />
-        <div className="flex justify-end gap-2">
-          <Boton variante="terciario" onClick={onCerrar}>
-            Cancelar
-          </Boton>
-          <Boton type="submit" cargando={crear.isPending}>
-            Crear borrador
-          </Boton>
-        </div>
-      </form>
-    </Modal>
   );
 }
 

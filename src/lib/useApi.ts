@@ -73,6 +73,31 @@ export function useApi() {
     [getToken, logout],
   );
 
+  /**
+   * Abre un archivo autenticado (PDF) en una pestaña nueva. La pestaña se abre en el click, antes del
+   * `await`: si no, el navegador la bloquea como popup.
+   */
+  const verEnPestana = useCallback(
+    async (ruta: string) => {
+      const ventana = window.open('', '_blank');
+      try {
+        const res = await fetch(`${API_URL}${ruta}`, { headers: { Authorization: `Bearer ${getToken()}` } });
+        if (!res.ok) {
+          if (res.status === 401) logout();
+          throw await errorDeRespuesta(res);
+        }
+        const url = URL.createObjectURL(await res.blob());
+        if (ventana) ventana.location.href = url;
+        else window.open(url, '_blank');
+        setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      } catch (err) {
+        ventana?.close();
+        throw err;
+      }
+    },
+    [getToken, logout],
+  );
+
   /** Trae una imagen autenticada como object URL (para previsualizar el logo). */
   const imagen = useCallback(
     async (ruta: string): Promise<string | null> => {
@@ -83,5 +108,5 @@ export function useApi() {
     [getToken],
   );
 
-  return { pedir, subir, descargar, imagen };
+  return { pedir, subir, descargar, verEnPestana, imagen };
 }

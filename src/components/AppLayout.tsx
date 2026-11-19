@@ -4,7 +4,6 @@ import { createPortal } from 'react-dom';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
-  FileSpreadsheet,
   HandCoins,
   LogOut,
   Menu,
@@ -20,13 +19,12 @@ import {
 import { useAuth } from '@/auth/auth-context';
 import type { Certificado } from '@/lib/tipos';
 import { useApi } from '@/lib/useApi';
-import { Aviso, Boton, Etiqueta, Modal } from './ui';
+import { Aviso, Boton, Etiqueta, ID_BARRA_MIGAS, Modal } from './ui';
 
 type ItemNav = { a: string; texto: string; icono: LucideIcon; secundario?: boolean };
 
 const NAV: ItemNav[] = [
   { a: '/comprobantes', texto: 'Comprobantes', icono: Receipt },
-  { a: '/importaciones', texto: 'Importaciones', icono: FileSpreadsheet },
   { a: '/recibos', texto: 'Recibos', icono: HandCoins },
   { a: '/clientes', texto: 'Clientes', icono: Users },
   // Secundario: va pegado al fondo del menú.
@@ -325,8 +323,10 @@ export function AppLayout() {
         ].join(' ')}
       >
         {/* Barra de cuenta: ambiente y usuario, sobre el fondo de la app. En mobile solo aparece si hay que avisar el ambiente. */}
-        <div className={`border-b border-fk-borde ${enPruebas ? '' : 'hidden lg:block'}`}>
+        <div className={`border-b border-fk-borde ${enPruebas ? '' : 'hidden has-[nav]:block lg:block'}`}>
           <div className="mx-auto flex min-h-12 w-full max-w-[var(--fk-ancho-contenido)] items-center gap-3 px-4 py-2 md:px-8 lg:min-h-16 lg:px-10">
+            {/* Migas de la página actual (las pone EncabezadoPagina con un portal). */}
+            <div id={ID_BARRA_MIGAS} className="min-w-0 empty:hidden" />
             {enPruebas && (
               // Lleva a terminar la configuración (certificado y paso a producción).
               <Link to="/primeros-pasos" title="Terminar la configuración para facturar de verdad" className="rounded-full hover:opacity-80">
