@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type FormEvent } from 'react';
-import { AlertaError, Aviso, Boton, Campo, Cargando, Entrada, Etiqueta, Modal, Tarjeta, Vacio } from '@/components/ui';
+import { Trash2 } from 'lucide-react';
+import { AlertaError, Aviso, Boton, BotonIcono, Campo, Cargando, Entrada, Etiqueta, Modal, Tarjeta, Vacio } from '@/components/ui';
 import { API_URL } from '@/lib/api';
 import { fechaHora, type Tono } from '@/lib/formato';
 import { useApi } from '@/lib/useApi';
@@ -108,14 +109,16 @@ export function WebhooksSeccion() {
                   >
                     Nuevo secreto
                   </Boton>
-                  <Boton
-                    variante="destructivo"
+                  <BotonIcono
+                    etiqueta="Eliminar webhook"
+                    icono={Trash2}
+                    peligro
+                    className="h-10 w-10"
+                    cargando={eliminar.isPending && eliminar.variables?.id === s.id}
                     onClick={() => {
                       if (window.confirm('¿Eliminar este webhook y su historial de envíos?')) eliminar.mutate(s);
                     }}
-                  >
-                    Eliminar
-                  </Boton>
+                  />
                 </div>
               </li>
             ))}

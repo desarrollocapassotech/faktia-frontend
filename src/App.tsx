@@ -9,10 +9,9 @@ import { NuevoComprobantePage } from './pages/comprobantes/NuevoComprobantePage'
 import { AccesoPage } from './pages/AccesoPage';
 import { ConfiguracionPage } from './pages/configuracion/ConfiguracionPage';
 import { ImportacionDetallePage } from './pages/importaciones/ImportacionDetallePage';
-import { RUTA_CREACION_MASIVA, rutaImportacion } from './lib/rutas';
+import { RUTA_CREACION_MASIVA, RUTA_RECIBO, rutaImportacion } from './lib/rutas';
 import { LoginPage } from './pages/LoginPage';
 import { PerfilPage } from './pages/PerfilPage';
-import { RecibosPage } from './pages/recibos/RecibosPage';
 import { RegistroPage } from './pages/RegistroPage';
 
 function RedirigirImportacion() {
@@ -41,10 +40,10 @@ export default function App() {
         <Route path="comprobantes/nuevo" element={<NuevoComprobantePage />} />
         <Route path="comprobantes/importaciones/:id" element={<ImportacionDetallePage />} />
         <Route path="comprobantes/:id" element={<ComprobanteDetallePage />} />
-        {/* Importaciones pasó a ser "Crear de forma masiva" dentro de Nueva factura: las URLs viejas redirigen. */}
+        {/* Importaciones y Recibos pasaron a Nuevo comprobante (Factura masiva / Recibo): las URLs viejas redirigen. */}
         <Route path="importaciones" element={<Navigate to={RUTA_CREACION_MASIVA} replace />} />
         <Route path="importaciones/:id" element={<RedirigirImportacion />} />
-        <Route path="recibos" element={<RecibosPage />} />
+        <Route path="recibos" element={<Navigate to={RUTA_RECIBO} replace />} />
         <Route path="clientes" element={<ClientesPage />} />
         <Route path="configuracion" element={<ConfiguracionPage />} />
         <Route path="perfil" element={<PerfilPage />} />

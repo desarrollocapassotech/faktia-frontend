@@ -21,7 +21,10 @@ import { leerNumero, numeroEditable } from '@/lib/numeros';
 import { claseBoton, type Variante } from './estilos';
 
 export const claseInput =
-  'min-h-10 w-full rounded-fk border border-fk-borde bg-fk-blanco px-3 py-2 text-sm text-fk-grafito placeholder:text-fk-gris-texto aria-[invalid=true]:border-fk-error-texto disabled:cursor-not-allowed disabled:bg-fk-blanco-roto disabled:text-fk-gris-texto';
+  'min-h-10 w-full rounded-fk border border-fk-borde bg-fk-blanco px-3 py-2 text-sm text-fk-grafito placeholder:text-fk-placeholder aria-[invalid=true]:border-fk-error-texto disabled:cursor-not-allowed disabled:bg-fk-blanco-roto disabled:text-fk-gris-texto';
+
+/** Mismo input, con el texto en color de placeholder (select sin elegir, fecha vacía). */
+const claseInputVacio = claseInput.replace('text-fk-grafito', 'text-fk-placeholder');
 
 /** Input de archivo: el botón nativo con forma de botón terciario. */
 export const claseArchivo =
@@ -46,18 +49,35 @@ export function Boton({
 export function BotonIcono({
   etiqueta,
   icono: Icono,
+  peligro,
+  cargando,
   className = '',
   ...props
-}: Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'> & { etiqueta: string; icono: LucideIcon }) {
+}: Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'> & {
+  etiqueta: string;
+  icono: LucideIcon;
+  /** Acción destructiva (quitar, eliminar): se pinta de rojo al pasar el mouse. */
+  peligro?: boolean;
+  cargando?: boolean;
+}) {
   return (
     <button
       type="button"
       title={etiqueta}
       aria-label={etiqueta}
       {...props}
-      className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-fk border border-fk-borde text-fk-fiordo transition-colors hover:bg-fk-niebla disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-transparent ${className}`}
+      disabled={props.disabled || cargando}
+      className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-fk border border-fk-borde transition-colors disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-transparent ${
+        peligro
+          ? 'text-fk-gris-texto hover:border-fk-error-texto/40 hover:bg-fk-error-fondo hover:text-fk-error-texto'
+          : 'text-fk-fiordo hover:bg-fk-niebla'
+      } ${className}`}
     >
-      <Icono className="h-4 w-4" strokeWidth={1.75} />
+      {cargando ? (
+        <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+      ) : (
+        <Icono className="h-4 w-4" strokeWidth={1.75} />
+      )}
     </button>
   );
 }
@@ -89,8 +109,12 @@ export function Campo({
   );
 }
 
+/** Fecha u hora sin valor: el navegador muestra "dd/mm/aaaa", que tiene que verse como placeholder. */
+const TIPOS_CON_MASCARA = ['date', 'time', 'datetime-local', 'month'];
+
 export function Entrada(props: InputHTMLAttributes<HTMLInputElement>) {
-  return <input {...props} className={`${claseInput} ${props.className ?? ''}`} />;
+  const vacia = TIPOS_CON_MASCARA.includes(props.type ?? '') && (props.value === '' || props.value == null);
+  return <input {...props} className={`${vacia ? claseInputVacio : claseInput} ${props.className ?? ''}`} />;
 }
 
 /** Contraseña con botón para mostrarla u ocultarla (login y registro). */
@@ -123,6 +147,7 @@ export function EntradaNumero({
   value,
   onValueChange,
   maxDecimales = 2,
+  sinNegativos,
   onFocus,
   onBlur,
   ...props
@@ -130,6 +155,8 @@ export function EntradaNumero({
   value: string | number | null | undefined;
   onValueChange: (valor: string) => void;
   maxDecimales?: number;
+  /** Solo cifras, punto y coma: no se puede escribir el signo menos ni letras. */
+  sinNegativos?: boolean;
 }) {
   const [editando, setEditando] = useState<string | null>(null);
   return (
@@ -145,8 +172,9 @@ export function EntradaNumero({
         onFocus?.(e);
       }}
       onChange={(e) => {
-        setEditando(e.target.value);
-        const n = leerNumero(e.target.value);
+        const texto = sinNegativos ? e.target.value.replace(/[^\d.,]/g, '') : e.target.value;
+        setEditando(texto);
+        const n = leerNumero(texto);
         onValueChange(n === null ? '' : String(n));
       }}
       onBlur={(e) => {
@@ -157,8 +185,10 @@ export function EntradaNumero({
   );
 }
 
+/** Sin nada elegido (`value=""`: "Elegí…", "Todos"), el texto se ve como placeholder; las opciones de la lista, normales. */
 export function Selector(props: SelectHTMLAttributes<HTMLSelectElement>) {
-  return <select {...props} className={`${claseInput} ${props.className ?? ''}`} />;
+  const vacio = props.value === '';
+  return <select {...props} className={`${vacio ? claseInputVacio : claseInput} [&>option]:text-fk-grafito ${props.className ?? ''}`} />;
 }
 
 /** Sin acentos ni mayúsculas: "Martín" se encuentra escribiendo "martin". */
@@ -283,7 +313,7 @@ export function SelectorBuscable({
         onClick={() => (abierto ? cerrar() : abrir())}
         className={`${claseInput} flex items-center justify-between gap-2 text-left ${className}`}
       >
-        <span className={`min-w-0 truncate ${elegida ? '' : 'text-fk-gris-texto'}`}>{elegida?.label ?? placeholder}</span>
+        <span className={`min-w-0 truncate ${elegida ? '' : 'text-fk-placeholder'}`}>{elegida?.label ?? placeholder}</span>
         <ChevronDown className="h-4 w-4 shrink-0 text-fk-gris-texto" strokeWidth={2} aria-hidden />
       </button>
       {abierto &&

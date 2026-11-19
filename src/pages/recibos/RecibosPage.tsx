@@ -1,13 +1,14 @@
 import { useQuery } from '@tanstack/react-query';
-import { useState, type FormEvent } from 'react';
-import { HandCoins, Wallet } from 'lucide-react';
-import { AlertaError, Aviso, Boton, Campo, Cargando, claseInput, EncabezadoPagina, Entrada, EntradaNumero, Selector, Tarjeta } from '@/components/ui';
+import { useMemo, useState, type FormEvent } from 'react';
+import { Plus, Trash2 } from 'lucide-react';
+import { AlertaError, Aviso, Boton, BotonIcono, Campo, Cargando, claseInput, Entrada, EntradaNumero, Selector, SelectorBuscable, Tarjeta } from '@/components/ui';
 import { cuit, dinero, fecha, hoy, numeroComprobante, tipoLargo } from '@/lib/formato';
 import type { Cliente, ComprobanteResumen, Moneda, Paginado } from '@/lib/tipos';
 import { useApi } from '@/lib/useApi';
 import { useAuth } from '@/auth/auth-context';
 
-type Tipo = 'COBRO' | 'PAGO';
+export type TipoRecibo = 'COBRO' | 'PAGO';
+type Tipo = TipoRecibo;
 
 interface Item {
   descripcion: string;
@@ -42,6 +43,14 @@ function deCentavos(c: number): string {
   return `${Math.floor(c / 100)}.${String(c % 100).padStart(2, '0')}`;
 }
 
+/** Concepto nuevo: la cantidad arranca en 1 (es obligatoria). */
+const conceptoVacio = (): Item => ({ descripcion: '', cantidad: '1', importe: '' });
+
+/** Obligatoria y mayor a 0 (vacía también es inválida). */
+function cantidadInvalida(v: string): boolean {
+  return !(Number(v) > 0);
+}
+
 function periodoDe(ymd: string): string {
   return `${MESES[Number(ymd.slice(5, 7)) - 1]} ${ymd.slice(0, 4)}`;
 }
@@ -71,24 +80,33 @@ function guardarUltimo(tenantId: string, t: Tipo, numero: string) {
   }
 }
 
-/** "0001-00000041" → "0001-00000042"; "R-7" → "R-8". Si no termina en número, no sugiere. */
+const PRIMER_NUMERO = '0001-00000001';
+
+/**
+ * "0001-00000041" → "0001-00000042"; "R-7" → "R-8". Sin recibos anteriores, el primero
+ * (0001-00000001). Si el último no termina en número, no sugiere.
+ */
 function siguienteNumero(ultimo: string): string {
+  if (!ultimo.trim()) return PRIMER_NUMERO;
   const m = /^(.*?)(\d+)$/.exec(ultimo);
   if (!m) return '';
   const siguiente = String(Number(m[2]) + 1).padStart(m[2].length, '0');
   return `${m[1]}${siguiente}`;
 }
 
-export function RecibosPage() {
+/**
+ * Formulario de un recibo (PDF; no se guarda ni va a ARCA). Vive en Nuevo comprobante → Recibo.
+ * Cambiar de tipo es montarlo de nuevo (con `key`): arranca vacío, con el número sugerido de ese tipo.
+ */
+export function FormularioRecibo({ tipo }: { tipo: Tipo }) {
   const { pedir, descargar } = useApi();
   const tenantId = useAuth().tenant?.id ?? 'sin-empresa';
-  const [tipo, setTipo] = useState<Tipo>('COBRO');
-  const [numero, setNumero] = useState(() => siguienteNumero(leerUltimo(tenantId, 'COBRO')));
+  const [numero, setNumero] = useState(() => siguienteNumero(leerUltimo(tenantId, tipo)));
   const [fechaRecibo, setFechaRecibo] = useState(hoy());
   const [moneda, setMoneda] = useState<Moneda>('ARS');
   const [clienteId, setClienteId] = useState('');
   const [contraparte, setContraparte] = useState({ nombre: '', documento: '', domicilio: '' });
-  const [items, setItems] = useState<Item[]>([{ descripcion: '', cantidad: '', importe: '' }]);
+  const [items, setItems] = useState<Item[]>(() => [conceptoVacio()]);
   const [aplicados, setAplicados] = useState<Aplicado[]>([]);
   const [periodo, setPeriodo] = useState(() => periodoDe(hoy()));
   const [medioPago, setMedioPago] = useState('');
@@ -108,19 +126,23 @@ export function RecibosPage() {
     enabled: tipo === 'COBRO' && Boolean(clienteId),
   });
 
-  const centavos = items.map((i) => aCentavos(i.importe));
-  const total = centavos.every((c) => c !== null) ? centavos.reduce<number>((s, c) => s + (c ?? 0), 0) : null;
+  const opcionesClientes = useMemo(
+    () =>
+      (clientes.data ?? [])
+        .map((c) => ({ value: c.id, label: c.razonSocial }))
+        .sort((a, b) => a.label.localeCompare(b.label, 'es', { sensitivity: 'base' })),
+    [clientes.data],
+  );
 
-  function cambiarTipo(t: Tipo) {
-    setTipo(t);
-    setNumero(siguienteNumero(leerUltimo(tenantId, t)));
-    setClienteId('');
-    setContraparte({ nombre: '', documento: '', domicilio: '' });
-    setAplicados([]);
-    setItems([{ descripcion: '', cantidad: '', importe: '' }]);
-    setError(null);
-    setListo(null);
-  }
+  const centavos = items.map((i) => aCentavos(i.importe));
+  // Subtotal = cantidad × importe (cantidad vacía = 1), redondeado al centavo. El total es la suma de los subtotales.
+  const subtotales = items.map((it, i) => {
+    const c = centavos[i];
+    return c === null || cantidadInvalida(it.cantidad) ? null : Math.round(Number(it.cantidad) * c);
+  });
+  // No se agrega otro concepto mientras alguno no tenga descripción e importe válido.
+  const hayIncompletos = items.some((it, i) => !it.descripcion.trim() || !subtotales[i]);
+  const total = subtotales.every((s) => s !== null) ? subtotales.reduce<number>((s, c) => s + (c ?? 0), 0) : null;
 
   function elegirCliente(id: string) {
     setClienteId(id);
@@ -138,14 +160,14 @@ export function RecibosPage() {
       setAplicados((a) => a.filter((x) => x.id !== f.id));
       setItems((its) => {
         const resto = its.filter((i) => i.descripcion !== `Pago ${descripcion}`);
-        return resto.length ? resto : [{ descripcion: '', cantidad: '', importe: '' }];
+        return resto.length ? resto : [conceptoVacio()];
       });
       return;
     }
     const importe = Number(f.importeTotal).toFixed(2);
     setAplicados((a) => [...a, { id: f.id, descripcion: `${descripcion} del ${fecha(f.fechaEmision)}`, importe }]);
     // Sugiere cobrar el total; si es un pago parcial, se corrige el importe del concepto.
-    setItems((its) => [...its.filter((i) => i.descripcion.trim() || i.importe.trim()), { descripcion: `Pago ${descripcion}`, cantidad: '', importe }]);
+    setItems((its) => [...its.filter((i) => i.descripcion.trim() || i.importe.trim()), { descripcion: `Pago ${descripcion}`, cantidad: '1', importe }]);
   }
 
   function cambiarItem(i: number, campo: keyof Item, valor: string) {
@@ -165,6 +187,11 @@ export function RecibosPage() {
       setError(new Error(`Concepto ${invalido + 1}: el importe no es válido.`));
       return;
     }
+    const sinCantidad = items.findIndex((it) => cantidadInvalida(it.cantidad));
+    if (sinCantidad >= 0) {
+      setError(new Error(`Concepto ${sinCantidad + 1}: la cantidad tiene que ser mayor a 0.`));
+      return;
+    }
     const body = {
       tipo,
       numero: numero.trim() || undefined,
@@ -175,10 +202,11 @@ export function RecibosPage() {
         documento: contraparte.documento.trim() || undefined,
         domicilio: contraparte.domicilio.trim() || undefined,
       },
-      items: items.map((i) => ({
-        descripcion: i.descripcion.trim(),
-        cantidad: i.cantidad.trim() || undefined,
-        importe: normalizarMonto(i.importe),
+      // El PDF muestra cantidad e importe de la línea (el subtotal).
+      items: items.map((it, i) => ({
+        descripcion: it.descripcion.trim(),
+        cantidad: Number(it.cantidad).toLocaleString('es-AR'),
+        importe: deCentavos(subtotales[i] ?? 0),
       })),
       total: deCentavos(total ?? 0),
       medioPago: medioPago.trim() || undefined,
@@ -206,91 +234,63 @@ export function RecibosPage() {
 
   return (
     <form onSubmit={generar} className="space-y-6">
-      <EncabezadoPagina
-        titulo="Recibos"
-        tituloEnBarra
-        descripcion="Se generan en PDF con tus datos y tu logo. No se guardan ni son comprobantes de ARCA: llevá tu propia numeración."
-      />
-
-      <div role="radiogroup" aria-label="Tipo de recibo" className="grid gap-3 sm:grid-cols-2">
-        {(
-          [
-            ['COBRO', 'Recibo de cobro', 'Un cliente te paga. Firmás vos.', HandCoins],
-            ['PAGO', 'Recibo de pago', 'Le pagás a un colaborador o proveedor. Firma quien cobra.', Wallet],
-          ] as const
-        ).map(([t, titulo, ayuda, Icono]) => (
-          <button
-            key={t}
-            type="button"
-            role="radio"
-            aria-checked={tipo === t}
-            onClick={() => cambiarTipo(t)}
-            className={`flex items-start gap-3 rounded-fk border bg-fk-blanco p-4 text-left transition-colors ${
-              tipo === t ? 'border-fk-fiordo ring-1 ring-fk-fiordo' : 'border-fk-borde hover:border-fk-gris-texto'
-            }`}
-          >
-            <Icono className={`mt-0.5 h-5 w-5 shrink-0 ${tipo === t ? 'text-fk-fiordo' : 'text-fk-gris-texto'}`} strokeWidth={1.75} aria-hidden />
-            <span>
-              <span className={`block text-[15px] font-semibold ${tipo === t ? 'text-fk-fiordo' : 'text-fk-grafito'}`}>{titulo}</span>
-              <span className="mt-0.5 block text-[13px] text-fk-gris-texto">{ayuda}</span>
-            </span>
-          </button>
-        ))}
-      </div>
-
-      {/* En pantallas anchas, los datos del recibo y la contraparte van lado a lado. */}
-      <div className="grid gap-6 xl:grid-cols-2">
-        <Tarjeta titulo="Datos del recibo">
-          <div className="grid gap-5 sm:grid-cols-3">
-            <Campo etiqueta="Número" ayuda="Opcional. Se sugiere el siguiente al último que generaste.">
-              <Entrada value={numero} onChange={(e) => setNumero(e.target.value)} maxLength={30} placeholder="0001-00000001" />
+      {/* Datos del recibo y de la contraparte en una sola tarjeta: dos filas en pantallas anchas. */}
+      <Tarjeta>
+        <div className="grid gap-x-5 gap-y-4 sm:grid-cols-2 lg:grid-cols-12">
+          <Campo etiqueta="Número" className="lg:col-span-2">
+            <Entrada value={numero} onChange={(e) => setNumero(e.target.value)} maxLength={30} placeholder={PRIMER_NUMERO} title="El siguiente al último que generaste" />
+          </Campo>
+          <Campo etiqueta="Fecha" className="lg:col-span-2">
+            <Entrada type="date" value={fechaRecibo} onChange={(e) => setFechaRecibo(e.target.value)} required />
+          </Campo>
+          <Campo etiqueta="Moneda" className="lg:col-span-2">
+            <Selector value={moneda} onChange={(e) => setMoneda(e.target.value as Moneda)}>
+              <option value="ARS">Pesos</option>
+              <option value="USD">Dólares</option>
+            </Selector>
+          </Campo>
+          {esCobro ? (
+            <Campo etiqueta="Cliente" className="lg:col-span-6">
+              <SelectorBuscable
+                value={clienteId}
+                onChange={elegirCliente}
+                opciones={opcionesClientes}
+                placeholder="Otro (cargar a mano)"
+                placeholderBusqueda="Buscar cliente…"
+              />
             </Campo>
-            <Campo etiqueta="Fecha">
-              <Entrada type="date" value={fechaRecibo} onChange={(e) => setFechaRecibo(e.target.value)} required />
+          ) : (
+            <Campo etiqueta="Período" className="lg:col-span-6">
+              <Entrada value={periodo} onChange={(e) => setPeriodo(e.target.value)} maxLength={60} placeholder="Opcional" />
             </Campo>
-            <Campo etiqueta="Moneda">
-              <Selector value={moneda} onChange={(e) => setMoneda(e.target.value as Moneda)}>
-                <option value="ARS">Pesos</option>
-                <option value="USD">Dólares</option>
-              </Selector>
-            </Campo>
-          </div>
-        </Tarjeta>
-
-        <Tarjeta titulo={esCobro ? 'Quién paga' : 'A quién le pagás'}>
-          <div className="grid gap-5 sm:grid-cols-2">
-            {esCobro && (
-              <Campo etiqueta="Cliente" className="sm:col-span-2" ayuda="Elegilo para completar sus datos y ver sus facturas emitidas.">
-                <Selector value={clienteId} onChange={(e) => elegirCliente(e.target.value)}>
-                  <option value="">Otro (cargar a mano)</option>
-                  {(clientes.data ?? []).map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.razonSocial}
-                    </option>
-                  ))}
-                </Selector>
-              </Campo>
-            )}
-            <Campo etiqueta="Nombre o razón social">
-              <Entrada value={contraparte.nombre} onChange={(e) => setContraparte((p) => ({ ...p, nombre: e.target.value }))} maxLength={200} required />
-            </Campo>
-            <Campo etiqueta="Documento" ayuda="Como querés que se lea: “CUIT 20-12345678-9”, “DNI 12.345.678”.">
-              <Entrada value={contraparte.documento} onChange={(e) => setContraparte((p) => ({ ...p, documento: e.target.value }))} maxLength={60} />
-            </Campo>
-            <Campo etiqueta="Domicilio" className="sm:col-span-2">
-              <Entrada value={contraparte.domicilio} onChange={(e) => setContraparte((p) => ({ ...p, domicilio: e.target.value }))} maxLength={300} />
-            </Campo>
-            {!esCobro && (
-              <Campo etiqueta="Período" ayuda="Opcional. Se menciona en el texto del recibo.">
-                <Entrada value={periodo} onChange={(e) => setPeriodo(e.target.value)} maxLength={60} />
-              </Campo>
-            )}
-          </div>
+          )}
+          <Campo etiqueta={esCobro ? 'Quién paga' : 'A quién le pagás'} className="lg:col-span-4">
+            <Entrada
+              value={contraparte.nombre}
+              onChange={(e) => setContraparte((p) => ({ ...p, nombre: e.target.value }))}
+              maxLength={200}
+              placeholder="Nombre o razón social"
+              required
+            />
+          </Campo>
+          <Campo etiqueta="Documento" className="lg:col-span-3">
+            <Entrada
+              value={contraparte.documento}
+              onChange={(e) => setContraparte((p) => ({ ...p, documento: e.target.value }))}
+              maxLength={60}
+              placeholder="CUIT 20-12345678-9"
+            />
+          </Campo>
+          <Campo etiqueta="Domicilio" className="sm:col-span-2 lg:col-span-5">
+            <Entrada value={contraparte.domicilio} onChange={(e) => setContraparte((p) => ({ ...p, domicilio: e.target.value }))} maxLength={300} />
+          </Campo>
+        </div>
+        {clientes.error != null && (
           <div className="mt-3">
             <AlertaError error={clientes.error} />
           </div>
-        </Tarjeta>
-      </div>
+        )}
+      </Tarjeta>
 
       {esCobro && clienteId && (
         <Tarjeta titulo="Facturas que cancela">
@@ -327,62 +327,96 @@ export function RecibosPage() {
       <Tarjeta
         titulo="Conceptos"
         acciones={
-          <Boton variante="terciario" onClick={() => setItems((its) => [...its, { descripcion: '', cantidad: '', importe: '' }])} disabled={items.length >= 200}>
+          <Boton
+            variante="terciario"
+            onClick={() => setItems((its) => [...its, conceptoVacio()])}
+            disabled={items.length >= 200 || hayIncompletos}
+            title={hayIncompletos ? 'Completá la descripción y el importe de los conceptos antes de agregar otro' : undefined}
+          >
+            <Plus className="h-4 w-4" strokeWidth={2.25} aria-hidden />
             Agregar concepto
           </Boton>
         }
       >
-        <div className="space-y-3">
-          {items.map((it, i) => (
-            <div key={i} className="grid gap-3 rounded-fk border border-fk-borde p-4 sm:grid-cols-12 sm:items-end">
-              <Campo etiqueta="Descripción" className="sm:col-span-6">
-                <Entrada value={it.descripcion} onChange={(e) => cambiarItem(i, 'descripcion', e.target.value)} maxLength={500} required />
-              </Campo>
-              <Campo etiqueta="Cantidad" ayuda="Opcional" className="sm:col-span-2">
-                <Entrada value={it.cantidad} onChange={(e) => cambiarItem(i, 'cantidad', e.target.value)} maxLength={40} placeholder="80 hs" />
-              </Campo>
-              <Campo
-                etiqueta="Importe"
-                className="sm:col-span-3"
-                error={it.importe !== '' && centavos[i] === null ? 'Importe no válido.' : null}
-              >
-                <EntradaNumero
-                  value={it.importe}
-                  onValueChange={(v) => cambiarItem(i, 'importe', v)}
-                  required
-                  aria-invalid={it.importe !== '' && centavos[i] === null}
-                />
-              </Campo>
-              <div className="sm:col-span-1">
-                <Boton
-                  variante="fantasma"
-                  onClick={() => setItems((its) => its.filter((_, j) => j !== i))}
-                  disabled={items.length === 1}
-                  aria-label={`Quitar concepto ${i + 1}`}
-                >
-                  Quitar
-                </Boton>
-              </div>
-            </div>
-          ))}
+        {/* Una fila por concepto; los títulos de columna solo arriba (en mobile, cada campo lleva el suyo). */}
+        <div className="hidden gap-3 pb-1.5 text-[13px] font-semibold text-fk-grafito sm:grid sm:grid-cols-12">
+          <span className="sm:col-span-5">Descripción</span>
+          <span className="sm:col-span-2">Cantidad</span>
+          <span className="sm:col-span-2">Importe</span>
+          <span className="text-right sm:col-span-2">Subtotal</span>
         </div>
-        <p className="mt-6 border-t border-fk-borde pt-4 text-right text-sm text-fk-gris-texto">
-          Total: <span className="fk-num text-lg font-semibold text-fk-fiordo">{total === null ? '—' : dinero(total / 100, moneda)}</span>
-        </p>
+        <div className="space-y-3 sm:space-y-2">
+          {items.map((it, i) => {
+            const importeMal = it.importe !== '' && centavos[i] === null;
+            const cantidadMal = cantidadInvalida(it.cantidad);
+            return (
+              <div key={i} className="grid gap-2 sm:grid-cols-12 sm:items-start sm:gap-3">
+                <label className="sm:col-span-5">
+                  <span className="mb-1 block text-[13px] font-semibold sm:sr-only">Descripción</span>
+                  <Entrada value={it.descripcion} onChange={(e) => cambiarItem(i, 'descripcion', e.target.value)} maxLength={500} required />
+                </label>
+                <label className="sm:col-span-2">
+                  <span className="mb-1 block text-[13px] font-semibold sm:sr-only">Cantidad</span>
+                  <EntradaNumero
+                    value={it.cantidad}
+                    onValueChange={(v) => cambiarItem(i, 'cantidad', v)}
+                    required
+                    sinNegativos
+                    aria-invalid={cantidadMal}
+                  />
+                  {cantidadMal && <span className="mt-1 block text-[13px] text-fk-error-texto">Tiene que ser mayor a 0.</span>}
+                </label>
+                <label className="sm:col-span-2">
+                  <span className="mb-1 block text-[13px] font-semibold sm:sr-only">Importe</span>
+                  <EntradaNumero value={it.importe} onValueChange={(v) => cambiarItem(i, 'importe', v)} required sinNegativos aria-invalid={importeMal} />
+                  {importeMal && <span className="mt-1 block text-[13px] text-fk-error-texto">Importe no válido.</span>}
+                </label>
+                <div className="flex min-h-10 items-center justify-between gap-2 sm:col-span-2 sm:justify-end">
+                  <span className="text-[13px] font-semibold sm:sr-only">Subtotal</span>
+                  <span className="fk-num font-medium text-fk-grafito">{subtotales[i] === null ? '—' : dinero(subtotales[i] / 100, moneda)}</span>
+                </div>
+                <div className="flex justify-end sm:col-span-1">
+                  <BotonIcono
+                    etiqueta={`Quitar concepto ${i + 1}`}
+                    icono={Trash2}
+                    peligro
+                    onClick={() => setItems((its) => its.filter((_, j) => j !== i))}
+                    disabled={items.length === 1}
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        {/* Misma grilla que las filas: el total queda bajo la columna Subtotal. */}
+        <div className="mt-5 grid items-baseline gap-3 border-t border-fk-borde pt-4 sm:grid-cols-12">
+          <span className="text-right text-sm text-fk-gris-texto sm:col-span-9">Total</span>
+          <span className="fk-num text-right text-lg font-semibold text-fk-fiordo sm:col-span-2">
+            {total === null ? '—' : dinero(total / 100, moneda)}
+          </span>
+        </div>
       </Tarjeta>
 
-      <Tarjeta titulo="Otros datos">
-        <div className="grid gap-5 sm:grid-cols-2">
-          <Campo etiqueta="Medio de pago" ayuda="Opcional.">
-            <Entrada list="medios-pago" value={medioPago} onChange={(e) => setMedioPago(e.target.value)} maxLength={100} />
+      <Tarjeta>
+        <div className="grid gap-x-5 gap-y-4 sm:grid-cols-12">
+          <Campo etiqueta="Medio de pago" className="sm:col-span-4">
+            <Entrada list="medios-pago" value={medioPago} onChange={(e) => setMedioPago(e.target.value)} maxLength={100} placeholder="Opcional" />
             <datalist id="medios-pago">
               {MEDIOS.map((m) => (
                 <option key={m} value={m} />
               ))}
             </datalist>
           </Campo>
-          <Campo etiqueta="Observaciones" ayuda="Opcional." className="sm:col-span-2">
-            <textarea className={`${claseInput} h-20`} value={observaciones} onChange={(e) => setObservaciones(e.target.value)} maxLength={1000} />
+          <Campo etiqueta="Observaciones" className="sm:col-span-8">
+            <textarea
+              rows={1}
+              className={`${claseInput} min-h-10 resize-y`}
+              value={observaciones}
+              onChange={(e) => setObservaciones(e.target.value)}
+              maxLength={1000}
+              placeholder="Opcional"
+            />
           </Campo>
         </div>
       </Tarjeta>

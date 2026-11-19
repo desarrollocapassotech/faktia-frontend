@@ -19,7 +19,7 @@ import { rutaImportacion } from '@/lib/rutas';
 import type { Importacion, Paginado, PlantillaMapeo } from '@/lib/tipos';
 import { useApi } from '@/lib/useApi';
 
-/** Pestaña "Crear de forma masiva" de Nueva factura: subir una planilla y el historial de lotes. */
+/** Nuevo comprobante → Factura masiva: subir una planilla y el historial de lotes. */
 export function CreacionMasiva() {
   const { pedir } = useApi();
   const [pagina, setPagina] = useState(1);

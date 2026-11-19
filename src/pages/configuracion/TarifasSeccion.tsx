@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type FormEvent } from 'react';
-import { AlertaError, Boton, Campo, Cargando, ContenedorTabla, Entrada, EntradaNumero, Selector, Tarjeta, Vacio } from '@/components/ui';
+import { Trash2 } from 'lucide-react';
+import { AlertaError, Boton, BotonIcono, Campo, Cargando, ContenedorTabla, Entrada, EntradaNumero, Selector, Tarjeta, Vacio } from '@/components/ui';
 import { ALICUOTAS, dinero, fecha, hoy, ORIGENES, UNIDADES, unidadTexto } from '@/lib/formato';
 import type { Cliente, Moneda, OrigenItem, Tarifa, Unidad } from '@/lib/tipos';
 import { useApi } from '@/lib/useApi';
@@ -68,15 +69,15 @@ export function TarifasSeccion() {
                       {fecha(t.vigenteDesde)} → {t.vigenteHasta ? fecha(t.vigenteHasta) : 'sin fin'}
                     </td>
                     <td className="text-right">
-                      <Boton
-                        variante="destructivo"
+                      <BotonIcono
+                        etiqueta="Eliminar tarifa"
+                        icono={Trash2}
+                        peligro
                         cargando={eliminar.isPending && eliminar.variables?.id === t.id}
                         onClick={() => {
                           if (window.confirm('¿Eliminar esta tarifa?')) eliminar.mutate(t);
                         }}
-                      >
-                        Eliminar
-                      </Boton>
+                      />
                     </td>
                   </tr>
                 ))}

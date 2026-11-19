@@ -4,7 +4,6 @@ import { createPortal } from 'react-dom';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
-  HandCoins,
   LogOut,
   Menu,
   PanelLeftClose,
@@ -25,7 +24,6 @@ type ItemNav = { a: string; texto: string; icono: LucideIcon; secundario?: boole
 
 const NAV: ItemNav[] = [
   { a: '/comprobantes', texto: 'Comprobantes', icono: Receipt },
-  { a: '/recibos', texto: 'Recibos', icono: HandCoins },
   { a: '/clientes', texto: 'Clientes', icono: Users },
   // Secundario: va pegado al fondo del menú.
   { a: '/configuracion', texto: 'Configuración', icono: Settings, secundario: true },

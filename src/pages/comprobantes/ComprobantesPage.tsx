@@ -1,5 +1,5 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { Eye, FileMinus, FilePlus, FileText, RotateCw, type LucideIcon } from 'lucide-react';
+import { Eye, FileMinus, FilePlus, FileText, Plus, RotateCw, type LucideIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
@@ -15,6 +15,7 @@ import {
   EtiquetaPrueba,
   FiltrosAplicados,
   Modal,
+  Selector,
   SelectorBuscable,
   Tarjeta,
   TituloOrdenable,
@@ -30,6 +31,14 @@ import { EmitirModal, NotaModal, type ClaseNota } from './modalesComprobante';
 const POR_PAGINA = 25;
 /** Mismo formato que acepta el backend: "15" o "00002-00000015". */
 const NUMERO_VALIDO = /^\s*\d{1,8}(\s*-\s*\d{1,8})?\s*$/;
+
+/** Filtro por tipo, cualquier letra. Espejo de `CLASES_COMPROBANTE` del backend. */
+type ClaseFiltro = 'FACTURA' | 'NOTA_CREDITO' | 'NOTA_DEBITO';
+const CLASES_FILTRO: Array<{ value: ClaseFiltro; label: string }> = [
+  { value: 'FACTURA', label: 'Factura' },
+  { value: 'NOTA_CREDITO', label: 'Nota de crédito' },
+  { value: 'NOTA_DEBITO', label: 'Nota de débito' },
+];
 
 /** Columnas ordenables. Espejo de `ORDENES_COMPROBANTES` del backend. */
 type OrdenComprobantes = 'comprobante' | 'numero' | 'fecha' | 'cliente' | 'total' | 'estado';
@@ -50,6 +59,7 @@ export function ComprobantesPage() {
   const { pedir, verEnPestana } = useApi();
   const navigate = useNavigate();
   const [pagina, setPagina] = useState(1);
+  const [clase, setClase] = useState<ClaseFiltro | ''>('');
   const [numero, setNumero] = useState('');
   const [fechaDesde, setFechaDesde] = useState('');
   const [fechaHasta, setFechaHasta] = useState('');
@@ -128,7 +138,16 @@ export function ComprobantesPage() {
     [clientes.data],
   );
 
+  // Mismo orden que los campos: tipo, número, cliente, desde, hasta.
   const filtrosAplicados: FiltroAplicado[] = [];
+  if (clase) {
+    filtrosAplicados.push({
+      id: 'clase',
+      titulo: 'Tipo',
+      valor: CLASES_FILTRO.find((c) => c.value === clase)?.label ?? clase,
+      quitar: () => (setClase(''), setPagina(1)),
+    });
+  }
   if (numeroBuscado) {
     filtrosAplicados.push({
       id: 'numero',
@@ -141,12 +160,6 @@ export function ComprobantesPage() {
       },
     });
   }
-  if (fechaDesde) {
-    filtrosAplicados.push({ id: 'desde', titulo: 'Desde', valor: fecha(fechaDesde), quitar: () => (setFechaDesde(''), setPagina(1)) });
-  }
-  if (fechaHasta) {
-    filtrosAplicados.push({ id: 'hasta', titulo: 'Hasta', valor: fecha(fechaHasta), quitar: () => (setFechaHasta(''), setPagina(1)) });
-  }
   if (clienteId) {
     filtrosAplicados.push({
       id: 'cliente',
@@ -155,9 +168,16 @@ export function ComprobantesPage() {
       quitar: () => (setClienteId(''), setPagina(1)),
     });
   }
+  if (fechaDesde) {
+    filtrosAplicados.push({ id: 'desde', titulo: 'Desde', valor: fecha(fechaDesde), quitar: () => (setFechaDesde(''), setPagina(1)) });
+  }
+  if (fechaHasta) {
+    filtrosAplicados.push({ id: 'hasta', titulo: 'Hasta', valor: fecha(fechaHasta), quitar: () => (setFechaHasta(''), setPagina(1)) });
+  }
   const hayFiltros = filtrosAplicados.length > 0;
 
   function limpiarFiltros() {
+    setClase('');
     setNumero('');
     setNumeroBuscado('');
     setFechaDesde('');
@@ -177,9 +197,10 @@ export function ComprobantesPage() {
   }
 
   const { data, error, isFetching } = useQuery({
-    queryKey: ['comprobantes', { pagina, numeroBuscado, fechaDesde, fechaHasta, clienteId, orden }],
+    queryKey: ['comprobantes', { pagina, clase, numeroBuscado, fechaDesde, fechaHasta, clienteId, orden }],
     queryFn: () => {
       const params = new URLSearchParams({ pagina: String(pagina), porPagina: String(POR_PAGINA) });
+      if (clase) params.set('clase', clase);
       if (numeroBuscado) params.set('numero', numeroBuscado);
       if (fechaDesde) params.set('fechaDesde', fechaDesde);
       if (fechaHasta) params.set('fechaHasta', fechaHasta);
@@ -200,6 +221,22 @@ export function ComprobantesPage() {
       <EncabezadoPagina titulo="Comprobantes" tituloEnBarra />
       <Tarjeta>
         <div className="mb-5 flex flex-wrap items-end gap-3">
+          <Campo etiqueta="Tipo" className="w-44">
+            <Selector
+              value={clase}
+              onChange={(e) => {
+                setClase(e.target.value as ClaseFiltro | '');
+                setPagina(1);
+              }}
+            >
+              <option value="">Todos</option>
+              {CLASES_FILTRO.map((c) => (
+                <option key={c.value} value={c.value}>
+                  {c.label}
+                </option>
+              ))}
+            </Selector>
+          </Campo>
           <Campo etiqueta="Número" className="w-44" error={numeroInvalido ? 'Ej.: 15 o 00002-00000015' : null}>
             <Entrada
               type="search"
@@ -208,6 +245,18 @@ export function ComprobantesPage() {
               value={numero}
               onChange={(e) => setNumero(e.target.value)}
               aria-invalid={numeroInvalido}
+            />
+          </Campo>
+          <Campo etiqueta="Cliente" className="w-64">
+            <SelectorBuscable
+              value={clienteId}
+              onChange={(v) => {
+                setClienteId(v);
+                setPagina(1);
+              }}
+              opciones={opcionesClientes}
+              placeholder="Todos los clientes"
+              placeholderBusqueda="Buscar cliente…"
             />
           </Campo>
           <Campo etiqueta="Desde" className="w-40">
@@ -232,21 +281,10 @@ export function ComprobantesPage() {
               }}
             />
           </Campo>
-          <Campo etiqueta="Cliente" className="w-64">
-            <SelectorBuscable
-              value={clienteId}
-              onChange={(v) => {
-                setClienteId(v);
-                setPagina(1);
-              }}
-              opciones={opcionesClientes}
-              placeholder="Todos los clientes"
-              placeholderBusqueda="Buscar cliente…"
-            />
-          </Campo>
           {isFetching && <span className="self-center text-xs text-fk-gris-texto">Actualizando…</span>}
           <Boton className="ml-auto" onClick={() => navigate('/comprobantes/nuevo')}>
-            Nueva factura
+            <Plus className="h-4 w-4" strokeWidth={2.25} aria-hidden />
+            Nuevo comprobante
           </Boton>
         </div>
         {filtrosAplicados.length > 0 && (
@@ -269,7 +307,7 @@ export function ComprobantesPage() {
               No hay comprobantes con esos filtros.
             </Vacio>
           ) : (
-            <Vacio accion={<Boton onClick={() => navigate('/comprobantes/nuevo')}>Nueva factura</Boton>}>Todavía no hay comprobantes.</Vacio>
+            <Vacio accion={<Boton onClick={() => navigate('/comprobantes/nuevo')}>Nuevo comprobante</Boton>}>Todavía no hay comprobantes.</Vacio>
           )
         ) : (
           <>

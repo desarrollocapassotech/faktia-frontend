@@ -12,6 +12,7 @@
   --fk-blanco: #ffffff; /* cards, tablas, inputs */
   --fk-grafito: #1b262d; /* texto principal */
   --fk-gris-texto: #4a5258; /* texto secundario */
+  --fk-placeholder: #8f969b; /* texto de ejemplo en campos vacíos: bien distinto de lo ingresado */
   --fk-niebla: #dde3e6; /* superficies secundarias, hover de filas */
   --fk-borde: #e4e2da; /* bordes y divisores */
   --fk-pino: #23423a; /* estados OK */
@@ -63,6 +64,7 @@
   --color-fk-blanco: var(--fk-blanco);
   --color-fk-grafito: var(--fk-grafito);
   --color-fk-gris-texto: var(--fk-gris-texto);
+  --color-fk-placeholder: var(--fk-placeholder);
   --color-fk-niebla: var(--fk-niebla);
   --color-fk-borde: var(--fk-borde);
   --color-fk-pino: var(--fk-pino);

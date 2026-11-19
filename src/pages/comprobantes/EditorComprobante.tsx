@@ -1,7 +1,8 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { AlertaError, Aviso, Boton, Campo, Cargando, claseInput, Entrada, EntradaNumero, Selector, Tarjeta } from '@/components/ui';
+import { Plus, Trash2 } from 'lucide-react';
+import { AlertaError, Aviso, Boton, BotonIcono, Campo, Cargando, claseInput, Entrada, EntradaNumero, Selector, Tarjeta } from '@/components/ui';
 import { ALICUOTAS, CONCEPTOS, conLetra, dinero, hoy, soloFecha, sugerirLetra, UNIDADES } from '@/lib/formato';
 import type { Cliente, Comprobante, Concepto, Emisor, Linea, Moneda, PuntoVenta, Unidad } from '@/lib/tipos';
 import { useApi } from '@/lib/useApi';
@@ -266,6 +267,10 @@ export function EditorComprobante({
   if (!emisor.data || !clientes.data || !puntos.data) return <Cargando />;
 
   const total = form.lineas.reduce((s, l) => s + importeEstimado(l, letra), 0);
+  // No se agrega otra línea mientras alguna no tenga descripción, cantidad y precio.
+  const hayLineasIncompletas = form.lineas.some(
+    (l) => !l.descripcion.trim() || !(Number(l.cantidad) > 0) || l.precioUnitario === '' || Number.isNaN(Number(l.precioUnitario)),
+  );
   const advertenciaLetra =
     !esNota && letraSugerida && letra !== letraSugerida
       ? `Para este emisor y este cliente lo habitual es Factura ${letraSugerida}. Si ARCA no acepta la letra elegida, va a rechazar el comprobante.`
@@ -396,7 +401,13 @@ export function EditorComprobante({
       <Tarjeta
         titulo="Detalle"
         acciones={
-          <Boton variante="terciario" onClick={() => cambiar('lineas', [...form.lineas, lineaVacia(form.concepto)])} disabled={form.lineas.length >= 200}>
+          <Boton
+            variante="terciario"
+            onClick={() => cambiar('lineas', [...form.lineas, lineaVacia(form.concepto)])}
+            disabled={form.lineas.length >= 200 || hayLineasIncompletas}
+            title={hayLineasIncompletas ? 'Completá descripción, cantidad y precio de las líneas antes de agregar otra' : undefined}
+          >
+            <Plus className="h-4 w-4" strokeWidth={2.25} aria-hidden />
             Agregar línea
           </Boton>
         }
@@ -408,7 +419,7 @@ export function EditorComprobante({
                 <Entrada value={l.descripcion} onChange={(e) => cambiarLinea(i, 'descripcion', e.target.value)} maxLength={500} />
               </Campo>
               <Campo etiqueta="Cantidad" className="sm:col-span-2 lg:col-span-1">
-                <EntradaNumero value={l.cantidad} onValueChange={(v) => cambiarLinea(i, 'cantidad', v)} />
+                <EntradaNumero value={l.cantidad} onValueChange={(v) => cambiarLinea(i, 'cantidad', v)} sinNegativos />
               </Campo>
               <Campo etiqueta="Unidad" className="sm:col-span-2 lg:col-span-2">
                 <Selector value={l.unidad} onChange={(e) => cambiarLinea(i, 'unidad', e.target.value as Unidad)} className="px-2">
@@ -420,10 +431,10 @@ export function EditorComprobante({
                 </Selector>
               </Campo>
               <Campo etiqueta={letra === 'C' ? 'Precio unitario' : 'Precio unit. (sin IVA)'} className="sm:col-span-3 lg:col-span-2">
-                <EntradaNumero value={l.precioUnitario} onValueChange={(v) => cambiarLinea(i, 'precioUnitario', v)} />
+                <EntradaNumero value={l.precioUnitario} onValueChange={(v) => cambiarLinea(i, 'precioUnitario', v)} sinNegativos />
               </Campo>
               <Campo etiqueta="Bonif. %" className="sm:col-span-2 lg:col-span-1">
-                <EntradaNumero value={l.bonificacionPct} onValueChange={(v) => cambiarLinea(i, 'bonificacionPct', v)} />
+                <EntradaNumero value={l.bonificacionPct} onValueChange={(v) => cambiarLinea(i, 'bonificacionPct', v)} sinNegativos />
               </Campo>
               {letra !== 'C' && (
                 <Campo etiqueta="IVA %" className="sm:col-span-2 lg:col-span-1">
@@ -438,14 +449,13 @@ export function EditorComprobante({
               )}
               <div className={`flex items-center justify-between gap-2 sm:col-span-12 ${letra === 'C' ? 'lg:col-span-3' : 'lg:col-span-2'}`}>
                 <span className="fk-num text-sm font-medium">{dinero(importeEstimado(l, letra), form.moneda)}</span>
-                <Boton
-                  variante="fantasma"
+                <BotonIcono
+                  etiqueta={`Quitar línea ${i + 1}`}
+                  icono={Trash2}
+                  peligro
                   onClick={() => cambiar('lineas', form.lineas.filter((_, j) => j !== i))}
                   disabled={form.lineas.length === 1}
-                  aria-label={`Quitar línea ${i + 1}`}
-                >
-                  Quitar
-                </Boton>
+                />
               </div>
             </div>
           ))}
