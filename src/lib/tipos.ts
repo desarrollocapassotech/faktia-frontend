@@ -153,6 +153,25 @@ export type FilaComprobantes =
       cliente: { id: string | null; razonSocial: string };
     });
 
+/** Recibo guardado (`GET /recibos/:id`). Los importes vienen como string decimal ("1234.50"). */
+export interface Recibo {
+  id: string;
+  tipo: 'COBRO' | 'PAGO';
+  numero: string | null;
+  fecha: string;
+  moneda: Moneda;
+  total: string;
+  clienteId: string | null;
+  contraparteNombre: string;
+  contraparte: { nombre: string; documento?: string; domicilio?: string };
+  items: Array<{ descripcion: string; cantidad?: string; importe: string }>;
+  comprobantesAplicados: Array<{ descripcion: string; importe: string }> | null;
+  periodo: string | null;
+  medioPago: string | null;
+  observaciones: string | null;
+  createdAt: string;
+}
+
 export interface Comprobante {
   id: string;
   tipo: TipoComprobante;

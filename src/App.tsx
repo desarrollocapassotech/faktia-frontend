@@ -12,7 +12,9 @@ import { ImportacionDetallePage } from './pages/importaciones/ImportacionDetalle
 import { RUTA_CREACION_MASIVA, RUTA_RECIBO, rutaImportacion } from './lib/rutas';
 import { LoginPage } from './pages/LoginPage';
 import { PerfilPage } from './pages/PerfilPage';
+import { ReciboDetallePage } from './pages/recibos/ReciboDetallePage';
 import { RegistroPage } from './pages/RegistroPage';
+import { VerificarReciboPage } from './pages/VerificarReciboPage';
 
 function RedirigirImportacion() {
   const { id = '' } = useParams();
@@ -26,6 +28,8 @@ export default function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/registro" element={<RegistroPage />} />
       <Route path="/acceso" element={<AccesoPage />} />
+      {/* Pública: a dónde lleva el QR de un recibo. */}
+      <Route path="/verificar/recibo/:id" element={<VerificarReciboPage />} />
       <Route
         element={
           <RequireAuth>
@@ -39,6 +43,7 @@ export default function App() {
         <Route path="comprobantes" element={<ComprobantesPage />} />
         <Route path="comprobantes/nuevo" element={<NuevoComprobantePage />} />
         <Route path="comprobantes/importaciones/:id" element={<ImportacionDetallePage />} />
+        <Route path="comprobantes/recibos/:id" element={<ReciboDetallePage />} />
         <Route path="comprobantes/:id" element={<ComprobanteDetallePage />} />
         {/* Importaciones y Recibos pasaron a Nuevo comprobante (Factura masiva / Recibo): las URLs viejas redirigen. */}
         <Route path="importaciones" element={<Navigate to={RUTA_CREACION_MASIVA} replace />} />

@@ -110,6 +110,29 @@
     text-align: right;
   }
 
+  /*
+   * La tabla va de borde a borde de la tarjeta (ContenedorTabla): la primera y la última columna
+   * llevan el mismo margen que el contenido de la tarjeta (px-4 / sm:px-6), así el texto queda alineado.
+   */
+  .fk-tabla th:first-child,
+  .fk-tabla td:first-child {
+    padding-left: 1rem;
+  }
+  .fk-tabla th:last-child,
+  .fk-tabla td:last-child {
+    padding-right: 1rem;
+  }
+  @media (min-width: 640px) {
+    .fk-tabla th:first-child,
+    .fk-tabla td:first-child {
+      padding-left: 1.5rem;
+    }
+    .fk-tabla th:last-child,
+    .fk-tabla td:last-child {
+      padding-right: 1.5rem;
+    }
+  }
+
   /* En pantallas chicas la tabla toma su ancho natural y scrollea dentro de su contenedor. */
   @media (max-width: 767px) {
     .fk-tabla {

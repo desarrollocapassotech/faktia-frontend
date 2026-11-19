@@ -51,6 +51,10 @@ function numeroFila(f: FilaComprobantes): string {
   return f.clase === 'recibo' ? (f.numeroTexto ?? '—') : numeroComprobante(f.puntoVenta.numero, f.numero);
 }
 
+function rutaDetalle(f: FilaComprobantes): string {
+  return f.clase === 'recibo' ? `/comprobantes/recibos/${f.id}` : `/comprobantes/${f.id}`;
+}
+
 /** Ruta del PDF: los recibos se regeneran desde lo guardado. */
 function rutaPdf(f: FilaComprobantes): string {
   return f.clase === 'recibo' ? `/recibos/${f.id}/pdf` : `/comprobantes/${f.id}/pdf`;
@@ -89,18 +93,11 @@ export function ComprobantesPage() {
   // Fila clickeada: modal con todas sus acciones disponibles.
   const [menu, setMenu] = useState<FilaComprobantes | null>(null);
 
-  /** Acciones de una fila: las mismas en los íconos de la columna y en el modal. Los recibos solo tienen el PDF. */
+  /** Acciones de una fila: las mismas en los íconos de la columna y en el modal. Los recibos: detalle y PDF. */
   function accionesDe(f: FilaComprobantes): AccionFila[] {
     const c = f.clase === 'comprobante' ? f : null;
     return [
-      {
-        id: 'ver',
-        texto: 'Ver detalle',
-        noDisponible: 'Los recibos no tienen detalle: abrí el PDF',
-        icono: Eye,
-        disponible: Boolean(c),
-        ejecutar: () => navigate(`/comprobantes/${f.id}`),
-      },
+      { id: 'ver', texto: 'Ver detalle', noDisponible: '', icono: Eye, disponible: true, ejecutar: () => navigate(rutaDetalle(f)) },
       {
         id: 'reemitir',
         texto: 'Volver a emitir',
@@ -369,27 +366,13 @@ export function ComprobantesPage() {
                       className="cursor-pointer transition-colors hover:bg-fk-niebla/50"
                     >
                       <td className="whitespace-nowrap">
-                        {c.clase === 'comprobante' ? (
-                          <Link
-                            to={`/comprobantes/${c.id}`}
-                            onClick={(e) => e.stopPropagation()}
-                            className="font-medium text-fk-fiordo underline-offset-2 hover:underline"
-                          >
-                            {tipoFila(c)}
-                          </Link>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              void verPdf(c);
-                            }}
-                            title="Ver PDF"
-                            className="font-medium text-fk-fiordo underline-offset-2 hover:underline"
-                          >
-                            {tipoFila(c)}
-                          </button>
-                        )}
+                        <Link
+                          to={rutaDetalle(c)}
+                          onClick={(e) => e.stopPropagation()}
+                          className="font-medium text-fk-fiordo underline-offset-2 hover:underline"
+                        >
+                          {tipoFila(c)}
+                        </Link>
                       </td>
                       <td className="fk-num">{numeroFila(c)}</td>
                       <td className="whitespace-nowrap tabular-nums">{fecha(c.fechaEmision)}</td>
