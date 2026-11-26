@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
+  HardHat,
   LogOut,
   Menu,
   PanelLeftClose,
@@ -25,10 +26,11 @@ import { Aviso, Boton, Etiqueta, ID_BARRA_MIGAS, Modal } from './ui';
 /** `modulos`: el ítem se ve si la empresa tiene alguno de esos módulos habilitado. */
 type ItemNav = { a: string; texto: string; icono: LucideIcon; secundario?: boolean; modulos?: Modulo[] };
 
-function itemsNav(): ItemNav[] {
+function itemsNav(etiquetaPlural: string): ItemNav[] {
   return [
     { a: '/comprobantes', texto: 'Comprobantes', icono: Receipt, modulos: ['comprobantes', 'recibos'] },
     { a: '/clientes', texto: 'Clientes', icono: Users },
+    { a: '/proyectos', texto: etiquetaPlural, icono: HardHat, modulos: ['proyectos'] },
     { a: '/cuenta-corriente', texto: 'Cuenta corriente', icono: Wallet, modulos: ['cuenta-corriente'] },
     // Secundario: va pegado al fondo del menú.
     { a: '/configuracion', texto: 'Configuración', icono: Settings, secundario: true },
@@ -193,7 +195,7 @@ export function AppLayout() {
   const nombreEmpresa = tenant?.nombre ?? 'Mi perfil';
   const enPerfil = location.pathname.startsWith('/perfil');
   const empresa = useEmpresa();
-  const NAV = itemsNav().filter((i) => !i.modulos || i.modulos.some((m) => empresa.tiene(m)));
+  const NAV = itemsNav(empresa.etiquetaPlural).filter((i) => !i.modulos || i.modulos.some((m) => empresa.tiene(m)));
   // El ambiente de pruebas de ARCA solo importa si la empresa factura.
   const enPruebas = tenant?.ambienteArca === 'HOMOLOGACION' && empresa.tiene('comprobantes');
   // Empresa recién registrada: en Configuración y en Primeros pasos ya está el formulario, ahí el aviso sobra.

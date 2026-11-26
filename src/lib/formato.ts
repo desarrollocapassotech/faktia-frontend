@@ -1,4 +1,6 @@
 import type {
+  EstadoProyecto,
+  ModoIvaProyecto,
   Ambiente,
   CondicionIva,
   Concepto,
@@ -212,3 +214,19 @@ export function documentoCliente(c: { tipoDocumento: TipoDocumento; numeroDocume
 export function hoy(): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' }).format(new Date());
 }
+
+export const ESTADOS_PROYECTO: Record<EstadoProyecto, Estado> = {
+  EN_CURSO: { texto: 'En curso', tono: 'pendiente' },
+  FINALIZADO: { texto: 'Finalizado', tono: 'ok' },
+  CANCELADO: { texto: 'Cancelado', tono: 'info', tachado: true },
+};
+
+export const MODOS_IVA: Record<ModoIvaProyecto, string> = {
+  MAS_IVA: 'Más IVA',
+  ACORDADO_FINAL: 'Acordado final (IVA incluido)',
+};
+
+export const MODOS_IVA_AYUDA: Record<ModoIvaProyecto, string> = {
+  MAS_IVA: 'Cada factura suma solo su IVA: el neto ya está en el acordado.',
+  ACORDADO_FINAL: 'Las facturas no suman nada: el acordado es el precio final.',
+};

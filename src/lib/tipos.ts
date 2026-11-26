@@ -172,6 +172,9 @@ export interface Recibo {
   periodo: string | null;
   medioPago: string | null;
   observaciones: string | null;
+  proyectoId?: string | null;
+  anuladoEn?: string | null;
+  motivoAnulacion?: string | null;
   createdAt: string;
 }
 
@@ -198,6 +201,7 @@ export interface Comprobante {
   importeTributos: string;
   importeTotal: string;
   observaciones: string | null;
+  proyectoId?: string | null;
   motivo: string | null;
   cae: string | null;
   caeVencimiento: string | null;
@@ -357,12 +361,14 @@ export interface Paginado<T> {
 // cliente debe) y HABER resta (cobros, notas de crédito, ajustes a su favor).
 
 export type TipoMovimientoCc = 'DEBE' | 'HABER';
-export type OrigenMovimientoCc = 'COMPROBANTE' | 'RECIBO' | 'MANUAL';
+export type OrigenMovimientoCc = 'COMPROBANTE' | 'RECIBO' | 'MANUAL' | 'ACUERDO' | 'ANULACION';
 export type EstadoMovimientoCc = 'PENDIENTE' | 'PARCIAL' | 'CANCELADO';
 
 export interface SaldoCc {
   moneda: Moneda;
   saldo: string;
+  /** Sin lo que falta certificar de sus proyectos. */
+  exigible?: string;
 }
 
 export interface TotalCc {
@@ -389,6 +395,9 @@ export interface PendienteCc {
   id: string;
   clienteId: string;
   razonSocial: string;
+  proyectoId?: string | null;
+  proyecto?: string | null;
+  certificacionId?: string | null;
   concepto: string;
   numero: string | null;
   moneda: Moneda;
@@ -403,6 +412,8 @@ export interface ResumenCc {
   porCobrar: TotalCc[];
   vencido: TotalCc[];
   proximo: TotalCc[];
+  /** Lo que falta certificar de los proyectos: está en "por cobrar", pero no vence. */
+  aCertificar?: TotalCc[];
   vencidos: PendienteCc[];
   proximos: PendienteCc[];
 }
@@ -435,6 +446,13 @@ export interface MovimientoCc {
   /** Saldo de su moneda después de este movimiento. */
   saldo: string;
   imputaciones: ImputacionCc[];
+  proyecto?: { id: string; nombre: string } | null;
+  porCertificacion?: boolean;
+  aCertificar?: string | null;
+  monedaOrigen?: Moneda | null;
+  importeOrigen?: string | null;
+  tipoCambio?: string | null;
+  anulado?: boolean;
   createdAt: string;
 }
 
@@ -449,4 +467,103 @@ export interface PreferenciasEmpresa {
   modulos: string[];
   etiquetaProyecto: string;
   etiquetaProyectoPlural: string;
+}
+
+// ─────────────────────────────── Proyectos ───────────────────────────────
+
+export type EstadoProyecto = 'EN_CURSO' | 'FINALIZADO' | 'CANCELADO';
+export type ModoIvaProyecto = 'MAS_IVA' | 'ACORDADO_FINAL';
+
+export interface SaldosProyecto {
+  montoAcordado: string | null;
+  adicionales: string;
+  totalEntregado: string;
+  saldo: string;
+  saldoExigible: string;
+  aCertificar: string;
+  vencido: string;
+}
+
+export interface ProyectoResumen {
+  id: string;
+  clienteId: string;
+  nombre: string;
+  ubicacion: string | null;
+  estado: EstadoProyecto;
+  moneda: Moneda;
+  montoAcordado: string | null;
+  modoIva: ModoIvaProyecto;
+  tipoCambioFijo: string | null;
+  fechaInicio: string | null;
+  fechaFin: string | null;
+  observaciones: string | null;
+  cliente: { id: string; razonSocial: string };
+  saldos: SaldosProyecto;
+}
+
+export interface CertificacionProyecto {
+  id: string;
+  fecha: string;
+  descripcion: string;
+  importe: string;
+  fechaVencimiento: string | null;
+  pendiente: string;
+  vencido: boolean;
+}
+
+export interface HitoProyecto {
+  id: string;
+  orden: number;
+  descripcion: string;
+  importe: string;
+  fechaVencimiento: string | null;
+  porCertificacion: boolean;
+  cobrado: string;
+  pendiente: string;
+  exigible: string;
+  certificado: string;
+  aCertificar: string;
+  vencido: boolean;
+  /** Sin cobros ni certificaciones: se puede cambiar el importe o quitar. */
+  editable: boolean;
+  certificaciones: CertificacionProyecto[];
+}
+
+export interface CargoProyecto {
+  id: string;
+  origen: OrigenMovimientoCc;
+  concepto: string;
+  numero: string | null;
+  comprobanteId: string | null;
+  fecha: string;
+  fechaVencimiento: string | null;
+  importe: string;
+  pendiente: string;
+  observaciones: string | null;
+  vencido: boolean;
+}
+
+export interface EntregaProyecto {
+  id: string;
+  origen: OrigenMovimientoCc;
+  reciboId: string | null;
+  concepto: string;
+  numero: string | null;
+  fecha: string;
+  importe: string;
+  monedaOrigen: Moneda | null;
+  importeOrigen: string | null;
+  tipoCambio: string | null;
+  observaciones: string | null;
+  anulado: boolean;
+  aCuenta: string;
+}
+
+export interface ProyectoDetalle extends Omit<ProyectoResumen, 'cliente'> {
+  cliente: { id: string; razonSocial: string; tipoDocumento: TipoDocumento; numeroDocumento: string };
+  hitos: HitoProyecto[];
+  cargos: CargoProyecto[];
+  entregas: EntregaProyecto[];
+  notasCredito: Array<{ id: string; concepto: string; numero: string | null; comprobanteId: string | null; fecha: string; importe: string }>;
+  recibos: Array<{ id: string; numero: string | null; fecha: string; moneda: Moneda; total: string; anulado: boolean; medioPago: string | null }>;
 }

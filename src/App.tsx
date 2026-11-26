@@ -16,6 +16,10 @@ import { ImportacionDetallePage } from './pages/importaciones/ImportacionDetalle
 import { RUTA_CREACION_MASIVA, RUTA_RECIBO, rutaImportacion } from './lib/rutas';
 import { LoginPage } from './pages/LoginPage';
 import { PerfilPage } from './pages/PerfilPage';
+import { NuevoProyectoPage } from './pages/proyectos/NuevoProyectoPage';
+import { ProyectoDetallePage } from './pages/proyectos/ProyectoDetallePage';
+import { ProyectosPage } from './pages/proyectos/ProyectosPage';
+import { useEmpresa } from './lib/modulos';
 import { ReciboDetallePage } from './pages/recibos/ReciboDetallePage';
 import { RegistroPage } from './pages/RegistroPage';
 import { VerificarReciboPage } from './pages/VerificarReciboPage';
@@ -23,6 +27,13 @@ import { VerificarReciboPage } from './pages/VerificarReciboPage';
 function RedirigirImportacion() {
   const { id = '' } = useParams();
   return <Navigate to={rutaImportacion(id)} replace />;
+}
+
+/** Pantalla de entrada: Comprobantes si la empresa factura; si no, sus proyectos. */
+function Inicio() {
+  const { tiene } = useEmpresa();
+  const destino = tiene('comprobantes') ? '/comprobantes' : tiene('proyectos') ? '/proyectos' : '/clientes';
+  return <Navigate to={destino} replace />;
 }
 
 /** Al entrar (el login lleva a "/"): si la empresa no terminó de configurarse, lo primero es eso. */
@@ -42,7 +53,7 @@ export default function App() {
         }
       >
         {/* Si falta configurar, AppLayout lo avisa con un modal al ingresar. */}
-        <Route index element={<Navigate to="/comprobantes" replace />} />
+        <Route index element={<Inicio />} />
         <Route path="primeros-pasos" element={<PrimerosPasosPage />} />
         <Route path="comprobantes" element={<ComprobantesPage />} />
         <Route path="comprobantes/nuevo" element={<NuevoComprobantePage />} />
@@ -57,6 +68,9 @@ export default function App() {
         <Route path="clientes/nuevo" element={<ClientePage />} />
         <Route path="clientes/:id" element={<ClienteDetallePage />} />
         <Route path="clientes/:id/editar" element={<ClientePage />} />
+        <Route path="proyectos" element={<ProyectosPage />} />
+        <Route path="proyectos/nuevo" element={<NuevoProyectoPage />} />
+        <Route path="proyectos/:id" element={<ProyectoDetallePage />} />
         <Route path="cuenta-corriente" element={<CuentaCorrientePage />} />
         <Route path="cuenta-corriente/:clienteId" element={<CuentaClientePage />} />
         <Route path="configuracion" element={<ConfiguracionPage />} />
