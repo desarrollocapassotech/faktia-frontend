@@ -42,6 +42,8 @@ function FormularioEmisor({ emisor }: { emisor: Emisor }) {
     domicilioFiscal: emisor.domicilioFiscal ?? '',
     ingresosBrutos: emisor.ingresosBrutos ?? '',
     inicioActividades: soloFecha(emisor.inicioActividades),
+    telefono: emisor.telefono ?? '',
+    emailContacto: emisor.emailContacto ?? '',
   });
   const [guardado, setGuardado] = useState(false);
   const [avisoPadron, setAvisoPadron] = useState<string | null>(null);
@@ -128,6 +130,8 @@ function FormularioEmisor({ emisor }: { emisor: Emisor }) {
         domicilioFiscal: form.domicilioFiscal.trim(),
         ingresosBrutos: form.ingresosBrutos.trim() || null,
         inicioActividades: form.inicioActividades || null,
+        telefono: form.telefono.trim() || null,
+        emailContacto: form.emailContacto.trim() || null,
       }),
     onSuccess: (emisor) => {
       queryClient.setQueryData(['emisor'], emisor);
@@ -265,6 +269,12 @@ function FormularioEmisor({ emisor }: { emisor: Emisor }) {
             }
           >
             <Entrada type="date" value={form.inicioActividades} onChange={(e) => cambiar('inicioActividades', e.target.value)} />
+          </Campo>
+          <Campo etiqueta="Teléfono" ayuda="Opcional. Va en el encabezado de presupuestos y recibos.">
+            <Entrada value={form.telefono} onChange={(e) => cambiar('telefono', e.target.value)} maxLength={60} />
+          </Campo>
+          <Campo etiqueta="Email de contacto" ayuda="Opcional. Va en el encabezado de presupuestos y recibos.">
+            <Entrada type="email" value={form.emailContacto} onChange={(e) => cambiar('emailContacto', e.target.value)} maxLength={120} />
           </Campo>
         </div>
         <AlertaError error={guardar.error} />

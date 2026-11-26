@@ -1,29 +1,33 @@
 import { useSearchParams } from 'react-router-dom';
-import { Building2, FileSpreadsheet, FileText, Plug, Rocket, ShieldCheck, Store, Tags, Webhook } from 'lucide-react';
+import { Building2, FileSpreadsheet, FileText, Plug, Rocket, ShieldCheck, SlidersHorizontal, Store, Tags, Webhook } from 'lucide-react';
 import { useAuth } from '@/auth/auth-context';
 import { EncabezadoPagina } from '@/components/ui';
+import { useEmpresa, type Modulo } from '@/lib/modulos';
 import { CertificadosSeccion } from './CertificadosSeccion';
 import { EmisorSeccion } from './EmisorSeccion';
 import { IntegracionesSeccion } from './IntegracionesSeccion';
 import { PlantillaSeccion } from './PlantillaSeccion';
 import { PlantillasMapeoSeccion } from './PlantillasMapeoSeccion';
+import { PreferenciasSeccion } from './PreferenciasSeccion';
 import { ProduccionSeccion } from './ProduccionSeccion';
 import { PuntosVentaSeccion } from './PuntosVentaSeccion';
 import { TarifasSeccion } from './TarifasSeccion';
 import { WebhooksSeccion } from './WebhooksSeccion';
 
 // requiereDatosFiscales: no se muestran hasta que la empresa cargue CUIT, razón social y demás datos del emisor.
+// modulo: la pestaña se ve solo si la empresa tiene ese módulo habilitado.
 const PESTANAS = [
   { id: 'emisor', texto: 'Datos del emisor', icono: Building2 },
-  { id: 'puntos', texto: 'Puntos de venta', icono: Store },
-  { id: 'certificados', texto: 'Certificados ARCA', icono: ShieldCheck, requiereDatosFiscales: true },
+  { id: 'preferencias', texto: 'Preferencias', icono: SlidersHorizontal },
+  { id: 'puntos', texto: 'Puntos de venta', icono: Store, modulo: 'comprobantes' },
+  { id: 'certificados', texto: 'Certificados ARCA', icono: ShieldCheck, requiereDatosFiscales: true, modulo: 'comprobantes' },
   { id: 'plantilla', texto: 'Plantilla PDF', icono: FileText },
-  { id: 'produccion', texto: 'Producción', icono: Rocket, requiereDatosFiscales: true },
-  { id: 'tarifas', texto: 'Tarifas', icono: Tags },
-  { id: 'mapeo', texto: 'Plantillas Excel', icono: FileSpreadsheet },
-  { id: 'integraciones', texto: 'Integraciones', icono: Plug },
-  { id: 'webhooks', texto: 'Webhooks', icono: Webhook },
-] as const;
+  { id: 'produccion', texto: 'Producción', icono: Rocket, requiereDatosFiscales: true, modulo: 'comprobantes' },
+  { id: 'tarifas', texto: 'Tarifas', icono: Tags, modulo: 'importaciones' },
+  { id: 'mapeo', texto: 'Plantillas Excel', icono: FileSpreadsheet, modulo: 'importaciones' },
+  { id: 'integraciones', texto: 'Integraciones', icono: Plug, modulo: 'integraciones' },
+  { id: 'webhooks', texto: 'Webhooks', icono: Webhook, modulo: 'webhooks' },
+] as const satisfies ReadonlyArray<{ id: string; texto: string; icono: unknown; requiereDatosFiscales?: boolean; modulo?: Modulo }>;
 
 type Pestana = (typeof PESTANAS)[number]['id'];
 
@@ -35,7 +39,8 @@ export function ConfiguracionPage() {
   const elegida: Pestana = PESTANAS.some((x) => x.id === p) ? (p as Pestana) : 'emisor';
   const setPestana = (id: Pestana) => setParams(id === 'emisor' ? {} : { tab: id }, { replace: true });
   const datosCompletos = tenant?.datosFiscalesCompletos !== false;
-  const visibles = PESTANAS.filter((p) => datosCompletos || !('requiereDatosFiscales' in p));
+  const { tiene } = useEmpresa();
+  const visibles = PESTANAS.filter((p) => (datosCompletos || !('requiereDatosFiscales' in p)) && (!('modulo' in p) || tiene(p.modulo)));
   // Si llega por ?tab=certificados sin datos fiscales, cae en Datos del emisor.
   const pestana: Pestana = visibles.some((p) => p.id === elegida) ? elegida : 'emisor';
 
@@ -69,6 +74,7 @@ export function ConfiguracionPage() {
         </div>
         <div className="min-w-0">
           {pestana === 'emisor' && <EmisorSeccion />}
+          {pestana === 'preferencias' && <PreferenciasSeccion />}
           {pestana === 'puntos' && <PuntosVentaSeccion />}
           {pestana === 'certificados' && <CertificadosSeccion />}
           {pestana === 'plantilla' && <PlantillaSeccion />}

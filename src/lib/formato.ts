@@ -34,7 +34,7 @@ export const TIPOS_DOCUMENTO: Record<TipoDocumento, string> = {
   CUIL: 'CUIL',
   DNI: 'DNI',
   PASAPORTE: 'Pasaporte',
-  CONSUMIDOR_FINAL: 'Sin identificar (consumidor final)',
+  CONSUMIDOR_FINAL: 'Sin documento',
 };
 
 export const CONCEPTOS: Record<Concepto, string> = {

@@ -48,6 +48,8 @@ export interface Emisor {
   domicilioFiscal: string | null;
   ingresosBrutos: string | null;
   inicioActividades: string | null;
+  telefono: string | null;
+  emailContacto: string | null;
   ambienteArca: Ambiente;
   /** Razón social, CUIT, condición IVA y domicilio cargados: sin esto no se puede facturar. */
   datosFiscalesCompletos: boolean;
@@ -86,6 +88,7 @@ export interface PlantillaPdf {
   colorPrimario: string;
   colorSecundario: string;
   textoPie: string | null;
+  firmaTexto: string | null;
   mostrarDuplicado: boolean;
   tieneLogo: boolean;
   logoMime: string | null;
@@ -440,4 +443,10 @@ export interface CuentaClienteCc {
   cliente: Pick<Cliente, 'id' | 'razonSocial' | 'tipoDocumento' | 'numeroDocumento' | 'condicionIva' | 'activo' | 'diasVencimiento' | 'monedaPreferida'>;
   saldos: SaldoCc[];
   movimientos: MovimientoCc[];
+}
+
+export interface PreferenciasEmpresa {
+  modulos: string[];
+  etiquetaProyecto: string;
+  etiquetaProyectoPlural: string;
 }

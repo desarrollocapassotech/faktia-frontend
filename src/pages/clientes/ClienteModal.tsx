@@ -146,6 +146,11 @@ export function FormularioCliente({
               ))}
             </Selector>
           </Campo>
+          {sinDocumento && (
+            <p className="self-end pb-2 text-xs text-fk-gris-texto sm:col-span-3">
+              Alcanza con el nombre para presupuestos, recibos y cuenta corriente. Para facturar con A hace falta el CUIT.
+            </p>
+          )}
           {!sinDocumento && (
             <Campo etiqueta="Número" className="sm:col-span-3">
               <div className="flex gap-2">
