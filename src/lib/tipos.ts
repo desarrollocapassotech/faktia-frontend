@@ -467,6 +467,29 @@ export interface PreferenciasEmpresa {
   modulos: string[];
   etiquetaProyecto: string;
   etiquetaProyectoPlural: string;
+  avisosEmail: boolean;
+  diasAvisoVencimiento: number;
+}
+
+export interface ItemAviso {
+  cliente: string;
+  proyecto: string | null;
+  concepto: string;
+  numero: string | null;
+  moneda: Moneda;
+  pendiente: string;
+  fechaVencimiento: string;
+}
+
+export interface VistaPreviaAviso {
+  dias: number;
+  vencidos: ItemAviso[];
+  proximos: ItemAviso[];
+}
+
+export interface HistorialAvisos {
+  transporte: 'smtp' | 'log';
+  envios: Array<{ fecha: string; destinatarios: string[]; vencidos: number; proximos: number; transporte: string }>;
 }
 
 // ─────────────────────────────── Proyectos ───────────────────────────────
