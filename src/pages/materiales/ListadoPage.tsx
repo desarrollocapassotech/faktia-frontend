@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState, type FormEvent } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ArrowDown, ArrowUp, Copy, FileText, Plus, RefreshCw, Trash2 } from 'lucide-react';
-import { AlertaError, Aviso, Boton, BotonIcono, Campo, Cargando, ContenedorTabla, EncabezadoPagina, Entrada, EntradaNumero, Selector, SelectorBuscable, Tarjeta } from '@/components/ui';
+import { BarraAcciones, AlertaError, Aviso, Boton, BotonIcono, Campo, Cargando, ContenedorTabla, EncabezadoPagina, Entrada, EntradaNumero, Selector, SelectorBuscable, Tarjeta } from '@/components/ui';
 import { claseInput } from '@/components/ui';
 import { dinero, hoy, PRECIOS_LISTADO } from '@/lib/formato';
 import { useEmpresa } from '@/lib/modulos';
@@ -317,7 +317,7 @@ function Formulario({ listado }: { listado?: ListadoMateriales }) {
       </Tarjeta>
 
       <AlertaError error={guardar.error} />
-      <div className="flex flex-wrap justify-end gap-2">
+      <BarraAcciones>
         {listado && (
           <Boton variante="destructivo" onClick={async () => (await confirmar({ titulo: '¿Borrar el listado?', mensaje: 'Se borra el listado de materiales y no se puede recuperar.', accion: 'Borrar', peligro: true })) && eliminar.mutate()} cargando={eliminar.isPending}>
             Borrar
@@ -329,7 +329,7 @@ function Formulario({ listado }: { listado?: ListadoMateriales }) {
         <Boton type="submit" cargando={guardar.isPending}>
           {listado ? 'Guardar cambios' : 'Guardar listado'}
         </Boton>
-      </div>
+      </BarraAcciones>
     </form>
   );
 }

@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Trash2 } from 'lucide-react';
-import { AlertaError, Boton, BotonIcono, Campo, Cargando, claseInput, Entrada, EntradaNumero, Selector, SelectorBuscable, Tarjeta } from '@/components/ui';
+import { BarraAcciones, AlertaError, Boton, BotonIcono, Campo, Cargando, claseInput, Entrada, EntradaNumero, Selector, SelectorBuscable, Tarjeta } from '@/components/ui';
 import { cuit, dinero, fecha, hoy, numeroComprobante, tipoLargo } from '@/lib/formato';
 import type { Cliente, ComprobanteResumen, Moneda, Paginado } from '@/lib/tipos';
 import { useApi } from '@/lib/useApi';
@@ -407,11 +407,11 @@ export function FormularioRecibo({ tipo, clienteInicial, volverACuenta }: { tipo
       </Tarjeta>
 
       <AlertaError error={error} />
-      <div className="flex justify-end">
+      <BarraAcciones>
         <Boton type="submit" cargando={generando} disabled={total === null || total <= 0}>
           Crear recibo
         </Boton>
-      </div>
+      </BarraAcciones>
     </form>
   );
 }

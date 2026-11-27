@@ -2,7 +2,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Trash2 } from 'lucide-react';
-import { AlertaError, Aviso, Boton, BotonIcono, Campo, Cargando, claseInput, Entrada, EntradaNumero, Selector, Tarjeta } from '@/components/ui';
+import { BarraAcciones, AlertaError, Aviso, Boton, BotonIcono, Campo, Cargando, claseInput, Entrada, EntradaNumero, Selector, Tarjeta } from '@/components/ui';
 import { ALICUOTAS, CONCEPTOS, conLetra, dinero, hoy, soloFecha, sugerirLetra, UNIDADES } from '@/lib/formato';
 import { useEmpresa } from '@/lib/modulos';
 import type { Cliente, Comprobante, Concepto, Emisor, Linea, Moneda, ProyectoResumen, PuntoVenta, Unidad } from '@/lib/tipos';
@@ -517,13 +517,13 @@ export function EditorComprobante({
 
       <AlertaError mensaje={errorLocal} />
       <AlertaError error={guardar.error} />
-      <div className="flex flex-wrap items-center justify-end gap-2">
+      <BarraAcciones>
         {sucio && comprobante && <span className="text-[13px] text-fk-pendiente-texto">Hay cambios sin guardar.</span>}
         {acciones?.({ sucio })}
         <Boton type="submit" variante={comprobante ? 'secundario' : 'primario'} cargando={guardar.isPending} disabled={comprobante && !sucio}>
           {comprobante ? 'Guardar cambios' : 'Guardar borrador'}
         </Boton>
-      </div>
+      </BarraAcciones>
     </form>
   );
 }

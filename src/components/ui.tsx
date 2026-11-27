@@ -70,7 +70,8 @@ export function BotonIcono({
       aria-label={etiqueta}
       {...props}
       disabled={props.disabled || cargando}
-      className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-fk border border-fk-borde transition-colors disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-transparent ${
+      // 40 px en celular (se tocan con el dedo), 32 px desde sm.
+      className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-fk border border-fk-borde transition-colors sm:h-8 sm:w-8 disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-transparent ${
         peligro
           ? 'text-fk-gris-texto hover:border-fk-error-texto/40 hover:bg-fk-error-fondo hover:text-fk-error-texto'
           : 'text-fk-fiordo hover:bg-fk-niebla'
@@ -491,8 +492,9 @@ export function EncabezadoPagina({
         <h1 className="sr-only">{titulo}</h1>
         {descripcion && <p className="max-w-[var(--fk-ancho-formulario)] text-fk-gris-texto">{descripcion}</p>}
         {/* Ocupa el espacio libre y se achica: un texto largo (un aviso) se parte en renglones en vez de empujar las acciones abajo. */}
-        {inicio && <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">{inicio}</div>}
-        {acciones && <div className="ml-auto flex flex-wrap gap-2">{acciones}</div>}
+        {/* En celular los botones se reparten el ancho (cada fila llena); desde sm, a su tamaño. */}
+        {inicio && <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2 max-sm:basis-full max-sm:[&>*]:grow">{inicio}</div>}
+        {acciones && <div className="ml-auto flex flex-wrap gap-2 max-sm:w-full max-sm:[&>*]:grow">{acciones}</div>}
       </header>
     );
   }
@@ -504,7 +506,7 @@ export function EncabezadoPagina({
           <h1 className="fk-titulo">{titulo}</h1>
           {junto}
         </div>
-        {acciones && <div className="flex flex-wrap gap-2">{acciones}</div>}
+        {acciones && <div className="flex flex-wrap gap-2 max-sm:w-full max-sm:[&>*]:grow">{acciones}</div>}
       </div>
       {descripcion && <p className="max-w-[var(--fk-ancho-formulario)] text-fk-gris-texto">{descripcion}</p>}
     </header>
@@ -566,8 +568,57 @@ export function TituloOrdenable({ titulo, orden }: { titulo: string; orden: Orde
 }
 
 /** Contenedor de tabla dentro de una Tarjeta: llega a los bordes y scrollea en horizontal en pantallas chicas. */
-export function ContenedorTabla({ children }: { children: ReactNode }) {
-  return <div className="-mx-4 overflow-x-auto sm:-mx-6">{children}</div>;
+/**
+ * Fila de acciones al pie de un formulario largo (Cancelar, Guardar…). En celular queda fija abajo
+ * mientras se scrollea, para que Guardar esté siempre a mano (`.fk-barra-acciones` en index.css); desde
+ * sm es la fila de siempre, alineada a la derecha.
+ */
+export function BarraAcciones({ children }: { children: ReactNode }) {
+  return <div className="fk-barra-acciones flex flex-wrap items-center justify-end gap-2">{children}</div>;
+}
+
+/**
+ * Contenedor de `<table className="fk-tabla">`: la tabla va de borde a borde de la tarjeta.
+ * En celular (< 640 px) cada fila se muestra como una tarjeta: la primera celda como título y las
+ * demás con el nombre de su columna al lado (`.fk-tabla-movil` en index.css). Los nombres salen solos
+ * del `<thead>`: acá se copian a cada celda (`data-etiqueta`) y se mantienen al día si cambian las filas.
+ * `movil="scroll"` deja la tabla tal cual, con scroll horizontal (para grillas que no se leen como tarjeta).
+ */
+export function ContenedorTabla({ children, movil = 'tarjetas' }: { children: ReactNode; movil?: 'tarjetas' | 'scroll' }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const raiz = ref.current;
+    if (!raiz || movil !== 'tarjetas') return;
+    const etiquetar = () => {
+      raiz.querySelectorAll('table.fk-tabla').forEach((tabla) => {
+        // La columna "Acciones" no lleva etiqueta en la tarjeta: los botones se entienden solos.
+        const titulos = Array.from(tabla.querySelectorAll('thead th')).map((th) => {
+          const texto = (th.textContent ?? '').trim();
+          return texto.toLowerCase() === 'acciones' ? '' : texto;
+        });
+        tabla.querySelectorAll('tbody tr').forEach((tr) => {
+          let columna = 0;
+          for (const celda of Array.from(tr.children) as HTMLTableCellElement[]) {
+            const ancho = celda.colSpan || 1;
+            // Una celda que ocupa varias columnas (vacío, totales) va a todo el ancho, sin etiqueta.
+            const etiqueta = ancho > 1 ? '' : (titulos[columna] ?? '');
+            if (celda.getAttribute('data-etiqueta') !== etiqueta) celda.setAttribute('data-etiqueta', etiqueta);
+            columna += ancho;
+          }
+        });
+      });
+    };
+    etiquetar();
+    // Solo cambios de filas y textos (no de atributos): poner la etiqueta no vuelve a disparar esto.
+    const observador = new MutationObserver(etiquetar);
+    observador.observe(raiz, { childList: true, subtree: true, characterData: true });
+    return () => observador.disconnect();
+  }, [movil]);
+  return (
+    <div ref={ref} className={`-mx-4 overflow-x-auto sm:-mx-6 ${movil === 'tarjetas' ? 'fk-tabla-movil' : ''}`}>
+      {children}
+    </div>
+  );
 }
 
 const TONOS: Record<Tono, string> = {
@@ -687,17 +738,23 @@ export function Modal({
   return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-end justify-center overflow-y-auto bg-fk-grafito/40 p-0 sm:items-center sm:p-4"
-      onMouseDown={onCerrar}
+      // En escritorio un clic afuera nunca cierra el modal (se pierde lo cargado sin querer): se cierra con
+      // la ✕, Cancelar o su acción. En celular, tocar afuera de la hoja inferior sí la cierra.
+      onMouseDown={() => {
+        if (!window.matchMedia('(min-width: 640px)').matches) onCerrar();
+      }}
       onSubmit={(e) => e.stopPropagation()}
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-label={titulo}
-        className={`flex max-h-[95dvh] w-full flex-col overflow-hidden rounded-t-fk-modal bg-fk-blanco shadow-fk-modal sm:max-h-[90vh] ${ANCHOS_MODAL[ancho]} sm:rounded-fk-modal`}
+        className={`flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-fk-modal bg-fk-blanco shadow-fk-modal sm:max-h-[90vh] ${ANCHOS_MODAL[ancho]} sm:rounded-fk-modal`}
         onMouseDown={(e) => e.stopPropagation()}
       >
-        <header className="flex shrink-0 items-center justify-between gap-3 border-b border-fk-borde py-3 pr-3 pl-4 sm:pl-6">
+        {/* Manija de la hoja inferior (solo celular). */}
+        <span className="mx-auto mt-2 h-1 w-10 shrink-0 rounded-fk-badge bg-fk-borde sm:hidden" aria-hidden />
+        <header className="flex shrink-0 items-center justify-between gap-3 border-b border-fk-borde py-2 pr-2 pl-4 sm:py-3 sm:pr-3 sm:pl-6">
           <h2 className="fk-subtitulo min-w-0 truncate">{titulo}</h2>
           <button
             type="button"
@@ -708,7 +765,8 @@ export function Modal({
             <X className="h-5 w-5" strokeWidth={1.75} />
           </button>
         </header>
-        <div className="min-h-0 overflow-y-auto px-4 py-5 sm:px-6 sm:py-6">{children}</div>
+        {/* Abajo deja libre la zona de la barra de gestos del celular. */}
+        <div className="min-h-0 overflow-y-auto px-4 pt-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] sm:px-6 sm:py-6">{children}</div>
       </div>
     </div>,
     document.body,

@@ -409,3 +409,105 @@
     animation: none;
   }
 }
+
+/* Tablas en celular (< 640 px, ContenedorTabla con movil="tarjetas", el default): cada fila es una
+   tarjeta. La primera celda es el título; las demás llevan el nombre de su columna (data-etiqueta, sale
+   del thead) a la izquierda y el valor a la derecha. Una celda sin etiqueta (acciones, celdas que
+   ocupan varias columnas) va sola, alineada a la derecha. */
+@media (max-width: 639px) {
+  .fk-tabla-movil .fk-tabla {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+  .fk-tabla-movil .fk-tabla thead {
+    display: none;
+  }
+  .fk-tabla-movil .fk-tabla tbody {
+    display: block;
+  }
+  .fk-tabla-movil .fk-tabla tbody tr {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--fk-borde);
+  }
+  .fk-tabla-movil .fk-tabla tbody tr:last-child {
+    border-bottom: 0;
+  }
+  .fk-tabla-movil .fk-tabla tbody td {
+    display: block;
+    height: auto;
+    padding: 0 !important;
+    border: 0;
+    text-align: right;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .fk-tabla-movil .fk-tabla tbody td::before {
+    content: attr(data-etiqueta);
+    float: left;
+    margin-right: 16px;
+    padding-top: 2px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--fk-gris-texto);
+    text-align: left;
+  }
+  .fk-tabla-movil .fk-tabla tbody td::after {
+    content: '';
+    display: table;
+    clear: both;
+  }
+  .fk-tabla-movil .fk-tabla tbody td[data-etiqueta='']::before {
+    content: none;
+  }
+  /* Título de la tarjeta. */
+  .fk-tabla-movil .fk-tabla tbody td:first-child {
+    order: -1;
+    text-align: left;
+    font-size: 1rem;
+    font-weight: 600;
+  }
+  .fk-tabla-movil .fk-tabla tbody td:first-child::before {
+    content: none;
+  }
+  /* Acciones al pie de la tarjeta. */
+  .fk-tabla-movil .fk-tabla tbody td[data-etiqueta='']:last-child:not(:first-child) {
+    margin-top: 4px;
+  }
+  .fk-tabla-movil .fk-tabla tbody td[colspan] {
+    text-align: left;
+  }
+}
+
+/* Barra de acciones de formularios largos (BarraAcciones en ui.tsx): fija abajo en celular, con los
+   botones repartiendo el ancho y la zona de la barra de gestos libre. */
+@media (max-width: 639px) {
+  .fk-barra-acciones {
+    position: sticky;
+    bottom: 0;
+    z-index: 20;
+    margin-inline: -1rem;
+    padding: 12px 1rem calc(12px + env(safe-area-inset-bottom));
+    background: color-mix(in srgb, var(--fk-blanco-roto) 96%, transparent);
+    border-top: 1px solid var(--fk-borde);
+  }
+  .fk-barra-acciones > * {
+    flex-grow: 1;
+  }
+  /* Textos (ej.: "Hay cambios sin guardar") en su propio renglón. */
+  .fk-barra-acciones > span {
+    flex-basis: 100%;
+    text-align: center;
+  }
+}
+
+/* Un <fieldset> por defecto no se achica por debajo de su contenido (min-width: min-content) y genera
+   scroll horizontal en celular: que se comporte como cualquier contenedor. */
+fieldset {
+  min-width: 0;
+}

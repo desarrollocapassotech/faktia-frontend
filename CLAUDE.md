@@ -80,7 +80,15 @@ Estilo nórdico: minimalista, mucho aire, pocos colores bien usados, nada recarg
   - Vale también para los selectores que funcionan como pestañas: filtros por estado, elección de tipo.
   - Referencias: `ConfiguracionPage.tsx`, filtros de `ImportacionDetallePage.tsx`, tipo de recibo en `RecibosPage.tsx`.
   - La fila de pestañas puede deslizarse en horizontal en mobile, **sin barra de scroll visible**.
-- **Responsive:** en mobile el sidebar pasa a menú desplegable y las tablas scrollean horizontalmente dentro de su contenedor. Nada debe generar scroll horizontal de la página.
+- **Responsive y mobile (obligatorio en todo lo nuevo):** toda pantalla y componente tiene que funcionar bien en un celular de 390 px, no solo "entrar". Nada genera scroll horizontal de la página.
+  - **Tablas:** siempre dentro de `ContenedorTabla`. En celular cada fila se ve como una tarjeta (primera columna como título, el resto con el nombre de su columna, acciones al pie): los nombres salen solos del `<thead>`, así que cada columna tiene que tener título (la de acciones puede ir vacía o decir "Acciones"). `movil="scroll"` solo para grillas que no se leen como tarjeta.
+  - **Formularios largos:** la fila de Guardar/Cancelar va en `BarraAcciones` (en celular queda fija abajo).
+  - **Encabezado:** las `acciones` de `EncabezadoPagina` se reparten el ancho en celular; no poner más de 3 botones (el resto, en la pantalla o en un menú).
+  - **Toque:** blancos de al menos 40 px en celular (`BotonIcono` ya lo hace); nada que dependa del hover.
+  - **Grillas y flex:** las celdas de un `grid`/`flex` que tienen texto largo, barras de herramientas o inputs llevan `min-w-0` (si no, no se achican y desbordan). Los `<fieldset>` ya tienen `min-width: 0` global.
+  - **Inputs:** el tamaño de letra de los inputs en celular es 16 px (global), para que iOS no haga zoom.
+  - **Revisar en 390 px** antes de dar por terminada una pantalla nueva o un cambio de layout (ver "Revisión visual").
+- **Modales:** en escritorio un clic afuera **nunca** cierra el modal (se pierde lo cargado): se cierra con la ✕, Cancelar o su acción. En celular son hojas que suben desde abajo y tocar afuera sí las cierra. Ya lo resuelve `Modal`: no armar modales a mano.
 - **Íconos:** siempre `lucide-react`, trazo 1.75, nunca emojis.
 - **Animaciones fluidas:** animar solo `transform` y `opacity` (nunca `clip-path`, `height`, `width` ni `steps()`), con curvas suaves. Si el elemento tiene sombra o máscara, la sombra va en el elemento que se mueve y la máscara en un hijo (ver `.fk-papel-*` en `index.css`). Siempre respetar `prefers-reduced-motion`.
 - **Reordenar con flechas (subir/bajar):** el movimiento se anima para que se vea qué renglón sube y cuál baja. Usar `useAnimarMovimiento()` de `src/lib/animarMovimiento.ts`:

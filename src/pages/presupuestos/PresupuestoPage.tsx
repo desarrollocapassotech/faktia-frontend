@@ -6,6 +6,7 @@ import { CompartirModal } from '@/components/CompartirModal';
 import { confirmarCambioEstado, confirmarDuplicado, confirmarEliminacion } from '@/pages/presupuestos/confirmaciones';
 import { EditorTexto, TextoFormato } from '@/components/EditorTexto';
 import {
+  BarraAcciones,
   AlertaError,
   Aviso,
   Boton,
@@ -403,7 +404,7 @@ function Formulario({ presupuesto, catalogo, diasValidez }: { presupuesto?: Pres
                     </div>
                   )}
                 </header>
-                <div className={`grid gap-3 p-3 md:items-start ${forma === 'POR_ITEM' ? 'md:grid-cols-[6rem_minmax(0,1fr)_11rem]' : 'md:grid-cols-[6rem_minmax(0,1fr)]'}`}>
+                <div className={`grid gap-3 p-3 md:items-start [&>*]:min-w-0 ${forma === 'POR_ITEM' ? 'md:grid-cols-[6rem_minmax(0,1fr)_11rem]' : 'md:grid-cols-[6rem_minmax(0,1fr)]'}`}>
                   <Campo etiqueta="Cantidad">
                     <Entrada value={it.cantidad} onChange={(x) => setItems((xs) => xs.map((y) => (y.clave === it.clave ? { ...y, cantidad: x.target.value } : y)))} maxLength={40} />
                   </Campo>
@@ -546,7 +547,7 @@ function Formulario({ presupuesto, catalogo, diasValidez }: { presupuesto?: Pres
       </fieldset>
 
       <AlertaError error={guardar.error} />
-      <div className="flex flex-wrap justify-end gap-2">
+      <BarraAcciones>
         {presupuesto?.estado === 'BORRADOR' && (
           <Boton variante="destructivo" cargando={eliminar.isPending} onClick={async () => (await confirmarEliminacion(presupuesto.numero)) && eliminar.mutate()}>
             Eliminar
@@ -562,7 +563,7 @@ function Formulario({ presupuesto, catalogo, diasValidez }: { presupuesto?: Pres
             </Boton>
           </>
         )}
-      </div>
+      </BarraAcciones>
 
       {biblioteca && (
         <BibliotecaModal

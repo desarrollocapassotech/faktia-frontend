@@ -339,9 +339,10 @@ export function AppLayout() {
       >
         {/* Barra de cuenta: ambiente y usuario, sobre el fondo de la app. En mobile solo aparece si hay que avisar el ambiente. */}
         <div className={`border-b border-fk-borde ${enPruebas ? '' : 'hidden has-[nav]:block lg:block'}`}>
-          <div className="mx-auto flex min-h-12 w-full max-w-[var(--fk-ancho-contenido)] items-center gap-3 px-4 py-2 md:px-8 lg:min-h-16 lg:px-10">
-            {/* Migas de la página actual (las pone EncabezadoPagina con un portal). */}
-            <div id={ID_BARRA_MIGAS} className="min-w-0 empty:hidden" />
+          <div className="mx-auto flex min-h-12 w-full max-w-[var(--fk-ancho-contenido)] flex-wrap items-center gap-x-3 gap-y-1.5 px-4 py-2 md:px-8 lg:min-h-16 lg:px-10">
+            {/* Migas de la página actual (las pone EncabezadoPagina con un portal). En celular van en su
+                propia línea y los avisos (ambiente, certificado) pasan abajo, sin taparlas. */}
+            <div id={ID_BARRA_MIGAS} className="min-w-0 empty:hidden max-sm:basis-full" />
             {enPruebas && (
               // Lleva a terminar la configuración (certificado y paso a producción).
               <Link to="/primeros-pasos" title="Terminar la configuración para facturar de verdad" className="rounded-full hover:opacity-80">

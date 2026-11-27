@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type FormEvent } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { UserPlus } from 'lucide-react';
-import { AlertaError, Boton, Campo, EncabezadoPagina, Entrada, EntradaNumero, Selector, SelectorBuscable, Tarjeta } from '@/components/ui';
+import { BarraAcciones, AlertaError, Boton, Campo, EncabezadoPagina, Entrada, EntradaNumero, Selector, SelectorBuscable, Tarjeta } from '@/components/ui';
 import { MODOS_IVA, MODOS_IVA_AYUDA, hoy } from '@/lib/formato';
 import { useEmpresa } from '@/lib/modulos';
 import type { Cliente, ModoIvaProyecto, Moneda, ProyectoDetalle } from '@/lib/tipos';
@@ -161,14 +161,14 @@ export function NuevoProyectoPage() {
         </Tarjeta>
       </div>
       <AlertaError error={crear.error} />
-      <div className="flex justify-end gap-2">
+      <BarraAcciones>
         <Boton variante="terciario" onClick={() => navigate('/proyectos')}>
           Cancelar
         </Boton>
         <Boton type="submit" cargando={crear.isPending} disabled={!clienteId || !nombre.trim() || descuadre}>
           Crear {etiqueta.toLowerCase()}
         </Boton>
-      </div>
+      </BarraAcciones>
       <ClienteModal
         abierto={altaCliente}
         valoresIniciales={{

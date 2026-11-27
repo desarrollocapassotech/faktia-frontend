@@ -164,8 +164,8 @@ export function EditorTexto({
   if (rotulo) {
     // Mismo espaciado que `Campo`, para alinear con los campos vecinos.
     return (
-      <div className="grid content-start gap-1.5">
-        <div className="flex h-5 items-center gap-3">
+      <div className="grid min-w-0 content-start gap-1.5">
+        <div className="flex h-5 min-w-0 items-center gap-3">
           <span className="cursor-text text-[13px] font-semibold text-fk-grafito" onClick={() => ref.current?.focus()}>
             {rotulo}
           </span>
