@@ -28,6 +28,7 @@ export function PreferenciasSeccion() {
   return (
     <div className="grid gap-4 xl:grid-cols-2 xl:items-start">
       <FormularioEtiquetas key={`${data.etiquetaProyecto}|${data.etiquetaProyectoPlural}`} preferencias={data} />
+      {data.modulos.includes('presupuestos') && <ValidezPresupuestos key={data.diasValidezPresupuesto} dias={data.diasValidezPresupuesto} />}
       {data.modulos.includes('cuenta-corriente') && <Avisos key={`${data.avisosEmail}|${data.diasAvisoVencimiento}`} preferencias={data} />}
       <Tarjeta titulo="Módulos habilitados">
         <p className="mb-3 text-sm text-fk-gris-texto">Para sumar o quitar un módulo, escribinos.</p>
@@ -207,6 +208,37 @@ function Avisos({ preferencias }: { preferencias: PreferenciasEmpresa }) {
           <p className="text-xs text-fk-gris-texto">Último envío: {fecha(historial.data.envios[0].fecha)} a {historial.data.envios[0].destinatarios.length} usuario(s).</p>
         )}
       </div>
+    </Tarjeta>
+  );
+}
+
+/** Validez por defecto de un presupuesto nuevo. */
+function ValidezPresupuestos({ dias: inicial }: { dias: number }) {
+  const { pedir } = useApi();
+  const queryClient = useQueryClient();
+  const [dias, setDias] = useState(String(inicial));
+  const guardar = useMutation({
+    mutationFn: () => pedir<PreferenciasEmpresa>('/configuracion/preferencias', 'PATCH', { diasValidezPresupuesto: Number(dias) || 15 }),
+    onSuccess: (p) => queryClient.setQueryData(['preferencias'], p),
+  });
+  return (
+    <Tarjeta titulo="Presupuestos">
+      <form
+        className="flex flex-wrap items-end gap-3"
+        onSubmit={(e) => {
+          e.preventDefault();
+          guardar.mutate();
+        }}
+      >
+        <Campo etiqueta="Validez por defecto (días)" ayuda="Al llegar a la fecha sin aceptarse ni rechazarse, pasa solo a vencido.">
+          <EntradaNumero value={dias} onValueChange={setDias} maxDecimales={0} sinNegativos />
+        </Campo>
+        <Boton type="submit" variante="terciario" cargando={guardar.isPending}>
+          Guardar
+        </Boton>
+      </form>
+      <AlertaError error={guardar.error} />
+      {guardar.isSuccess && <p className="mt-2 text-sm text-fk-pino">Guardado.</p>}
     </Tarjeta>
   );
 }

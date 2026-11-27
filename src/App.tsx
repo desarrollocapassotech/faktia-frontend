@@ -17,6 +17,9 @@ import { RUTA_CREACION_MASIVA, RUTA_RECIBO, rutaImportacion } from './lib/rutas'
 import { LoginPage } from './pages/LoginPage';
 import { PerfilPage } from './pages/PerfilPage';
 import { NuevoProyectoPage } from './pages/proyectos/NuevoProyectoPage';
+import { BibliotecaPage } from './pages/presupuestos/BibliotecaPage';
+import { PresupuestoPage } from './pages/presupuestos/PresupuestoPage';
+import { PresupuestosPage } from './pages/presupuestos/PresupuestosPage';
 import { ProyectoDetallePage } from './pages/proyectos/ProyectoDetallePage';
 import { ProyectosPage } from './pages/proyectos/ProyectosPage';
 import { useEmpresa } from './lib/modulos';
@@ -71,6 +74,10 @@ export default function App() {
         <Route path="proyectos" element={<ProyectosPage />} />
         <Route path="proyectos/nuevo" element={<NuevoProyectoPage />} />
         <Route path="proyectos/:id" element={<ProyectoDetallePage />} />
+        <Route path="presupuestos" element={<PresupuestosPage />} />
+        <Route path="presupuestos/nuevo" element={<PresupuestoPage />} />
+        <Route path="presupuestos/biblioteca" element={<BibliotecaPage />} />
+        <Route path="presupuestos/:id" element={<PresupuestoPage />} />
         <Route path="cuenta-corriente" element={<CuentaCorrientePage />} />
         <Route path="cuenta-corriente/:clienteId" element={<CuentaClientePage />} />
         <Route path="configuracion" element={<ConfiguracionPage />} />

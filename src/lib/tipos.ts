@@ -469,6 +469,7 @@ export interface PreferenciasEmpresa {
   etiquetaProyectoPlural: string;
   avisosEmail: boolean;
   diasAvisoVencimiento: number;
+  diasValidezPresupuesto: number;
 }
 
 export interface ItemAviso {
@@ -589,4 +590,78 @@ export interface ProyectoDetalle extends Omit<ProyectoResumen, 'cliente'> {
   entregas: EntregaProyecto[];
   notasCredito: Array<{ id: string; concepto: string; numero: string | null; comprobanteId: string | null; fecha: string; importe: string }>;
   recibos: Array<{ id: string; numero: string | null; fecha: string; moneda: Moneda; total: string; anulado: boolean; medioPago: string | null }>;
+}
+
+// ─────────────────────────────── Presupuestos ───────────────────────────────
+
+export type EstadoPresupuesto = 'BORRADOR' | 'ENVIADO' | 'ACEPTADO' | 'RECHAZADO' | 'VENCIDO';
+export type FormaCotizar = 'POR_ITEM' | 'GLOBAL' | 'SUPERFICIE';
+export type IvaPresupuesto = 'SIN_IVA' | 'NO_INCLUYE' | 'DISCRIMINADO';
+
+export interface Superficie {
+  ancho?: string | null;
+  largo?: string | null;
+  alturaLateral?: string | null;
+  alturaCumbrera?: string | null;
+  metrosCuadrados?: string | null;
+  precioMetroCuadrado?: string | null;
+}
+
+export interface PresupuestoResumen {
+  id: string;
+  numero: string;
+  fecha: string;
+  fechaVencimiento: string;
+  estado: EstadoPresupuesto;
+  titulo: string | null;
+  lugar: string | null;
+  moneda: Moneda;
+  total: string;
+  cliente: { id: string; razonSocial: string };
+  proyectoId: string | null;
+}
+
+export interface Presupuesto {
+  id: string;
+  numero: string;
+  fecha: string;
+  fechaVencimiento: string;
+  estado: EstadoPresupuesto;
+  clienteId: string;
+  titulo: string | null;
+  lugar: string | null;
+  moneda: Moneda;
+  formaCotizar: FormaCotizar;
+  superficie: Superficie | null;
+  importeGlobal: string | null;
+  ivaModo: IvaPresupuesto;
+  alicuotaIva: string;
+  subtotal: string;
+  iva: string;
+  total: string;
+  observaciones: Array<{ texto: string; valor?: string }>;
+  notas: string | null;
+  cliente: { razonSocial: string; documento: string | null; domicilio: string | null };
+  proyectoId: string | null;
+  duplicadoDeId: string | null;
+  editable: boolean;
+  items: Array<{ id: string; orden: number; cantidad: string | null; descripcion: string; importe: string | null }>;
+}
+
+export interface ItemBiblioteca {
+  id: string;
+  titulo: string;
+  descripcion: string;
+  categoria: string | null;
+  activo: boolean;
+}
+
+export interface ObservacionCatalogo {
+  id: string;
+  texto: string;
+  llevaValor: boolean;
+  valorSugerido: string | null;
+  porDefecto: boolean;
+  orden: number;
+  activo: boolean;
 }

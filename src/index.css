@@ -149,3 +149,10 @@
     font-size: 16px;
   }
 }
+
+/* Texto con formato limitado (presupuestos): colores de la paleta y párrafos con poco aire. */
+.fk-texto-formato p { margin: 0 0 0.25rem; }
+.fk-texto-formato .c-rojo { color: var(--fk-error-texto); }
+.fk-texto-formato .c-azul { color: var(--fk-fiordo); }
+.fk-texto-formato .c-verde { color: var(--fk-pino); }
+.fk-texto-formato .c-naranja { color: var(--fk-terracota-texto); }

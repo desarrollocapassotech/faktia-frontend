@@ -1,4 +1,7 @@
 import type {
+  EstadoPresupuesto,
+  FormaCotizar,
+  IvaPresupuesto,
   EstadoProyecto,
   ModoIvaProyecto,
   Ambiente,
@@ -230,3 +233,29 @@ export const MODOS_IVA_AYUDA: Record<ModoIvaProyecto, string> = {
   MAS_IVA: 'Cada factura suma solo su IVA: el neto ya está en el acordado.',
   ACORDADO_FINAL: 'Las facturas no suman nada: el acordado es el precio final.',
 };
+
+export const ESTADOS_PRESUPUESTO: Record<EstadoPresupuesto, Estado> = {
+  BORRADOR: { texto: 'Borrador', tono: 'info' },
+  ENVIADO: { texto: 'Enviado', tono: 'pendiente' },
+  ACEPTADO: { texto: 'Aceptado', tono: 'ok' },
+  RECHAZADO: { texto: 'Rechazado', tono: 'error' },
+  VENCIDO: { texto: 'Vencido', tono: 'info', tachado: true },
+};
+
+export const FORMAS_COTIZAR: Record<FormaCotizar, string> = {
+  POR_ITEM: 'Por ítem',
+  GLOBAL: 'Total global',
+  SUPERFICIE: 'Por superficie',
+};
+
+export const IVA_PRESUPUESTO: Record<IvaPresupuesto, string> = {
+  NO_INCLUYE: 'Aclarar que no incluye IVA',
+  DISCRIMINADO: 'IVA discriminado y total con IVA',
+  SIN_IVA: 'Sin mencionar el IVA',
+};
+
+/** "Plazo de obra: {valor}." con su valor. */
+export function textoObservacion(o: { texto: string; valor?: string }): string {
+  if (o.texto.includes('{valor}')) return o.texto.replace('{valor}', o.valor?.trim() || '…');
+  return o.valor ? `${o.texto} ${o.valor}` : o.texto;
+}

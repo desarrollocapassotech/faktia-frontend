@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
+  FileText,
   HardHat,
   LogOut,
   Menu,
@@ -32,6 +33,7 @@ function itemsNav(etiquetaPlural: string): ItemNav[] {
     { a: '/clientes', texto: 'Clientes', icono: Users },
     { a: '/proyectos', texto: etiquetaPlural, icono: HardHat, modulos: ['proyectos'] },
     { a: '/cuenta-corriente', texto: 'Cuenta corriente', icono: Wallet, modulos: ['cuenta-corriente'] },
+    { a: '/presupuestos', texto: 'Presupuestos', icono: FileText, modulos: ['presupuestos'] },
     // Secundario: va pegado al fondo del menú.
     { a: '/configuracion', texto: 'Configuración', icono: Settings, secundario: true },
   ];
