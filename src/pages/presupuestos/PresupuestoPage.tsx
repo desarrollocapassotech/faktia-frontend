@@ -19,6 +19,7 @@ import {
   SelectorBuscable,
   Tarjeta,
 } from '@/components/ui';
+import { useAnimarMovimiento } from '@/lib/animarMovimiento';
 import { dinero, ESTADOS_PRESUPUESTO, hoy, IVA_PRESUPUESTO, textoObservacion } from '@/lib/formato';
 import { useEmpresa } from '@/lib/modulos';
 import type { Cliente, EstadoPresupuesto, FormaCotizar, ItemBiblioteca, IvaPresupuesto, Moneda, ObservacionCatalogo, PreferenciasEmpresa, Presupuesto, Superficie } from '@/lib/tipos';
@@ -116,6 +117,8 @@ function Formulario({ presupuesto, catalogo, diasValidez }: { presupuesto?: Pres
     if (forma === 'SUPERFICIE' && Number(superficie.precioMetroCuadrado)) return Math.round(m2 * Number(superficie.precioMetroCuadrado) * 100) / 100;
     return Number(importeGlobal) || 0;
   }, [forma, items, importeGlobal, superficie.precioMetroCuadrado, m2]);
+  // No se agrega un ítem nuevo mientras haya alguno sin descripción (o sin importe, al cotizar por ítem).
+  const hayIncompletos = items.some((i) => !i.descripcion.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim() || (forma === 'POR_ITEM' && !i.importe));
   const iva = ivaModo === 'DISCRIMINADO' ? Math.round(subtotal * Number(alicuota)) / 100 : 0;
 
   const body = () => ({
@@ -146,6 +149,11 @@ function Formulario({ presupuesto, catalogo, diasValidez }: { presupuesto?: Pres
     mutationFn: () => (presupuesto ? pedir<Presupuesto>(`/presupuestos/${presupuesto.id}`, 'PUT', body()) : pedir<Presupuesto>('/presupuestos', 'POST', body())),
     onSuccess: alGuardar,
   });
+  // Al cambiar el cliente se borra el error del último guardado (ej.: "Elegí un cliente.").
+  const elegirCliente = (id: string) => {
+    setClienteId(id);
+    guardar.reset();
+  };
   const estado = useMutation({
     mutationFn: (e: Exclude<EstadoPresupuesto, 'VENCIDO'>) => pedir<Presupuesto>(`/presupuestos/${presupuesto!.id}/estado`, 'PATCH', { estado: e }),
     onSuccess: alGuardar,
@@ -180,13 +188,16 @@ function Formulario({ presupuesto, catalogo, diasValidez }: { presupuesto?: Pres
     guardar.mutate();
   }
 
-  const mover = (i: number, d: -1 | 1) =>
+  const animarItems = useAnimarMovimiento();
+  const mover = (i: number, d: -1 | 1) => {
+    animarItems.capturar();
     setItems((xs) => {
       const c = [...xs];
       const [x] = c.splice(i, 1);
       c.splice(i + d, 0, x);
       return c;
     });
+  };
   const sup = (k: keyof Superficie, v: string) => setSuperficie((s) => ({ ...s, [k]: v }));
   const $ = (v: number | string) => dinero(v, moneda);
   const e = presupuesto?.estado;
@@ -266,14 +277,14 @@ function Formulario({ presupuesto, catalogo, diasValidez }: { presupuesto?: Pres
       )}
 
       <fieldset disabled={!editable} className="space-y-6">
-        <div className="grid gap-6 xl:grid-cols-2 xl:items-start">
+        <div className="grid gap-6 xl:grid-cols-2">
           <Tarjeta titulo="Cliente y trabajo">
             <div className="grid gap-4 sm:grid-cols-2">
               <Campo etiqueta="Cliente" className="sm:col-span-2">
                 <div className="flex gap-2">
                   <SelectorBuscable
                     value={clienteId}
-                    onChange={setClienteId}
+                    onChange={elegirCliente}
                     placeholder="Elegí un cliente"
                     aria-label="Cliente"
                     opciones={(clientes.data ?? []).filter((c) => c.activo || c.id === clienteId).map((c) => ({ value: c.id, label: c.razonSocial }))}
@@ -321,68 +332,89 @@ function Formulario({ presupuesto, catalogo, diasValidez }: { presupuesto?: Pres
           </Tarjeta>
         </div>
 
+        {/* Sin título: las pestañas de forma de cotizar ocupan el encabezado de la tarjeta. */}
         <Tarjeta
-          titulo="Ítems"
           acciones={
-            editable && (
-              <Boton variante="terciario" onClick={() => setBiblioteca(true)}>
-                <BookOpen className="h-4 w-4" strokeWidth={1.75} aria-hidden />
-                Agregar de la biblioteca
-              </Boton>
-            )
+            <div className="flex w-full flex-wrap items-center justify-between gap-3">
+              <div role="tablist" aria-label="Forma de cotizar" className="flex min-w-0 gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                {FORMAS.map((f) => (
+                  <button
+                    key={f.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={forma === f.id}
+                    title={f.ayuda}
+                    onClick={() => setForma(f.id)}
+                    className={`inline-flex min-h-10 shrink-0 items-center gap-2 rounded-fk px-3 text-sm whitespace-nowrap transition-colors ${
+                      forma === f.id ? 'bg-fk-niebla font-semibold text-fk-fiordo' : 'font-medium text-fk-gris-texto hover:bg-fk-niebla/60 hover:text-fk-grafito'
+                    }`}
+                  >
+                    <f.icono className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+                    {f.texto}
+                  </button>
+                ))}
+              </div>
+              {editable && (
+                <Boton variante="terciario" onClick={() => setBiblioteca(true)}>
+                  <BookOpen className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+                  Agregar de la biblioteca
+                </Boton>
+              )}
+            </div>
           }
         >
-          <div role="tablist" aria-label="Forma de cotizar" className="mb-5 flex gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {FORMAS.map((f) => (
-              <button
-                key={f.id}
-                type="button"
-                role="tab"
-                aria-selected={forma === f.id}
-                title={f.ayuda}
-                onClick={() => setForma(f.id)}
-                className={`inline-flex min-h-10 shrink-0 items-center gap-2 rounded-fk px-3 text-sm whitespace-nowrap transition-colors ${
-                  forma === f.id ? 'bg-fk-niebla font-semibold text-fk-fiordo' : 'font-medium text-fk-gris-texto hover:bg-fk-niebla/60 hover:text-fk-grafito'
-                }`}
-              >
-                <f.icono className="h-4 w-4" strokeWidth={1.75} aria-hidden />
-                {f.texto}
-              </button>
-            ))}
-          </div>
           <div className="space-y-3">
             {items.map((it, i) => (
-              <div key={it.clave} className="grid gap-2 rounded-fk border border-fk-borde p-3 md:grid-cols-[6rem_minmax(0,1fr)_auto]">
-                <Campo etiqueta="Cantidad">
-                  <Entrada value={it.cantidad} onChange={(x) => setItems((xs) => xs.map((y) => (y.clave === it.clave ? { ...y, cantidad: x.target.value } : y)))} maxLength={40} />
-                </Campo>
-                <div className="space-y-2">
-                  <span className="text-[13px] font-semibold text-fk-grafito">Descripción</span>
+              <section key={it.clave} ref={animarItems.ref(it.clave)} aria-label={`Ítem ${i + 1}`} className="overflow-hidden rounded-fk border border-fk-borde bg-fk-blanco">
+                {/* Encabezado de cada ítem: número y acciones, sobre blanco roto para separar un ítem del otro. */}
+                <header className="flex min-h-11 items-center justify-between gap-2 border-b border-fk-borde bg-fk-blanco-roto py-1 pr-1 pl-3">
+                  <span className="fk-etiqueta tabular-nums">Ítem {i + 1}</span>
+                  {editable && (
+                    <div className="flex gap-1">
+                      <BotonIcono etiqueta="Subir" icono={ArrowUp} disabled={i === 0} onClick={() => mover(i, -1)} />
+                      <BotonIcono etiqueta="Bajar" icono={ArrowDown} disabled={i === items.length - 1} onClick={() => mover(i, 1)} />
+                      <BotonIcono etiqueta="Quitar ítem" icono={Trash2} peligro onClick={() => setItems((xs) => xs.filter((y) => y.clave !== it.clave))} />
+                    </div>
+                  )}
+                </header>
+                <div className={`grid gap-3 p-3 md:items-start ${forma === 'POR_ITEM' ? 'md:grid-cols-[6rem_minmax(0,1fr)_11rem]' : 'md:grid-cols-[6rem_minmax(0,1fr)]'}`}>
+                  <Campo etiqueta="Cantidad">
+                    <Entrada value={it.cantidad} onChange={(x) => setItems((xs) => xs.map((y) => (y.clave === it.clave ? { ...y, cantidad: x.target.value } : y)))} maxLength={40} />
+                  </Campo>
                   {editable ? (
-                    <EditorTexto etiqueta={`Descripción del ítem ${i + 1}`} value={it.descripcion} onChange={(h) => setItems((xs) => xs.map((y) => (y.clave === it.clave ? { ...y, descripcion: h } : y)))} />
+                    <EditorTexto
+                      rotulo="Descripción"
+                      etiqueta={`Descripción del ítem ${i + 1}`}
+                      minAlto="min-h-9"
+                      value={it.descripcion}
+                      onChange={(h) => setItems((xs) => xs.map((y) => (y.clave === it.clave ? { ...y, descripcion: h } : y)))}
+                    />
                   ) : (
-                    <TextoFormato html={it.descripcion} className="rounded-fk border border-fk-borde px-3 py-2" />
+                    <div className="grid content-start gap-1.5">
+                      <span className="text-[13px] font-semibold text-fk-grafito">Descripción</span>
+                      <TextoFormato html={it.descripcion} className="rounded-fk border border-fk-borde px-3 py-2" />
+                    </div>
                   )}
                   {forma === 'POR_ITEM' && (
-                    <Campo etiqueta="Importe" className="max-w-xs">
+                    <Campo etiqueta="Importe">
                       <EntradaNumero value={it.importe} onValueChange={(v) => setItems((xs) => xs.map((y) => (y.clave === it.clave ? { ...y, importe: v } : y)))} sinNegativos />
                     </Campo>
                   )}
                 </div>
-                {editable && (
-                  <div className="flex gap-1 md:flex-col">
-                    <BotonIcono etiqueta="Subir" icono={ArrowUp} disabled={i === 0} onClick={() => mover(i, -1)} />
-                    <BotonIcono etiqueta="Bajar" icono={ArrowDown} disabled={i === items.length - 1} onClick={() => mover(i, 1)} />
-                    <BotonIcono etiqueta="Quitar ítem" icono={Trash2} peligro onClick={() => setItems((xs) => xs.filter((y) => y.clave !== it.clave))} />
-                  </div>
-                )}
-              </div>
+              </section>
             ))}
             {editable && (
-              <Boton variante="terciario" onClick={() => setItems((xs) => [...xs, nuevoItem()])}>
-                <Plus className="h-4 w-4" strokeWidth={2} aria-hidden />
-                Agregar ítem
-              </Boton>
+              <div className="flex flex-wrap items-center gap-3">
+                <Boton variante="terciario" disabled={hayIncompletos} onClick={() => setItems((xs) => [...xs, nuevoItem()])}>
+                  <Plus className="h-4 w-4" strokeWidth={2} aria-hidden />
+                  Agregar ítem
+                </Boton>
+                {hayIncompletos && (
+                  <span className="text-xs text-fk-gris-texto">
+                    {forma === 'POR_ITEM' ? 'Completá la descripción y el importe de los ítems para agregar otro.' : 'Completá la descripción de los ítems para agregar otro.'}
+                  </span>
+                )}
+              </div>
             )}
           </div>
 
@@ -415,7 +447,7 @@ function Formulario({ presupuesto, catalogo, diasValidez }: { presupuesto?: Pres
           )}
         </Tarjeta>
 
-        <div className="grid gap-6 xl:grid-cols-2 xl:items-start">
+        <div className="grid gap-6 xl:grid-cols-2">
           <Tarjeta titulo="IVA y total">
             <div className="grid gap-4 sm:grid-cols-2">
               <Campo etiqueta="IVA">
@@ -522,7 +554,7 @@ function Formulario({ presupuesto, catalogo, diasValidez }: { presupuesto?: Pres
         onCerrar={() => setAltaCliente(false)}
         onGuardado={(c) => {
           void queryClient.invalidateQueries({ queryKey: ['clientes'] });
-          setClienteId(c.id);
+          elegirCliente(c.id);
           setAltaCliente(false);
         }}
       />

@@ -658,10 +658,14 @@ export function Aviso({ children, tono = 'ambar' }: { children: ReactNode; tono?
 
 export function Modal({ abierto, titulo, onCerrar, children }: { abierto: boolean; titulo: string; onCerrar: () => void; children: ReactNode }) {
   if (!abierto) return null;
+  // El portal saca el modal del DOM del formulario de la página, pero los eventos de React
+  // siguen subiendo por el árbol de componentes: sin cortar el submit, enviar un formulario
+  // del modal (ej.: alta de cliente) también enviaría el de la página que lo abrió.
   return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-end justify-center overflow-y-auto bg-fk-grafito/40 p-0 sm:items-center sm:p-4"
       onMouseDown={onCerrar}
+      onSubmit={(e) => e.stopPropagation()}
     >
       <div
         role="dialog"

@@ -71,6 +71,11 @@ Estilo nórdico: minimalista, mucho aire, pocos colores bien usados, nada recarg
   - La fila de pestañas puede deslizarse en horizontal en mobile, **sin barra de scroll visible**.
 - **Responsive:** en mobile el sidebar pasa a menú desplegable y las tablas scrollean horizontalmente dentro de su contenedor. Nada debe generar scroll horizontal de la página.
 - **Íconos:** siempre `lucide-react`, trazo 1.75, nunca emojis.
+- **Reordenar con flechas (subir/bajar):** el movimiento se anima para que se vea qué renglón sube y cuál baja. Usar `useAnimarMovimiento()` de `src/lib/animarMovimiento.ts`:
+  - `ref={animar.ref(clave)}` en el elemento de cada renglón, con la misma clave estable del `key` (nunca el índice).
+  - `animar.capturar()` justo antes del `setState` que cambia el orden.
+  - El renglón necesita fondo propio (`bg-fk-blanco`) para no transparentar al cruzarse con el vecino.
+  - Ya respeta "reducir movimiento" del sistema. Referencia: ítems de `PresupuestoPage.tsx`.
 
 ## Revisión visual
 

@@ -23,18 +23,7 @@ export function MaterialesPage() {
   const pestana: Pestana = PESTANAS.some((x) => x.id === p) ? (p as Pestana) : 'listados';
   return (
     <div className="space-y-6">
-      <EncabezadoPagina
-        titulo="Materiales"
-        tituloEnBarra
-        acciones={
-          pestana === 'listados' && (
-            <Link to="/materiales/listados/nuevo" className={claseBoton('primario')}>
-              <Plus className="h-4 w-4" strokeWidth={2} aria-hidden />
-              Nuevo listado
-            </Link>
-          )
-        }
-      />
+      <EncabezadoPagina titulo="Materiales" tituloEnBarra />
       <div role="tablist" aria-label="Materiales" className="flex gap-1 overflow-x-auto border-b border-fk-borde [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {PESTANAS.map((x) => (
           <button
@@ -67,21 +56,21 @@ function Listados() {
   const q = useDeferredValue(busqueda.trim());
   const { data, error } = useQuery({ queryKey: ['listados', q], queryFn: () => pedir<ListadoResumen[]>(`/listados-materiales${q ? `?q=${encodeURIComponent(q)}` : ''}`) });
   return (
-    <Tarjeta>
+    <Tarjeta
+      titulo="Listados"
+      acciones={
+        <Link to="/materiales/listados/nuevo" className={claseBoton('terciario')}>
+          <Plus className="h-4 w-4" strokeWidth={2} aria-hidden />
+          Nuevo listado
+        </Link>
+      }
+    >
       <Entrada type="search" placeholder="Buscar por título o destino" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} className="mb-5 max-w-sm" />
       <AlertaError error={error} />
       {!data ? (
         <Cargando />
       ) : data.length === 0 ? (
-        <Vacio
-          accion={
-            <Link to="/materiales/listados/nuevo" className={claseBoton('terciario')}>
-              Armar un listado
-            </Link>
-          }
-        >
-          Todavía no hay listados de materiales.
-        </Vacio>
+        <Vacio>Todavía no hay listados de materiales.</Vacio>
       ) : (
         <ContenedorTabla>
           <table className="fk-tabla">
