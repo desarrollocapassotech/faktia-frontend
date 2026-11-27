@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth, type OpcionTenant } from '@/auth/auth-context';
-import { MarcoPublico } from '@/components/MarcoPublico';
+import { MarcoIngreso } from '@/components/MarcoIngreso';
 import { AlertaError, Boton, Campo, Entrada, EntradaPassword } from '@/components/ui';
 import { ApiError } from '@/lib/api';
 
@@ -50,7 +50,7 @@ export function LoginPage() {
   }
 
   return (
-    <MarcoPublico>
+    <MarcoIngreso titulo="Ingresá a tu cuenta" bajada={tenants ? 'Tu email está en más de una empresa: elegí con cuál entrar.' : 'Con el email y la contraseña de tu cuenta.'}>
       <form onSubmit={onSubmit} className="grid gap-5">
         <Campo etiqueta="Email">
           <Entrada
@@ -76,15 +76,15 @@ export function LoginPage() {
         {tenants && (
           <fieldset className="space-y-2">
             <legend className="mb-1 text-[13px] font-semibold">¿Con qué empresa querés ingresar?</legend>
+            {/* Cada empresa como una opción grande, marcada con borde fiordo. */}
             {tenants.map((t) => (
-              <label key={t.slug} className="flex items-center gap-2 text-sm">
-                <input
-                  type="radio"
-                  name="tenant"
-                  value={t.slug}
-                  checked={tenantSlug === t.slug}
-                  onChange={() => setTenantSlug(t.slug)}
-                />
+              <label
+                key={t.slug}
+                className={`flex cursor-pointer items-center gap-3 rounded-fk border px-4 py-3 text-sm transition-colors ${
+                  tenantSlug === t.slug ? 'border-fk-fiordo bg-fk-niebla/50 font-semibold text-fk-fiordo' : 'border-fk-borde hover:bg-fk-niebla/40'
+                }`}
+              >
+                <input type="radio" name="tenant" value={t.slug} checked={tenantSlug === t.slug} onChange={() => setTenantSlug(t.slug)} className="accent-fk-fiordo" />
                 {t.nombre}
               </label>
             ))}
@@ -107,6 +107,6 @@ export function LoginPage() {
           </Link>
         </p>
       </form>
-    </MarcoPublico>
+    </MarcoIngreso>
   );
 }

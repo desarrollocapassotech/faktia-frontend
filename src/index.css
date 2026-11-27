@@ -327,3 +327,85 @@
   }
   .fk-cargador-sello { animation: none; opacity: 0.9; transform: rotate(-12deg); }
 }
+
+/* Ilustración del login y el registro (MarcoIngreso): una factura de ejemplo que sale de una ranura
+   al entrar, con un ticket quieto atrás y el sello que cae al final. Solo transform y opacity. */
+.fk-ingreso-ilustracion {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 340px;
+}
+.fk-ingreso-ranura {
+  position: relative;
+  z-index: 1;
+  width: 340px;
+  height: 16px;
+  border-radius: 8px;
+  background: var(--fk-grafito);
+  box-shadow: inset 0 -5px 0 color-mix(in srgb, var(--fk-fiordo) 45%, var(--fk-grafito));
+}
+.fk-ingreso-boca {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  margin-top: -8px;
+  padding: 0 20px 28px;
+}
+.fk-ingreso-atras {
+  position: absolute;
+  inset: 0 20px 28px;
+  background: color-mix(in srgb, var(--fk-blanco) 22%, transparent);
+  transform: translate(-18px, 16px) rotate(-4deg);
+  transform-origin: top left;
+}
+.fk-ingreso-mover {
+  position: relative;
+  animation: fk-ingreso-imprimir 1.1s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both;
+}
+.fk-ingreso-sello {
+  transform: rotate(-8deg);
+  opacity: 0.9;
+  animation: fk-ticket-sellar 320ms cubic-bezier(0.3, 0, 0.6, 1) 1.15s both;
+}
+/* Alto disponible → tamaño de la ilustración (la escala no ocupa lugar: los márgenes negativos lo
+   devuelven). Así entra sin scroll en notebooks y se oculta solo en ventanas muy bajas. */
+@media (max-height: 860px) {
+  .fk-ingreso-escala { margin-block: -40px; transform: scale(0.72); }
+}
+@media (max-height: 560px) {
+  .fk-ingreso-escala { display: none !important; }
+}
+/* Beneficios del panel de marca: lista vertical; en ventanas bajas, grilla de 2 × 2 (una columna si el
+   panel es angosto); en ventanas muy bajas se ocultan. */
+.fk-ingreso-beneficios { gap: 12px; }
+@media (max-height: 820px) {
+  .fk-ingreso-beneficios { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 8px 24px; }
+  .fk-ingreso-beneficio-icono { width: 28px; height: 28px; }
+  .fk-ingreso-beneficios li { font-size: 13px; white-space: nowrap; }
+}
+@media (max-height: 600px) {
+  .fk-ingreso-beneficios { display: none !important; }
+}
+/* Apilada (panel angosto) se achica hacia su borde izquierdo, alineada con el texto. */
+.fk-ingreso-escala { transform-origin: left center; }
+/* Lado a lado (panel ancho, @container del panel de marca): no compite por el alto con el texto, así
+   que va completa y alineada a la derecha; solo se achica en ventanas muy bajas. */
+@container (min-width: 48rem) {
+  .fk-ingreso-escala { transform-origin: right center; margin-block: 0; transform: none; }
+}
+@media (max-height: 620px) {
+  @container (min-width: 48rem) {
+    .fk-ingreso-escala { margin-block: -48px; transform: scale(0.72); }
+  }
+}
+@keyframes fk-ingreso-imprimir {
+  from { transform: translateY(-100%); }
+  to { transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fk-ingreso-mover,
+  .fk-ingreso-sello {
+    animation: none;
+  }
+}

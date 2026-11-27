@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/auth/auth-context';
-import { MarcoPublico } from '@/components/MarcoPublico';
+import { MarcoIngreso } from '@/components/MarcoIngreso';
 import { AlertaError, Boton, Campo, Entrada, EntradaPassword } from '@/components/ui';
 import { ApiError } from '@/lib/api';
 
@@ -42,7 +42,7 @@ export function RegistroPage() {
   }
 
   return (
-    <MarcoPublico>
+    <MarcoIngreso titulo="Creá tu cuenta" bajada="Lo mínimo para empezar. Los datos fiscales los cargás después, antes de tu primera factura.">
       <form onSubmit={onSubmit} className="grid gap-5">
         <Campo etiqueta="Nombre de tu empresa">
           <Entrada autoComplete="organization" required maxLength={120} value={nombreEmpresa} onChange={(e) => setNombreEmpresa(e.target.value)} />
@@ -76,6 +76,6 @@ export function RegistroPage() {
           </Link>
         </p>
       </form>
-    </MarcoPublico>
+    </MarcoIngreso>
   );
 }
