@@ -2,6 +2,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { useState, type FormEvent } from 'react';
 import { Mail, MessageCircle } from 'lucide-react';
 import { AlertaError, Boton, Campo, Entrada, Modal } from '@/components/ui';
+import { confirmar } from '@/lib/confirmar';
 import { toast } from '@/lib/toasts';
 import { useApi } from '@/lib/useApi';
 
@@ -38,6 +39,7 @@ export function CompartirModal({
   emailSugerido,
   enviarEmail,
   onCompartido,
+  avisoAlCompartir,
 }: {
   abierto: boolean;
   onCerrar: () => void;
@@ -54,6 +56,8 @@ export function CompartirModal({
    * elige a quién mandarlo (o se abre WhatsApp). Sirve para marcar el documento como enviado.
    */
   onCompartido?: (medio: 'email' | 'whatsapp') => void;
+  /** Se agrega a la confirmación (ej.: "Queda marcado como enviado."). */
+  avisoAlCompartir?: string;
 }) {
   const { traerArchivo } = useApi();
   const [para, setPara] = useState(emailSugerido ?? '');
@@ -80,6 +84,12 @@ export function CompartirModal({
   async function porWhatsapp() {
     const pdf = archivo.data;
     if (!pdf) return;
+    const ok = await confirmar({
+      titulo: '¿Compartir por WhatsApp?',
+      mensaje: `${compartirSistema ? 'Se abre el menú para compartir con el PDF adjunto.' : 'Se abre WhatsApp y se descarga el PDF para adjuntarlo.'}${avisoAlCompartir ? ` ${avisoAlCompartir}` : ''}`,
+      accion: 'Compartir',
+    });
+    if (!ok) return;
     if (compartirSistema) {
       try {
         await navigator.share({ files: [pdf], title: titulo, text: texto });
@@ -99,9 +109,14 @@ export function CompartirModal({
     onCerrar();
   }
 
-  function enviar(e: FormEvent) {
+  async function enviar(e: FormEvent) {
     e.preventDefault();
-    email.mutate();
+    const ok = await confirmar({
+      titulo: '¿Enviar por email?',
+      mensaje: `Se envía el PDF a ${para.split(/[,;\s]+/).filter(Boolean).join(', ')}.${avisoAlCompartir ? ` ${avisoAlCompartir}` : ''}`,
+      accion: 'Enviar',
+    });
+    if (ok) email.mutate();
   }
 
   return (

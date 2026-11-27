@@ -5,6 +5,7 @@ import { EditorTexto, TextoFormato } from '@/components/EditorTexto';
 import { AlertaError, Aviso, Boton, BotonIcono, Campo, Cargando, EncabezadoPagina, Entrada, Modal, Tarjeta, Vacio } from '@/components/ui';
 import type { ItemBiblioteca, ObservacionCatalogo } from '@/lib/tipos';
 import { useApi } from '@/lib/useApi';
+import { confirmar } from '@/lib/confirmar';
 
 type Pestana = 'items' | 'observaciones';
 
@@ -25,7 +26,7 @@ export function BibliotecaPage() {
         tituloEnBarra
         migas={[{ texto: 'Presupuestos', a: '/presupuestos' }, { texto: 'Biblioteca' }]}
         acciones={
-          <Boton variante="terciario" cargando={cargar.isPending} onClick={() => cargar.mutate()}>
+          <Boton variante="terciario" cargando={cargar.isPending} onClick={async () => (await confirmar({ titulo: '¿Cargar la biblioteca inicial?', mensaje: 'Se agregan ítems y observaciones de ejemplo. Lo que ya cargaste no se toca.', accion: 'Cargar' })) && cargar.mutate()}>
             Cargar la biblioteca inicial
           </Boton>
         }
@@ -98,7 +99,7 @@ function Items() {
               </div>
               <div className="flex gap-1">
                 <BotonIcono etiqueta="Editar" icono={Pencil} onClick={() => setEditando(i)} />
-                <BotonIcono etiqueta="Quitar" icono={Trash2} peligro onClick={() => window.confirm(`¿Quitar "${i.titulo}"?`) && eliminar.mutate(i.id)} />
+                <BotonIcono etiqueta="Quitar" icono={Trash2} peligro onClick={async () => (await confirmar({ titulo: '¿Quitar de la biblioteca?', mensaje: `"${i.titulo}" deja de estar en la biblioteca. Los presupuestos que ya lo usan no cambian.`, accion: 'Quitar', peligro: true })) && eliminar.mutate(i.id)} />
               </div>
             </li>
           ))}
@@ -197,7 +198,7 @@ function Observaciones() {
                 </p>
               </div>
               <BotonIcono etiqueta="Editar" icono={Pencil} onClick={() => setEditando(o)} />
-              <BotonIcono etiqueta="Quitar" icono={Trash2} peligro onClick={() => eliminar.mutate(o.id)} />
+              <BotonIcono etiqueta="Quitar" icono={Trash2} peligro onClick={async () => (await confirmar({ titulo: '¿Quitar la observación?', mensaje: 'Deja de ofrecerse en los presupuestos nuevos. Los que ya la usan no cambian.', accion: 'Quitar', peligro: true })) && eliminar.mutate(o.id)} />
             </li>
           ))}
         </ul>

@@ -8,6 +8,7 @@ import { dinero, fecha, fechaHora, saldosTexto, UNIDADES_MATERIAL } from '@/lib/
 import { useEmpresa } from '@/lib/modulos';
 import type { ListadoResumen, Material, Moneda, Proveedor } from '@/lib/tipos';
 import { useApi } from '@/lib/useApi';
+import { confirmar } from '@/lib/confirmar';
 
 const PESTANAS = [
   { id: 'listados', texto: 'Listados', icono: ClipboardList },
@@ -281,7 +282,7 @@ function MaterialModal({ material, onCerrar }: { material: Material | null; onCe
         <AlertaError error={guardar.error ?? eliminar.error} />
         <div className="flex justify-between gap-2">
           {material ? (
-            <Boton variante="destructivo" onClick={() => eliminar.mutate()} cargando={eliminar.isPending}>
+            <Boton variante="destructivo" onClick={async () => (await confirmar({ titulo: '¿Borrar el material?', mensaje: 'Sale del catálogo y no se puede recuperar. Los listados que ya lo usan no cambian.', accion: 'Borrar', peligro: true })) && eliminar.mutate()} cargando={eliminar.isPending}>
               <Trash2 className="h-4 w-4" strokeWidth={1.75} aria-hidden />
               Borrar
             </Boton>
@@ -418,7 +419,7 @@ function ProveedorModal({ proveedor, onCerrar }: { proveedor: Proveedor | null; 
         <AlertaError error={guardar.error ?? eliminar.error} />
         <div className="flex justify-between gap-2">
           {proveedor ? (
-            <Boton variante="destructivo" onClick={() => eliminar.mutate()} cargando={eliminar.isPending}>
+            <Boton variante="destructivo" onClick={async () => (await confirmar({ titulo: '¿Borrar el proveedor?', mensaje: 'Se borra y no se puede recuperar.', accion: 'Borrar', peligro: true })) && eliminar.mutate()} cargando={eliminar.isPending}>
               Borrar
             </Boton>
           ) : (

@@ -5,6 +5,7 @@ import { fechaHora, ORIGENES, SCOPES } from '@/lib/formato';
 import type { Integracion, OrigenItem, Scope } from '@/lib/tipos';
 import { useApi } from '@/lib/useApi';
 import { URL_DOCS } from './WebhooksSeccion';
+import { confirmar } from '@/lib/confirmar';
 
 export function IntegracionesSeccion() {
   const { pedir } = useApi();
@@ -55,8 +56,8 @@ export function IntegracionesSeccion() {
                   <Boton
                     variante="destructivo"
                     cargando={revocar.isPending && revocar.variables?.id === i.id}
-                    onClick={() => {
-                      if (window.confirm(`¿Revocar la API key de "${i.nombre}"? El sistema deja de poder conectarse.`)) revocar.mutate(i);
+                    onClick={async () => {
+                      if (await confirmar({ titulo: '¿Revocar la API key?', mensaje: `"${i.nombre}" deja de poder conectarse con Faktia. No se puede deshacer.`, accion: 'Revocar', peligro: true })) revocar.mutate(i);
                     }}
                   >
                     Revocar

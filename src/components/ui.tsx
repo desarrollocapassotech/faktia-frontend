@@ -487,7 +487,8 @@ export function EncabezadoPagina({
         <MigasEnBarra items={migas ?? [{ texto: titulo }]} extra={junto} />
         <h1 className="sr-only">{titulo}</h1>
         {descripcion && <p className="max-w-[var(--fk-ancho-formulario)] text-fk-gris-texto">{descripcion}</p>}
-        {inicio && <div className="flex flex-wrap items-center gap-2">{inicio}</div>}
+        {/* Ocupa el espacio libre y se achica: un texto largo (un aviso) se parte en renglones en vez de empujar las acciones abajo. */}
+        {inicio && <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">{inicio}</div>}
         {acciones && <div className="ml-auto flex flex-wrap gap-2">{acciones}</div>}
       </header>
     );

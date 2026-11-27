@@ -5,6 +5,7 @@ import { AlertaError, Boton, BotonIcono, Campo, Cargando, ContenedorTabla, Entra
 import { ALICUOTAS, dinero, fecha, hoy, ORIGENES, UNIDADES, unidadTexto } from '@/lib/formato';
 import type { Cliente, Moneda, OrigenItem, Tarifa, Unidad } from '@/lib/tipos';
 import { useApi } from '@/lib/useApi';
+import { confirmar } from '@/lib/confirmar';
 
 export interface TarifaInicial {
   clienteId?: string;
@@ -75,8 +76,8 @@ export function TarifasSeccion() {
                         icono={Trash2}
                         peligro
                         cargando={eliminar.isPending && eliminar.variables?.id === t.id}
-                        onClick={() => {
-                          if (window.confirm('¿Eliminar esta tarifa?')) eliminar.mutate(t);
+                        onClick={async () => {
+                          if (await confirmar({ titulo: '¿Eliminar la tarifa?', mensaje: 'Las importaciones de este cliente dejan de usarla.', accion: 'Eliminar', peligro: true })) eliminar.mutate(t);
                         }}
                       />
                     </td>

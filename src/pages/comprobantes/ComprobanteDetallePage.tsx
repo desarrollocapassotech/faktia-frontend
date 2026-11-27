@@ -19,6 +19,7 @@ import { useApi } from '@/lib/useApi';
 import { EditorComprobante } from './EditorComprobante';
 import { EmitirModal, NotaModal, type ClaseNota } from './modalesComprobante';
 import { toast } from '@/lib/toasts';
+import { confirmar } from '@/lib/confirmar';
 
 const EDITABLES = ['BORRADOR', 'RECHAZADO'];
 
@@ -173,8 +174,8 @@ function EliminarBorrador({ comprobante: c }: { comprobante: Comprobante }) {
       <Boton
         variante="destructivo"
         cargando={eliminar.isPending}
-        onClick={() => {
-          if (window.confirm('¿Eliminar este borrador? No se puede deshacer.')) eliminar.mutate();
+        onClick={async () => {
+          if (await confirmar({ titulo: '¿Eliminar el borrador?', mensaje: 'El comprobante se borra y no se puede recuperar.', accion: 'Eliminar', peligro: true })) eliminar.mutate();
         }}
       >
         Eliminar borrador

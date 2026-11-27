@@ -6,6 +6,7 @@ import { ambienteTexto } from '@/lib/formato';
 import type { Ambiente, Emisor, PuntoVenta } from '@/lib/tipos';
 import { useApi } from '@/lib/useApi';
 import { toast } from '@/lib/toasts';
+import { confirmar } from '@/lib/confirmar';
 
 export function PuntosVentaSeccion() {
   const { pedir } = useApi();
@@ -67,7 +68,13 @@ export function PuntosVentaSeccion() {
                           icono={pv.activo ? PowerOff : Power}
                           peligro={pv.activo}
                           cargando={cambiarActivo.isPending && cambiarActivo.variables?.id === pv.id}
-                          onClick={() => cambiarActivo.mutate(pv)}
+                          onClick={async () =>
+                            (await confirmar(
+                              pv.activo
+                                ? { titulo: '¿Desactivar el punto de venta?', mensaje: `El punto de venta ${pv.numero} deja de estar disponible para emitir.`, accion: 'Desactivar', peligro: true }
+                                : { titulo: '¿Activar el punto de venta?', mensaje: `El punto de venta ${pv.numero} vuelve a estar disponible para emitir.`, accion: 'Activar' },
+                            )) && cambiarActivo.mutate(pv)
+                          }
                         />
                       </div>
                     </td>

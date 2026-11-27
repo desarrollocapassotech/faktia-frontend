@@ -6,6 +6,7 @@ import { API_URL } from '@/lib/api';
 import { fechaHora, type Tono } from '@/lib/formato';
 import { useApi } from '@/lib/useApi';
 import { toast } from '@/lib/toasts';
+import { confirmar } from '@/lib/confirmar';
 
 const EVENTOS: Record<string, string> = {
   'comprobante.emitido': 'Comprobante emitido (con CAE)',
@@ -114,14 +115,20 @@ export function WebhooksSeccion() {
                     etiqueta={s.activa ? 'Pausar' : 'Reanudar'}
                     icono={s.activa ? Pause : Play}
                     cargando={alternar.isPending && alternar.variables?.id === s.id}
-                    onClick={() => alternar.mutate(s)}
+                    onClick={async () =>
+                      (await confirmar(
+                        s.activa
+                          ? { titulo: '¿Pausar el webhook?', mensaje: 'Deja de recibir eventos hasta que lo vuelvas a activar.', accion: 'Pausar', peligro: true }
+                          : { titulo: '¿Activar el webhook?', mensaje: 'Vuelve a recibir los eventos desde ahora.', accion: 'Activar' },
+                      )) && alternar.mutate(s)
+                    }
                   />
                   <BotonIcono
                     etiqueta="Generar un secreto nuevo"
                     icono={KeyRound}
                     cargando={rotar.isPending && rotar.variables?.id === s.id}
-                    onClick={() => {
-                      if (window.confirm('¿Generar un secreto nuevo? El anterior deja de valer en el acto.')) rotar.mutate(s);
+                    onClick={async () => {
+                      if (await confirmar({ titulo: '¿Generar un secreto nuevo?', mensaje: 'El secreto anterior deja de valer en el acto.', accion: 'Generar secreto', peligro: true })) rotar.mutate(s);
                     }}
                   />
                   <BotonIcono
@@ -129,8 +136,8 @@ export function WebhooksSeccion() {
                     icono={Trash2}
                     peligro
                     cargando={eliminar.isPending && eliminar.variables?.id === s.id}
-                    onClick={() => {
-                      if (window.confirm('¿Eliminar este webhook y su historial de envíos?')) eliminar.mutate(s);
+                    onClick={async () => {
+                      if (await confirmar({ titulo: '¿Eliminar el webhook?', mensaje: 'Se borra junto con su historial de envíos.', accion: 'Eliminar', peligro: true })) eliminar.mutate(s);
                     }}
                   />
                 </div>
@@ -264,7 +271,7 @@ function EntregasModal({ suscripcion, onCerrar }: { suscripcion: Suscripcion; on
                   etiqueta="Reenviar"
                   icono={RotateCw}
                   cargando={reenviar.isPending && reenviar.variables?.id === e.id}
-                  onClick={() => reenviar.mutate(e)}
+                  onClick={async () => (await confirmar({ titulo: '¿Reenviar la entrega?', mensaje: 'El evento se vuelve a mandar a la URL del webhook.', accion: 'Reenviar' })) && reenviar.mutate(e)}
                 />
               )}
             </li>

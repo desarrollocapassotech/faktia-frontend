@@ -20,6 +20,7 @@ import type { HitoProyecto, ProyectoDetalle } from '@/lib/tipos';
 import { useApi } from '@/lib/useApi';
 import { Indicador } from '@/pages/cuenta-corriente/CuentaCorrientePage';
 import { AdicionalModal, CertificacionModal, DatosProyectoModal, EntregaModal, PlanModal } from './modalesProyecto';
+import { confirmar } from '@/lib/confirmar';
 
 type ModalAbierto =
   | { tipo: 'entrega' }
@@ -191,7 +192,7 @@ export function ProyectoDetallePage() {
                         <td className="fk-num">{$(c.importe)}</td>
                         <td className="fk-num">{Number(c.pendiente) === 0 ? <Etiqueta tono="ok">Cobrado</Etiqueta> : $(c.pendiente)}</td>
                         <td className="text-right">
-                          <BotonIcono etiqueta="Quitar certificación" icono={Trash2} peligro onClick={() => quitarCertificacion.mutate(c.id)} />
+                          <BotonIcono etiqueta="Quitar certificación" icono={Trash2} peligro onClick={async () => (await confirmar({ titulo: '¿Quitar la certificación?', mensaje: 'Se borra la certificación y su importe vuelve a quedar pendiente de certificar.', accion: 'Quitar', peligro: true })) && quitarCertificacion.mutate(c.id)} />
                         </td>
                       </tr>
                     ))}
@@ -328,7 +329,7 @@ export function ProyectoDetallePage() {
           <Boton
             variante="destructivo"
             cargando={eliminar.isPending}
-            onClick={() => window.confirm(`¿Eliminar esta ${etiquetaMin}?`) && eliminar.mutate()}
+            onClick={async () => (await confirmar({ titulo: `¿Eliminar: ${etiquetaMin}?`, mensaje: 'Se borra con su plan y no se puede recuperar.', accion: 'Eliminar', peligro: true })) && eliminar.mutate()}
           >
             Eliminar {etiqueta.toLowerCase()}
           </Boton>

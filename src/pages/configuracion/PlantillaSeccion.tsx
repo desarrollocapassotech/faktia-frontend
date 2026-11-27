@@ -4,6 +4,7 @@ import { claseBoton } from '@/components/estilos';
 import { AlertaError, Aviso, Boton, Campo, Cargando, Entrada, Tarjeta, claseInput } from '@/components/ui';
 import type { PlantillaPdf } from '@/lib/tipos';
 import { useApi } from '@/lib/useApi';
+import { confirmar } from '@/lib/confirmar';
 
 const LOGO_MAX_KB = 300;
 
@@ -181,7 +182,7 @@ function Logo({ tieneLogo }: { tieneLogo: boolean }) {
             <input type="file" accept="image/png,image/jpeg" className="sr-only" onChange={elegir} disabled={subirLogo.isPending} />
           </label>
           {tieneLogo && (
-            <Boton variante="destructivo" cargando={borrarLogo.isPending} onClick={() => borrarLogo.mutate()} className="ml-2">
+            <Boton variante="destructivo" cargando={borrarLogo.isPending} onClick={async () => (await confirmar({ titulo: '¿Quitar el logo?', mensaje: 'Los PDF que se generen desde ahora salen sin logo.', accion: 'Quitar logo', peligro: true })) && borrarLogo.mutate()} className="ml-2">
               Quitar
             </Boton>
           )}

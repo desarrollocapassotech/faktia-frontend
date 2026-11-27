@@ -5,6 +5,7 @@ import { AlertaError, Boton, BotonIcono, Campo, Entrada, EntradaNumero, Modal, S
 import { dinero, fecha, hoy } from '@/lib/formato';
 import type { Moneda, MovimientoCc, TipoMovimientoCc } from '@/lib/tipos';
 import { useApi } from '@/lib/useApi';
+import { confirmar } from '@/lib/confirmar';
 
 /** Invalida todo lo que muestra saldos (listado, resumen y la cuenta abierta). */
 function useRefrescarCuentas() {
@@ -311,7 +312,7 @@ export function ImputacionesModal({ movimiento, onCerrar }: { movimiento: Movimi
                   peligro
                   cargando={deshacer.isPending && deshacer.variables === i.id}
                   disabled={deshacer.isPending}
-                  onClick={() => deshacer.mutate(i.id)}
+                  onClick={async () => (await confirmar({ titulo: '¿Deshacer la imputación?', mensaje: 'El pago deja de aplicarse a ese comprobante y vuelve a quedar disponible.', accion: 'Deshacer', peligro: true })) && deshacer.mutate(i.id)}
                 />
               </span>
             </li>
@@ -392,7 +393,7 @@ export function EliminarMovimientoModal({ movimiento, onCerrar }: { movimiento: 
           <Boton variante="terciario" onClick={onCerrar} disabled={eliminar.isPending}>
             Cancelar
           </Boton>
-          <Boton variante="destructivo" cargando={eliminar.isPending} onClick={() => eliminar.mutate()}>
+          <Boton variante="destructivo" cargando={eliminar.isPending} onClick={async () => (await confirmar({ titulo: '¿Eliminar el movimiento?', mensaje: 'Se borra de la cuenta corriente y no se puede recuperar.', accion: 'Eliminar', peligro: true })) && eliminar.mutate()}>
             Eliminar
           </Boton>
         </div>

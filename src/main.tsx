@@ -8,6 +8,7 @@ import { ApiError } from './lib/api';
 import { migrarClavesViejas } from './lib/storage';
 import { toast } from './lib/toasts';
 import { Toasts } from './components/Toasts';
+import { Confirmacion } from './components/Confirmacion';
 import './index.css';
 
 // Antes de que el AuthProvider lea la sesión guardada.
@@ -48,6 +49,7 @@ createRoot(document.getElementById('root')!).render(
           <App />
         </AuthProvider>
         <Toasts />
+        <Confirmacion />
       </QueryClientProvider>
     </BrowserRouter>
   </StrictMode>,

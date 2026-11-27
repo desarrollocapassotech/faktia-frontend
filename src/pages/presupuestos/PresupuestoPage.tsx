@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowDown, ArrowUp, BookOpen, Calculator, Copy, FileText, Grid2x2, HardHat, List, Plus, Share2, Trash2, UserPlus, type LucideIcon } from 'lucide-react';
 import { CompartirModal } from '@/components/CompartirModal';
+import { confirmarCambioEstado, confirmarDuplicado, confirmarEliminacion } from '@/pages/presupuestos/confirmaciones';
 import { EditorTexto, TextoFormato } from '@/components/EditorTexto';
 import {
   AlertaError,
@@ -185,6 +186,14 @@ function Formulario({ presupuesto, catalogo, diasValidez }: { presupuesto?: Pres
     },
   });
 
+  // Acciones importantes: siempre con confirmación (pages/presupuestos/confirmaciones.ts).
+  async function cambiarEstado(nuevo: Exclude<EstadoPresupuesto, 'VENCIDO'>) {
+    if (presupuesto && (await confirmarCambioEstado(presupuesto.numero, nuevo))) estado.mutate(nuevo);
+  }
+  async function duplicarPresupuesto(reemplaza: boolean) {
+    if (presupuesto && (await confirmarDuplicado(presupuesto.numero, reemplaza))) duplicar.mutate(reemplaza);
+  }
+
   async function verPdf() {
     setErrorPdf(null);
     try {
@@ -224,27 +233,27 @@ function Formulario({ presupuesto, catalogo, diasValidez }: { presupuesto?: Pres
           presupuesto && (
             <>
               {e === 'BORRADOR' && (
-                <Boton variante="secundario" onClick={() => estado.mutate('ENVIADO')} cargando={estado.isPending}>
+                <Boton variante="secundario" onClick={() => void cambiarEstado('ENVIADO')} cargando={estado.isPending && estado.variables === 'ENVIADO'}>
                   Marcar como enviado
                 </Boton>
               )}
               {e === 'ENVIADO' && (
-                <Boton variante="terciario" onClick={() => estado.mutate('BORRADOR')}>
+                <Boton variante="terciario" onClick={() => void cambiarEstado('BORRADOR')}>
                   Volver a borrador
                 </Boton>
               )}
               {e && ['BORRADOR', 'ENVIADO', 'VENCIDO'].includes(e) && (
                 <>
-                  <Boton variante="secundario" onClick={() => estado.mutate('ACEPTADO')}>
+                  <Boton variante="secundario" onClick={() => void cambiarEstado('ACEPTADO')}>
                     Aceptado
                   </Boton>
-                  <Boton variante="destructivo" onClick={() => estado.mutate('RECHAZADO')}>
+                  <Boton variante="destructivo" onClick={() => void cambiarEstado('RECHAZADO')}>
                     Rechazado
                   </Boton>
                 </>
               )}
               {e && ['ENVIADO', 'ACEPTADO'].includes(e) && !presupuesto.proyectoId && (
-                <Boton variante="terciario" onClick={() => duplicar.mutate(true)}>
+                <Boton variante="terciario" onClick={() => void duplicarPresupuesto(true)}>
                   Duplicar y reemplazar
                 </Boton>
               )}
@@ -261,6 +270,14 @@ function Formulario({ presupuesto, catalogo, diasValidez }: { presupuesto?: Pres
                   </Boton>
                 )
               )}
+              {/* Aviso en la misma fila que los botones (si no entra, pasa abajo). */}
+              {!editable && (
+                <Aviso tono="azul">
+                  {e === 'VENCIDO'
+                    ? 'Venció sin aceptarse ni rechazarse. Duplicalo para mandarlo con fecha nueva.'
+                    : 'Ya no es un borrador: para cambiarlo, duplicalo. El duplicado puede reemplazar a este (queda rechazado).'}
+                </Aviso>
+              )}
             </>
           )
         }
@@ -271,7 +288,7 @@ function Formulario({ presupuesto, catalogo, diasValidez }: { presupuesto?: Pres
                 <FileText className="h-4 w-4" strokeWidth={1.75} aria-hidden />
                 Ver PDF
               </Boton>
-              <Boton variante="terciario" cargando={duplicar.isPending && !duplicar.variables} onClick={() => duplicar.mutate(false)}>
+              <Boton variante="terciario" cargando={duplicar.isPending && !duplicar.variables} onClick={() => void duplicarPresupuesto(false)}>
                 <Copy className="h-4 w-4" strokeWidth={1.75} aria-hidden />
                 Duplicar
               </Boton>
@@ -284,14 +301,6 @@ function Formulario({ presupuesto, catalogo, diasValidez }: { presupuesto?: Pres
         }
       />
       <AlertaError error={errorPdf ?? estado.error ?? duplicar.error ?? eliminar.error} />
-
-      {presupuesto && !editable && (
-        <Aviso tono="azul">
-          {e === 'VENCIDO'
-            ? 'Venció sin aceptarse ni rechazarse. Duplicalo para mandarlo con fecha nueva.'
-            : 'Ya no es un borrador: para cambiarlo, duplicalo. El duplicado puede reemplazar a este (queda rechazado).'}
-        </Aviso>
-      )}
 
       <fieldset disabled={!editable} className="space-y-6">
         <div className="grid gap-6 xl:grid-cols-2">
@@ -539,7 +548,7 @@ function Formulario({ presupuesto, catalogo, diasValidez }: { presupuesto?: Pres
       <AlertaError error={guardar.error} />
       <div className="flex flex-wrap justify-end gap-2">
         {presupuesto?.estado === 'BORRADOR' && (
-          <Boton variante="destructivo" cargando={eliminar.isPending} onClick={() => window.confirm('¿Eliminar este borrador?') && eliminar.mutate()}>
+          <Boton variante="destructivo" cargando={eliminar.isPending} onClick={async () => (await confirmarEliminacion(presupuesto.numero)) && eliminar.mutate()}>
             Eliminar
           </Boton>
         )}
@@ -575,6 +584,7 @@ function Formulario({ presupuesto, catalogo, diasValidez }: { presupuesto?: Pres
           mensaje={`Presupuesto${presupuesto.titulo ? `: ${presupuesto.titulo}` : ''} (PDF adjunto).`}
           emailSugerido={clientes.data?.find((c) => c.id === presupuesto.clienteId)?.email}
           enviarEmail={(datos) => pedir(`/presupuestos/${presupuesto.id}/enviar-email`, 'POST', datos)}
+          avisoAlCompartir={presupuesto.estado === 'BORRADOR' ? 'El presupuesto queda marcado como enviado.' : undefined}
           onCompartido={(medio) => {
             // Mandarlo desde el sistema lo marca como enviado si era un borrador. Por email lo hace el
             // backend (acá solo se refresca); por WhatsApp no hay confirmación del servidor: se marca acá.

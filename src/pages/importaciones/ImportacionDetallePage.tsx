@@ -24,6 +24,7 @@ import { useApi } from '@/lib/useApi';
 import { ClienteModal } from '../clientes/ClienteModal';
 import { FormularioTarifa } from '../configuracion/TarifasSeccion';
 import { toast } from '@/lib/toasts';
+import { confirmar as pedirConfirmacion } from '@/lib/confirmar';
 
 const FILTROS: Array<{ id: EstadoItem | ''; texto: string; icono: LucideIcon }> = [
   { id: '', texto: 'Todos', icono: List },
@@ -183,7 +184,7 @@ export function ImportacionDetallePage() {
                 onEditar={() => setEditando(item)}
                 onAsignar={() => setAsignando(item)}
                 onTarifa={() => setTarifaPara(item)}
-                onDescartar={() => accionItem.mutate({ item, accion: 'descartar' })}
+                onDescartar={async () => (await pedirConfirmacion({ titulo: '¿Descartar el ítem?', mensaje: 'No se va a facturar. Se puede restaurar después.', accion: 'Descartar', peligro: true })) && accionItem.mutate({ item, accion: 'descartar' })}
                 onRestaurar={() => accionItem.mutate({ item, accion: 'restaurar' })}
               />
             ))}
@@ -246,9 +247,9 @@ function Acciones({
 
   if (i.estado === 'DESCARTADA') return <Aviso tono="azul">Esta importación fue descartada.</Aviso>;
 
-  function enviar(e: FormEvent) {
+  async function enviar(e: FormEvent) {
     e.preventDefault();
-    generar.mutate();
+    if (await pedirConfirmacion({ titulo: '¿Generar los comprobantes?', mensaje: 'Se generan los comprobantes de los ítems listos de esta importación.', accion: 'Generar' })) generar.mutate();
   }
 
   return (
@@ -262,13 +263,13 @@ function Acciones({
             <Boton
               variante="destructivo"
               cargando={descartar.isPending}
-              onClick={() => {
-                if (window.confirm('¿Descartar toda la importación? Sus ítems no se van a facturar.')) descartar.mutate();
+              onClick={async () => {
+                if (await pedirConfirmacion({ titulo: '¿Descartar la importación?', mensaje: 'Ninguno de sus ítems se va a facturar.', accion: 'Descartar', peligro: true })) descartar.mutate();
               }}
             >
               Descartar lote
             </Boton>
-            <Boton cargando={confirmar.isPending} onClick={() => confirmar.mutate()} disabled={listos === 0}>
+            <Boton cargando={confirmar.isPending} onClick={async () => (await pedirConfirmacion({ titulo: '¿Confirmar la importación?', mensaje: 'Los ítems listos quedan confirmados para facturar.', accion: 'Confirmar' })) && confirmar.mutate()} disabled={listos === 0}>
               Confirmar {listos} ítem{listos === 1 ? '' : 's'}
             </Boton>
           </div>

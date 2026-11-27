@@ -8,6 +8,7 @@ import { dinero, hoy, PRECIOS_LISTADO } from '@/lib/formato';
 import { useEmpresa } from '@/lib/modulos';
 import type { ListadoMateriales, Material, Moneda, PreciosListado, PresupuestoResumen, ProyectoResumen, Proveedor } from '@/lib/tipos';
 import { useApi } from '@/lib/useApi';
+import { confirmar } from '@/lib/confirmar';
 
 interface RenglonForm {
   clave: string;
@@ -175,7 +176,7 @@ function Formulario({ listado }: { listado?: ListadoMateriales }) {
         acciones={
           listado && (
             <>
-              <Boton variante="terciario" onClick={() => duplicar.mutate()} cargando={duplicar.isPending}>
+              <Boton variante="terciario" onClick={async () => (await confirmar({ titulo: '¿Duplicar el listado?', mensaje: 'Se crea un listado nuevo con los mismos materiales.', accion: 'Duplicar' })) && duplicar.mutate()} cargando={duplicar.isPending}>
                 <Copy className="h-4 w-4" strokeWidth={1.75} aria-hidden />
                 Duplicar
               </Boton>
@@ -239,7 +240,7 @@ function Formulario({ listado }: { listado?: ListadoMateriales }) {
             {listado && (
               <Aviso tono="azul">
                 Los precios quedan copiados al armar el listado: cambiar el catálogo no lo modifica.{' '}
-                <button type="button" className="font-semibold text-fk-fiordo underline-offset-2 hover:underline" onClick={() => actualizarPrecios.mutate()}>
+                <button type="button" className="font-semibold text-fk-fiordo underline-offset-2 hover:underline" onClick={async () => (await confirmar({ titulo: '¿Actualizar los precios?', mensaje: 'Los precios del listado se reemplazan por los actuales del catálogo.', accion: 'Actualizar' })) && actualizarPrecios.mutate()}>
                   <RefreshCw className="mr-1 inline h-3.5 w-3.5" strokeWidth={2} aria-hidden />
                   Actualizar con el catálogo
                 </button>
@@ -318,7 +319,7 @@ function Formulario({ listado }: { listado?: ListadoMateriales }) {
       <AlertaError error={guardar.error} />
       <div className="flex flex-wrap justify-end gap-2">
         {listado && (
-          <Boton variante="destructivo" onClick={() => window.confirm('¿Borrar este listado?') && eliminar.mutate()} cargando={eliminar.isPending}>
+          <Boton variante="destructivo" onClick={async () => (await confirmar({ titulo: '¿Borrar el listado?', mensaje: 'Se borra el listado de materiales y no se puede recuperar.', accion: 'Borrar', peligro: true })) && eliminar.mutate()} cargando={eliminar.isPending}>
             Borrar
           </Boton>
         )}

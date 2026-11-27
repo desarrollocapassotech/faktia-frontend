@@ -61,6 +61,11 @@ Estilo nórdico: minimalista, mucho aire, pocos colores bien usados, nada recarg
   - `error`: es el título; debajo va el mensaje de la API. Sin él, el título es el mensaje de la API. `error: false` lo silencia (solo si el error ya se maneja de otra forma). Los 401 no muestran toast.
   - Si el mensaje depende de las variables o de la respuesta (estado nuevo, activar/desactivar, resultado de ARCA), llamar `toast.exito()` / `toast.error()` de `@/lib/toasts` en el `onSuccess` y no poner `exito` en `meta`.
   - El `AlertaError` del formulario se mantiene: el toast avisa aunque el error quede fuera de la vista y el `AlertaError` deja el detalle junto al formulario.
+- **Confirmación antes de las acciones importantes:** duplicar, enviar o compartir (email, WhatsApp), cambiar de estado, activar/desactivar/pausar, eliminar/quitar/descartar, revocar, reenviar, generar o confirmar en lote, reemplazar datos (actualizar precios, cargar ejemplos).
+  - Usar `await confirmar({ titulo, mensaje, accion, peligro })` de `@/lib/confirmar` (el diálogo es `components/Confirmacion.tsx`, montado en `main.tsx`). **Nunca `window.confirm`.**
+  - `titulo` como pregunta ("¿Duplicar el presupuesto?"), `mensaje` con qué pasa en concreto (y si no se puede deshacer), `accion` con el verbo del botón ("Duplicar", "Enviar"). `peligro: true` si borra, rechaza, pausa o no tiene vuelta atrás.
+  - No hace falta para guardar un formulario, navegar, ver o descargar, ni cuando la acción ya abre su propio modal de confirmación (emitir, anular recibo, crear proyecto, pasar a producción).
+  - Si se repiten en un módulo, juntar los textos en un archivo (ej.: `pages/presupuestos/confirmaciones.ts`).
 - `MarcoPublico`: pantallas sin sesión (fondo fiordo, card blanca con el logo y el tagline "Facturar no debería ser un trámite.").
 
 ## Layout y criterios de pantalla
