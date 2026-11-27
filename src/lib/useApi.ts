@@ -98,6 +98,21 @@ export function useApi() {
     [getToken, logout],
   );
 
+  /** Trae un archivo autenticado (PDF) como `File`, con el nombre que manda el backend (para compartirlo). */
+  const traerArchivo = useCallback(
+    async (ruta: string, nombrePorDefecto: string): Promise<File> => {
+      const res = await fetch(`${API_URL}${ruta}`, { headers: { Authorization: `Bearer ${getToken()}` } });
+      if (!res.ok) {
+        if (res.status === 401) logout();
+        throw await errorDeRespuesta(res);
+      }
+      const nombre = /filename="([^"]+)"/.exec(res.headers.get('Content-Disposition') ?? '')?.[1] ?? nombrePorDefecto;
+      const blob = await res.blob();
+      return new File([blob], nombre, { type: blob.type || 'application/pdf' });
+    },
+    [getToken, logout],
+  );
+
   /** Trae una imagen autenticada como object URL (para previsualizar el logo). */
   const imagen = useCallback(
     async (ruta: string): Promise<string | null> => {
@@ -108,5 +123,5 @@ export function useApi() {
     [getToken],
   );
 
-  return { pedir, subir, descargar, verEnPestana, imagen };
+  return { pedir, subir, descargar, verEnPestana, traerArchivo, imagen };
 }

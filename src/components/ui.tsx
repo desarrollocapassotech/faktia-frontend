@@ -660,7 +660,22 @@ export function Aviso({ children, tono = 'ambar' }: { children: ReactNode; tono?
   return <div className={`rounded-fk border-l-[3px] px-4 py-3 text-sm text-fk-grafito ${TONOS_AVISO[tono]}`}>{children}</div>;
 }
 
-export function Modal({ abierto, titulo, onCerrar, children }: { abierto: boolean; titulo: string; onCerrar: () => void; children: ReactNode }) {
+const ANCHOS_MODAL = { normal: 'sm:max-w-lg', grande: 'sm:max-w-3xl' } as const;
+
+export function Modal({
+  abierto,
+  titulo,
+  onCerrar,
+  children,
+  ancho = 'normal',
+}: {
+  abierto: boolean;
+  titulo: string;
+  onCerrar: () => void;
+  children: ReactNode;
+  /** `grande` para contenido en dos columnas (ej.: compartir). */
+  ancho?: keyof typeof ANCHOS_MODAL;
+}) {
   if (!abierto) return null;
   // El portal saca el modal del DOM del formulario de la página, pero los eventos de React
   // siguen subiendo por el árbol de componentes: sin cortar el submit, enviar un formulario
@@ -675,7 +690,7 @@ export function Modal({ abierto, titulo, onCerrar, children }: { abierto: boolea
         role="dialog"
         aria-modal="true"
         aria-label={titulo}
-        className="flex max-h-[95dvh] w-full flex-col overflow-hidden rounded-t-fk-modal bg-fk-blanco shadow-fk-modal sm:max-h-[90vh] sm:max-w-lg sm:rounded-fk-modal"
+        className={`flex max-h-[95dvh] w-full flex-col overflow-hidden rounded-t-fk-modal bg-fk-blanco shadow-fk-modal sm:max-h-[90vh] ${ANCHOS_MODAL[ancho]} sm:rounded-fk-modal`}
         onMouseDown={(e) => e.stopPropagation()}
       >
         <header className="flex shrink-0 items-center justify-between gap-3 border-b border-fk-borde py-3 pr-3 pl-4 sm:pl-6">

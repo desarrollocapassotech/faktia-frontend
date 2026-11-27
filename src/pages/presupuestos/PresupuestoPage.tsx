@@ -1,7 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowDown, ArrowUp, BookOpen, Calculator, Copy, FileText, Grid2x2, HardHat, List, Plus, Trash2, UserPlus, type LucideIcon } from 'lucide-react';
+import { ArrowDown, ArrowUp, BookOpen, Calculator, Copy, FileText, Grid2x2, HardHat, List, Plus, Share2, Trash2, UserPlus, type LucideIcon } from 'lucide-react';
+import { CompartirModal } from '@/components/CompartirModal';
 import { EditorTexto, TextoFormato } from '@/components/EditorTexto';
 import {
   AlertaError,
@@ -106,6 +107,7 @@ function Formulario({ presupuesto, catalogo, diasValidez }: { presupuesto?: Pres
   const [notas, setNotas] = useState(presupuesto?.notas ?? '');
   const [biblioteca, setBiblioteca] = useState(false);
   const [crearObra, setCrearObra] = useState(false);
+  const [compartir, setCompartir] = useState(false);
   const [errorPdf, setErrorPdf] = useState<unknown>(null);
 
   useEffect(() => {
@@ -272,6 +274,10 @@ function Formulario({ presupuesto, catalogo, diasValidez }: { presupuesto?: Pres
               <Boton variante="terciario" cargando={duplicar.isPending && !duplicar.variables} onClick={() => duplicar.mutate(false)}>
                 <Copy className="h-4 w-4" strokeWidth={1.75} aria-hidden />
                 Duplicar
+              </Boton>
+              <Boton variante="terciario" onClick={() => setCompartir(true)}>
+                <Share2 className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+                Compartir
               </Boton>
             </>
           )
@@ -559,6 +565,28 @@ function Formulario({ presupuesto, catalogo, diasValidez }: { presupuesto?: Pres
         />
       )}
       {crearObra && presupuesto && <CrearObraModal presupuesto={presupuesto} onCerrar={() => setCrearObra(false)} />}
+      {compartir && presupuesto && (
+        <CompartirModal
+          abierto
+          onCerrar={() => setCompartir(false)}
+          titulo={`Compartir presupuesto ${presupuesto.numero}`}
+          rutaPdf={`/presupuestos/${presupuesto.id}/pdf`}
+          nombreArchivo={`Presupuesto_${presupuesto.numero}.pdf`}
+          mensaje={`Presupuesto${presupuesto.titulo ? `: ${presupuesto.titulo}` : ''} (PDF adjunto).`}
+          emailSugerido={clientes.data?.find((c) => c.id === presupuesto.clienteId)?.email}
+          enviarEmail={(datos) => pedir(`/presupuestos/${presupuesto.id}/enviar-email`, 'POST', datos)}
+          onCompartido={(medio) => {
+            // Mandarlo desde el sistema lo marca como enviado si era un borrador. Por email lo hace el
+            // backend (acá solo se refresca); por WhatsApp no hay confirmación del servidor: se marca acá.
+            if (medio === 'email') {
+              void queryClient.invalidateQueries({ queryKey: ['presupuesto', presupuesto.id] });
+              void queryClient.invalidateQueries({ queryKey: ['presupuestos'] });
+            } else if (presupuesto.estado === 'BORRADOR') {
+              estado.mutate('ENVIADO');
+            }
+          }}
+        />
+      )}
       <ClienteModal
         abierto={altaCliente}
         valoresIniciales={{ tipoDocumento: 'CONSUMIDOR_FINAL', condicionIva: 'CONSUMIDOR_FINAL' }}
