@@ -157,33 +157,44 @@
 .fk-texto-formato .c-verde { color: var(--fk-pino); }
 .fk-texto-formato .c-naranja { color: var(--fk-terracota-texto); }
 
-/* Toasts con forma de ticket (components/Toasts.tsx).
-   - Borde de abajo en zigzag (papel cortado) con una máscara; por eso la sombra va como drop-shadow
-     en el contenedor (un box-shadow quedaría recortado).
-   - Entrada: el papel "se imprime" de arriba hacia abajo, a tirones cortos como una impresora térmica.
-   - Después cae el sello. Al cerrarse, el ticket se "arranca" (gira un poco y se va).
+/* Animaciones de papel (toasts y loader). Para que sean fluidas solo se animan transform y opacity:
+   - El papel "sale" deslizándose desde una boca con overflow oculto (no se anima clip-path).
+   - La sombra (drop-shadow) va en el mismo elemento que se mueve: se pinta una vez y la placa de video
+     lo desplaza sin redibujar. El zigzag (máscara) va en un hijo, quieto respecto del que se mueve.
    - Sin animaciones con "reducir movimiento". */
-.fk-ticket-sombra {
+.fk-papel-sombra {
   filter: drop-shadow(0 6px 14px color-mix(in srgb, var(--fk-grafito) 16%, transparent)) drop-shadow(0 1px 2px color-mix(in srgb, var(--fk-grafito) 12%, transparent));
+  will-change: transform;
 }
-.fk-ticket {
+.fk-papel-zigzag {
   --diente: 7px;
   mask:
     linear-gradient(#000 0 0) top / 100% calc(100% - var(--diente)) no-repeat,
     conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / calc(2 * var(--diente)) var(--diente) repeat-x;
-  animation: fk-ticket-imprimir 420ms steps(7, end) both;
+}
+
+/* Toasts con forma de ticket (components/Toasts.tsx): el ticket sale desde arriba, cae el sello y al
+   cerrarse se "arranca" (gira un poco y se va). La boca deja lugar a los costados y abajo para la sombra. */
+.fk-ticket-boca {
+  overflow: hidden;
+  margin: 0 -16px -24px;
+  padding: 0 16px 24px;
+}
+.fk-ticket-mover {
+  animation: fk-ticket-imprimir 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 .fk-ticket-sello {
   transform: rotate(-8deg);
   opacity: 0.85;
-  animation: fk-ticket-sellar 260ms cubic-bezier(0.3, 0, 0.6, 1) 380ms both;
+  animation: fk-ticket-sellar 300ms cubic-bezier(0.3, 0, 0.6, 1) 420ms both;
 }
 .fk-ticket-salir {
-  animation: fk-ticket-arrancar 220ms cubic-bezier(0.4, 0, 1, 1) forwards;
+  will-change: transform, opacity;
+  animation: fk-ticket-arrancar 240ms cubic-bezier(0.4, 0, 1, 1) forwards;
 }
 @keyframes fk-ticket-imprimir {
-  from { clip-path: inset(0 0 100% 0); transform: translateY(-6px); }
-  to { clip-path: inset(0 0 0 0); transform: translateY(0); }
+  from { transform: translateY(-100%); }
+  to { transform: translateY(0); }
 }
 @keyframes fk-ticket-sellar {
   0% { opacity: 0; transform: rotate(-8deg) scale(1.8); }
@@ -193,10 +204,111 @@
 @keyframes fk-ticket-arrancar {
   to { opacity: 0; transform: translate(24px, -10px) rotate(4deg); }
 }
+
+/* Loader (Cargando en ui.tsx): una impresora de tickets. El papel sale de la ranura, cae el sello, el
+   ticket se arranca y vuelve a empezar (ciclo de 2,8 s). */
+.fk-cargador {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 140px;
+}
+.fk-cargador-ranura {
+  position: relative;
+  z-index: 1;
+  width: 112px;
+  height: 14px;
+  border-radius: 7px;
+  background: var(--fk-fiordo);
+  box-shadow: inset 0 -4px 0 color-mix(in srgb, var(--fk-grafito) 45%, transparent);
+}
+.fk-cargador-boca {
+  overflow: hidden;
+  margin-top: -7px;
+  padding: 0 14px 24px;
+}
+.fk-cargador-mover {
+  animation: fk-cargador-imprimir 2.8s infinite;
+}
+.fk-cargador-papel {
+  --diente: 6px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 84px;
+  height: 112px;
+  padding: 14px 10px calc(var(--diente) + 8px);
+  background: var(--fk-blanco);
+}
+.fk-cargador-logo {
+  width: 18px;
+  height: 18px;
+  margin-bottom: 2px;
+}
+.fk-cargador-linea {
+  display: block;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--fk-niebla);
+}
+.fk-cargador-linea-total {
+  height: 7px;
+  background: var(--fk-fiordo);
+}
+.fk-cargador-corte {
+  display: block;
+  margin: 2px 0;
+  border-top: 1.5px dashed var(--fk-borde);
+}
+.fk-cargador-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.fk-cargador-sello {
+  position: absolute;
+  right: 8px;
+  top: 12px;
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--fk-ok-texto);
+  border-radius: 999px;
+  opacity: 0;
+  transform: rotate(-12deg) scale(1.8);
+  animation: fk-cargador-sellar 2.8s infinite;
+}
+/* El tilde del sello, dibujado con dos bordes. */
+.fk-cargador-sello::after {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 3px;
+  width: 6px;
+  height: 10px;
+  border-right: 2px solid var(--fk-ok-texto);
+  border-bottom: 2px solid var(--fk-ok-texto);
+  transform: rotate(40deg);
+}
+@keyframes fk-cargador-imprimir {
+  0% { transform: translateY(-100%); opacity: 1; animation-timing-function: cubic-bezier(0.33, 0, 0.15, 1); }
+  42% { transform: translateY(0); opacity: 1; }
+  80% { transform: translateY(0) rotate(0deg); opacity: 1; animation-timing-function: cubic-bezier(0.4, 0, 1, 1); }
+  100% { transform: translate(8px, 16px) rotate(5deg); opacity: 0; }
+}
+@keyframes fk-cargador-sellar {
+  0%, 46% { opacity: 0; transform: rotate(-12deg) scale(1.8); }
+  54% { opacity: 1; transform: rotate(-12deg) scale(0.92); }
+  60%, 80% { opacity: 0.9; transform: rotate(-12deg) scale(1); }
+  100% { opacity: 0; transform: rotate(-12deg) scale(1); }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .fk-ticket,
+  .fk-ticket-mover,
   .fk-ticket-sello,
-  .fk-ticket-salir {
+  .fk-ticket-salir,
+  .fk-cargador-mover {
     animation: none;
   }
+  .fk-cargador-sello { animation: none; opacity: 0.9; transform: rotate(-12deg); }
 }

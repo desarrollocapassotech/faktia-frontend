@@ -764,12 +764,36 @@ export function Ayuda({ children, etiqueta = 'Ayuda', className = '' }: { childr
   );
 }
 
+/**
+ * Loader: una impresora de tickets que imprime un comprobante (ícono de la marca, renglones, total y
+ * sello), lo arranca y empieza otro. Estilos y animación en index.css (`.fk-cargador*`); con
+ * "reducir movimiento" se ve el ticket quieto.
+ */
 export function Cargando({ texto = 'Cargando…' }: { texto?: string }) {
   return (
-    <p role="status" className="flex flex-col items-center justify-center gap-3 py-12 text-center text-sm text-fk-gris-texto">
-      <img src="/brand/faktia-icono.svg" alt="" className="h-8 w-8 motion-safe:animate-pulse" />
-      {texto}
-    </p>
+    <div role="status" className="flex flex-col items-center justify-center gap-4 py-12 text-center text-sm text-fk-gris-texto">
+      <div className="fk-cargador" aria-hidden>
+        <div className="fk-cargador-ranura" />
+        {/* boca (recorta) › mover (se desliza, con la sombra) › papel (zigzag, quieto respecto del que se mueve) */}
+        <div className="fk-cargador-boca">
+          <div className="fk-cargador-mover fk-papel-sombra">
+          <div className="fk-cargador-papel fk-papel-zigzag">
+            <img src="/brand/faktia-icono.svg" alt="" className="fk-cargador-logo" />
+            <span className="fk-cargador-linea w-[78%]" />
+            <span className="fk-cargador-linea w-[56%]" />
+            <span className="fk-cargador-linea w-[68%]" />
+            <span className="fk-cargador-corte" />
+            <span className="fk-cargador-total">
+              <span className="fk-cargador-linea w-[34%]" />
+              <span className="fk-cargador-linea fk-cargador-linea-total w-[30%]" />
+            </span>
+            <span className="fk-cargador-sello" />
+          </div>
+          </div>
+        </div>
+      </div>
+      <p>{texto}</p>
+    </div>
   );
 }
 

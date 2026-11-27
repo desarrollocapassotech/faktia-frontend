@@ -2,9 +2,9 @@ import { CircleAlert, CircleCheck, X } from 'lucide-react';
 import { cerrarToast, pausarToast, reanudarToast, useToasts } from '@/lib/toasts';
 
 /**
- * Avisos de éxito y error con forma de ticket: salen "impresos" (el papel aparece de arriba hacia
- * abajo), tienen el borde de abajo cortado en zigzag, número y hora como un comprobante, y un sello
- * que cae al final. Al cerrarse se "arrancan". Estilos y animaciones en index.css (`.fk-ticket*`).
+ * Avisos de éxito y error con forma de ticket: salen "impresos" (el papel se desliza desde arriba),
+ * tienen el borde de abajo cortado en zigzag, número y hora como un comprobante, y un sello que cae al
+ * final. Al cerrarse se "arrancan". Estilos y animaciones en index.css (`.fk-ticket*`, `.fk-papel-*`).
  * Se monta una sola vez en main.tsx; los éxitos se anuncian con aria-live polite y los errores, como alerta.
  */
 export function Toasts() {
@@ -15,16 +15,19 @@ export function Toasts() {
         const error = t.tipo === 'error';
         const Icono = error ? CircleAlert : CircleCheck;
         return (
-          // La sombra va en el contenedor (drop-shadow): la máscara del zigzag recortaría un box-shadow.
+          // boca (recorta la entrada) › mover (se desliza, con la sombra) › ticket (zigzag). Solo se animan
+          // transform y opacity, para que sea fluido (ver index.css).
           <div
             key={t.id}
-            className={`fk-ticket-sombra pointer-events-auto w-full max-w-sm ${t.saliendo ? 'fk-ticket-salir' : ''}`}
+            className={`pointer-events-auto w-full max-w-sm ${t.saliendo ? 'fk-ticket-salir' : ''}`}
             onMouseEnter={() => pausarToast(t.id)}
             onMouseLeave={() => reanudarToast(t.id)}
             onFocus={() => pausarToast(t.id)}
             onBlur={() => reanudarToast(t.id)}
           >
-            <div role={error ? 'alert' : 'status'} className="fk-ticket relative bg-fk-blanco">
+            <div className="fk-ticket-boca">
+            <div className="fk-ticket-mover fk-papel-sombra">
+            <div role={error ? 'alert' : 'status'} className="fk-papel-zigzag relative bg-fk-blanco">
               {/* Franja superior en el color del resultado, como el encabezado de un comprobante. */}
               <div className={`h-1 ${error ? 'bg-fk-error-texto' : 'bg-fk-ok-texto'}`} aria-hidden />
               <div className="px-4 pt-3 pb-5">
@@ -63,6 +66,8 @@ export function Toasts() {
               >
                 {error ? 'Error' : 'Listo'}
               </span>
+            </div>
+            </div>
             </div>
           </div>
         );
