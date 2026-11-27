@@ -33,6 +33,7 @@ export function ProduccionSeccion() {
   const [prueba, setPrueba] = useState<ResultadoPrueba | null>(null);
 
   const probar = useMutation({
+    meta: { error: 'No se pudo probar la conexión con ARCA.' },
     mutationFn: () => pedir<ResultadoPrueba>('/configuracion/produccion/probar', 'POST'),
     onSuccess: setPrueba,
   });
@@ -112,6 +113,7 @@ function CambiarAmbiente({ estado, onCambio }: { estado: EstadoProduccion; onCam
   const aProduccion = estado.ambiente === 'HOMOLOGACION';
 
   const cambiar = useMutation({
+    meta: { exito: aProduccion ? 'Producción activada: ya facturás con validez fiscal.' : 'Volviste a homologación.', error: aProduccion ? 'No se pudo activar producción.' : 'No se pudo volver a homologación.' },
     mutationFn: () =>
       pedir<EstadoProduccion>(`/configuracion/produccion/${aProduccion ? 'activar' : 'volver-a-homologacion'}`, 'POST', { cuit: confirmacion }),
     onSuccess: onCambio,

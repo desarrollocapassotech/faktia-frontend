@@ -55,6 +55,12 @@ Estilo nórdico: minimalista, mucho aire, pocos colores bien usados, nada recarg
     - info: borrador, inactivo, anulado (este último tachado).
 - `Aviso` (ambar, azul, verde) y `AlertaError` (error de API con detalle técnico desplegable).
 - `Modal`, `Cargando` (ícono de la marca) y `Vacio`: ícono mono gris, frase corta y `accion` con el CTA cuando tiene sentido.
+- **Toasts (éxito y error):** toda acción que guarda, crea, borra o cambia algo avisa con un toast. Tienen forma de ticket (`components/Toasts.tsx`, estilos `.fk-ticket*` en `index.css`): no cambiarlo por un toast genérico.
+  - **Cada `useMutation` lleva `meta`** con mensajes propios, cortos y en voseo: `meta: { exito: 'Cliente creado.', error: 'No se pudo guardar el cliente.' }`. El `MutationCache` de `main.tsx` los muestra solo.
+  - `exito`: sin él no hay toast de éxito (sirve para consultas que ya muestran su resultado en pantalla). Puede depender del render: `cliente ? 'Cliente actualizado.' : 'Cliente creado.'`.
+  - `error`: es el título; debajo va el mensaje de la API. Sin él, el título es el mensaje de la API. `error: false` lo silencia (solo si el error ya se maneja de otra forma). Los 401 no muestran toast.
+  - Si el mensaje depende de las variables o de la respuesta (estado nuevo, activar/desactivar, resultado de ARCA), llamar `toast.exito()` / `toast.error()` de `@/lib/toasts` en el `onSuccess` y no poner `exito` en `meta`.
+  - El `AlertaError` del formulario se mantiene: el toast avisa aunque el error quede fuera de la vista y el `AlertaError` deja el detalle junto al formulario.
 - `MarcoPublico`: pantallas sin sesión (fondo fiordo, card blanca con el logo y el tagline "Facturar no debería ser un trámite.").
 
 ## Layout y criterios de pantalla

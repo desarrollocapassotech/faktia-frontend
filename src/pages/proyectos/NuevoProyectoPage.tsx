@@ -37,6 +37,7 @@ export function NuevoProyectoPage() {
   const descuadre = Boolean(montoAcordado) && hitos.length > 0 && Math.abs(sumaHitos(hitos) - Number(montoAcordado)) > 0.004;
 
   const crear = useMutation({
+    meta: { exito: `Listo: ${etiquetaMin} en marcha.`, error: `No se pudo crear: ${etiquetaMin}.` },
     mutationFn: () =>
       pedir<ProyectoDetalle>('/proyectos', 'POST', {
         clienteId,

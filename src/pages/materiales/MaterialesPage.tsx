@@ -195,6 +195,7 @@ function MaterialModal({ material, onCerrar }: { material: Material | null; onCe
   });
   const cambiar = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF((x) => ({ ...x, [k]: v }));
   const guardar = useMutation({
+    meta: { exito: material ? 'Material actualizado.' : 'Material creado.', error: 'No se pudo guardar el material.' },
     mutationFn: () => {
       const body = {
         ...f,
@@ -211,6 +212,7 @@ function MaterialModal({ material, onCerrar }: { material: Material | null; onCe
     },
   });
   const eliminar = useMutation({
+    meta: { exito: 'Material eliminado.', error: 'No se pudo eliminar el material.' },
     mutationFn: () => pedir(`/materiales/${material!.id}`, 'DELETE'),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['materiales'] });
@@ -376,8 +378,8 @@ function ProveedorModal({ proveedor, onCerrar }: { proveedor: Proveedor | null; 
     void queryClient.invalidateQueries({ queryKey: ['proveedores'] });
     onCerrar();
   };
-  const guardar = useMutation({ mutationFn: () => (proveedor ? pedir(`/proveedores/${proveedor.id}`, 'PATCH', f) : pedir('/proveedores', 'POST', f)), onSuccess: refrescar });
-  const eliminar = useMutation({ mutationFn: () => pedir(`/proveedores/${proveedor!.id}`, 'DELETE'), onSuccess: refrescar });
+  const guardar = useMutation({ meta: { exito: proveedor ? 'Proveedor actualizado.' : 'Proveedor creado.', error: 'No se pudo guardar el proveedor.' }, mutationFn: () => (proveedor ? pedir(`/proveedores/${proveedor.id}`, 'PATCH', f) : pedir('/proveedores', 'POST', f)), onSuccess: refrescar });
+  const eliminar = useMutation({ meta: { exito: 'Proveedor eliminado.', error: 'No se pudo eliminar el proveedor.' }, mutationFn: () => pedir(`/proveedores/${proveedor!.id}`, 'DELETE'), onSuccess: refrescar });
   return (
     <Modal abierto titulo={proveedor ? 'Editar proveedor' : 'Nuevo proveedor'} onCerrar={onCerrar}>
       <form

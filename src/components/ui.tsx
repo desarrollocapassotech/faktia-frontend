@@ -464,11 +464,14 @@ export function EncabezadoPagina({
   acciones,
   junto,
   tituloEnBarra,
+  inicio,
 }: {
   titulo: ReactNode;
   migas?: Array<{ texto: ReactNode; a?: string }>;
   descripcion?: ReactNode;
   acciones?: ReactNode;
+  /** Con `tituloEnBarra`: acciones a la izquierda, en la misma fila que `acciones` (ej.: cambios de estado). */
+  inicio?: ReactNode;
   /** Algo chico al lado del título (número, badge de estado). */
   junto?: ReactNode;
   /**
@@ -479,11 +482,12 @@ export function EncabezadoPagina({
 }) {
   if (tituloEnBarra) {
     return (
-      <header className={descripcion || acciones ? 'flex flex-wrap items-center justify-between gap-4' : 'contents'}>
+      <header className={descripcion || acciones || inicio ? 'flex flex-wrap items-center justify-between gap-4' : 'contents'}>
         {/* Sin migas (página de primer nivel), el título solo es la "miga". */}
         <MigasEnBarra items={migas ?? [{ texto: titulo }]} extra={junto} />
         <h1 className="sr-only">{titulo}</h1>
         {descripcion && <p className="max-w-[var(--fk-ancho-formulario)] text-fk-gris-texto">{descripcion}</p>}
+        {inicio && <div className="flex flex-wrap items-center gap-2">{inicio}</div>}
         {acciones && <div className="ml-auto flex flex-wrap gap-2">{acciones}</div>}
       </header>
     );

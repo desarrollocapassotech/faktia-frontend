@@ -53,6 +53,7 @@ function FormularioEmisor({ emisor }: { emisor: Emisor }) {
   // Con el certificado de plataforma del servidor: funciona aunque la empresa esté en pruebas.
   const consultaPadron = emisor.padronDisponible === true;
   const padron = useMutation({
+    meta: { exito: 'Datos cargados desde el padrón de ARCA.', error: 'No se pudo consultar el padrón.' },
     mutationFn: (cuitBuscado: string) => pedir<DatosPadron>(`/configuracion/emisor/padron/${cuitBuscado}`),
     onSuccess: (d, cuitBuscado) => {
       // Si mientras tanto cambió el CUIT, esta respuesta ya no corresponde.
@@ -76,6 +77,7 @@ function FormularioEmisor({ emisor }: { emisor: Emisor }) {
   // y sugiere el inicio de actividades.
   const [camposArca, setCamposArca] = useState<CampoArca[]>(emisor.camposDeArca ?? []);
   const sincronizar = useMutation({
+    meta: { exito: 'Datos sincronizados con ARCA.', error: 'No se pudo sincronizar con ARCA.' },
     mutationFn: () =>
       pedir<{ camposDeArca: CampoArca[]; inicioActividadesSugerido: string | null }>('/configuracion/emisor/sincronizar-arca', 'POST'),
     onSuccess: (r) => {
@@ -121,6 +123,7 @@ function FormularioEmisor({ emisor }: { emisor: Emisor }) {
   }
 
   const guardar = useMutation({
+    meta: { exito: 'Datos del emisor guardados.', error: 'No se pudieron guardar los datos del emisor.' },
     mutationFn: () =>
       pedir<Emisor>('/configuracion/emisor', 'PATCH', {
         ...(cuitEditable ? { cuit: form.cuit.trim() } : {}),

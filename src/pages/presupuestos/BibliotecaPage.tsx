@@ -14,6 +14,7 @@ export function BibliotecaPage() {
   const { pedir } = useApi();
   const queryClient = useQueryClient();
   const cargar = useMutation({
+    meta: { exito: 'Biblioteca inicial cargada.', error: 'No se pudo cargar la biblioteca inicial.' },
     mutationFn: () => pedir<{ items: number; observaciones: number }>('/presupuestos/biblioteca/cargar-inicial', 'POST'),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['presupuestos'] }),
   });
@@ -68,6 +69,7 @@ function Items() {
   const { data, error } = useQuery({ queryKey: ['presupuestos', 'biblioteca'], queryFn: () => pedir<ItemBiblioteca[]>('/presupuestos/biblioteca/items') });
   const [editando, setEditando] = useState<ItemBiblioteca | 'nuevo' | null>(null);
   const eliminar = useMutation({
+    meta: { exito: 'Ítem eliminado de la biblioteca.', error: 'No se pudo eliminar el ítem.' },
     mutationFn: (id: string) => pedir(`/presupuestos/biblioteca/items/${id}`, 'DELETE'),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['presupuestos', 'biblioteca'] }),
   });
@@ -114,6 +116,7 @@ function ItemModal({ item, onCerrar }: { item: ItemBiblioteca | null; onCerrar: 
   const [categoria, setCategoria] = useState(item?.categoria ?? '');
   const [descripcion, setDescripcion] = useState(item?.descripcion ?? '');
   const guardar = useMutation({
+    meta: { exito: item ? 'Ítem actualizado.' : 'Ítem agregado a la biblioteca.', error: 'No se pudo guardar el ítem.' },
     mutationFn: () => {
       const body = { titulo: titulo.trim(), categoria: categoria.trim() || undefined, descripcion };
       return item ? pedir(`/presupuestos/biblioteca/items/${item.id}`, 'PUT', body) : pedir('/presupuestos/biblioteca/items', 'POST', body);
@@ -164,6 +167,7 @@ function Observaciones() {
   const { data, error } = useQuery({ queryKey: ['presupuestos', 'observaciones'], queryFn: () => pedir<ObservacionCatalogo[]>('/presupuestos/biblioteca/observaciones') });
   const [editando, setEditando] = useState<ObservacionCatalogo | 'nueva' | null>(null);
   const eliminar = useMutation({
+    meta: { exito: 'Observación eliminada.', error: 'No se pudo eliminar la observación.' },
     mutationFn: (id: string) => pedir(`/presupuestos/biblioteca/observaciones/${id}`, 'DELETE'),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['presupuestos', 'observaciones'] }),
   });
@@ -210,6 +214,7 @@ function ObservacionModal({ observacion, onCerrar }: { observacion: ObservacionC
   const [valorSugerido, setValorSugerido] = useState(observacion?.valorSugerido ?? '');
   const [porDefecto, setPorDefecto] = useState(observacion?.porDefecto ?? false);
   const guardar = useMutation({
+    meta: { exito: observacion ? 'Observación actualizada.' : 'Observación agregada.', error: 'No se pudo guardar la observación.' },
     mutationFn: () => {
       const body = { texto: texto.trim(), llevaValor: texto.includes('{valor}'), valorSugerido: valorSugerido.trim() || undefined, porDefecto };
       return observacion ? pedir(`/presupuestos/biblioteca/observaciones/${observacion.id}`, 'PUT', body) : pedir('/presupuestos/biblioteca/observaciones', 'POST', body);

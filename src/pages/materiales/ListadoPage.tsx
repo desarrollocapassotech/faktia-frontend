@@ -126,14 +126,17 @@ function Formulario({ listado }: { listado?: ListadoMateriales }) {
     if (!listado) navigate(`/materiales/listados/${l.id}`, { replace: true });
   };
   const guardar = useMutation({
+    meta: { exito: listado ? 'Listado guardado.' : 'Listado creado.', error: 'No se pudo guardar el listado.' },
     mutationFn: () => (listado ? pedir<ListadoMateriales>(`/listados-materiales/${listado.id}`, 'PUT', body()) : pedir<ListadoMateriales>('/listados-materiales', 'POST', body())),
     onSuccess: alGuardar,
   });
   const actualizarPrecios = useMutation({
+    meta: { exito: 'Precios actualizados.', error: 'No se pudieron actualizar los precios.' },
     mutationFn: () => pedir<ListadoMateriales>(`/listados-materiales/${listado!.id}/actualizar-precios`, 'POST'),
     onSuccess: (l) => queryClient.setQueryData(['listado', l.id], l),
   });
   const duplicar = useMutation({
+    meta: { exito: 'Listado duplicado.', error: 'No se pudo duplicar el listado.' },
     mutationFn: () => pedir<ListadoMateriales>(`/listados-materiales/${listado!.id}/duplicar`, 'POST'),
     onSuccess: (l) => {
       void queryClient.invalidateQueries({ queryKey: ['listados'] });
@@ -141,6 +144,7 @@ function Formulario({ listado }: { listado?: ListadoMateriales }) {
     },
   });
   const eliminar = useMutation({
+    meta: { exito: 'Listado eliminado.', error: 'No se pudo eliminar el listado.' },
     mutationFn: () => pedir(`/listados-materiales/${listado!.id}`, 'DELETE'),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['listados'] });

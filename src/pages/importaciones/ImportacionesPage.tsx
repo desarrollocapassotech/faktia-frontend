@@ -107,6 +107,7 @@ function ImportarExcel() {
   const elegida = plantillaId || activas[0]?.id || '';
 
   const importar = useMutation({
+    meta: { exito: 'Archivo importado.', error: 'No se pudo importar el archivo.' },
     mutationFn: (f: File) => subir<Importacion>('/importaciones/excel', 'archivo', f, { method: 'POST', campos: { plantillaMapeoId: elegida } }),
     onSuccess: (imp) => navigate(rutaImportacion(imp.id)),
   });

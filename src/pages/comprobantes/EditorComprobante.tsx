@@ -189,6 +189,7 @@ export function EditorComprobante({
   const servicios = form.concepto !== 'PRODUCTOS';
 
   const guardar = useMutation({
+    meta: { exito: comprobante ? 'Cambios guardados.' : 'Borrador creado.', error: 'No se pudo guardar el comprobante.' },
     mutationFn: () => {
       const body = {
         puntoVentaId,

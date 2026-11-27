@@ -5,6 +5,7 @@ import { AlertaError, Aviso, Boton, BotonIcono, Campo, Cargando, ContenedorTabla
 import { ambienteTexto } from '@/lib/formato';
 import type { Ambiente, Emisor, PuntoVenta } from '@/lib/tipos';
 import { useApi } from '@/lib/useApi';
+import { toast } from '@/lib/toasts';
 
 export function PuntosVentaSeccion() {
   const { pedir } = useApi();
@@ -13,8 +14,12 @@ export function PuntosVentaSeccion() {
   const emisor = useQuery({ queryKey: ['emisor'], queryFn: () => pedir<Emisor>('/configuracion/emisor') });
 
   const cambiarActivo = useMutation({
+    meta: { error: 'No se pudo cambiar el punto de venta.' },
     mutationFn: (pv: PuntoVenta) => pedir<PuntoVenta>(`/configuracion/puntos-venta/${pv.id}`, 'PATCH', { activo: !pv.activo }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['puntos-venta'] }),
+    onSuccess: (_r, pv) => {
+      toast.exito(pv.activo ? 'Punto de venta desactivado.' : 'Punto de venta activado.');
+      return queryClient.invalidateQueries({ queryKey: ['puntos-venta'] });
+    },
   });
 
   if (puntos.error) return <AlertaError error={puntos.error} />;
@@ -89,6 +94,7 @@ function NuevoPuntoVenta({ ambiente, sugerirUno }: { ambiente: Ambiente; sugerir
   const [descripcion, setDescripcion] = useState('');
 
   const crear = useMutation({
+    meta: { exito: 'Punto de venta creado.', error: 'No se pudo crear el punto de venta.' },
     mutationFn: () =>
       pedir<PuntoVenta>('/configuracion/puntos-venta', 'POST', {
         numero: Number(numero),

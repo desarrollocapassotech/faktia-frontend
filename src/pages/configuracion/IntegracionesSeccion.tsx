@@ -13,6 +13,7 @@ export function IntegracionesSeccion() {
   const { data, error } = useQuery({ queryKey: ['integraciones'], queryFn: () => pedir<Integracion[]>('/integraciones') });
 
   const revocar = useMutation({
+    meta: { exito: 'Integración revocada.', error: 'No se pudo revocar la integración.' },
     mutationFn: (i: Integracion) => pedir<Integracion>(`/integraciones/${i.id}`, 'DELETE'),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['integraciones'] }),
   });
@@ -115,6 +116,7 @@ function NuevaIntegracion({ onCreada }: { onCreada: (nombre: string, clave: stri
   const [scopes, setScopes] = useState<Scope[]>(['items:write', 'comprobantes:write', 'comprobantes:read']);
 
   const crear = useMutation({
+    meta: { exito: 'Integración creada.', error: 'No se pudo crear la integración.' },
     mutationFn: () => pedir<{ integracion: Integracion; clave: string }>('/integraciones', 'POST', { nombre: nombre.trim(), origen, scopes }),
     onSuccess: (r) => {
       setNombre('');

@@ -5,6 +5,7 @@ import { AlertaError, Aviso, Boton, BotonIcono, Campo, Cargando, Entrada, Etique
 import { API_URL } from '@/lib/api';
 import { fechaHora, type Tono } from '@/lib/formato';
 import { useApi } from '@/lib/useApi';
+import { toast } from '@/lib/toasts';
 
 const EVENTOS: Record<string, string> = {
   'comprobante.emitido': 'Comprobante emitido (con CAE)',
@@ -51,15 +52,25 @@ export function WebhooksSeccion() {
   const refrescar = () => queryClient.invalidateQueries({ queryKey: ['webhooks'] });
 
   const alternar = useMutation({
+    meta: { error: 'No se pudo cambiar el webhook.' },
     mutationFn: (s: Suscripcion) => pedir(`/configuracion/webhooks/${s.id}`, 'PATCH', { activa: !s.activa }),
-    onSuccess: refrescar,
+    onSuccess: (_r, s) => {
+      toast.exito(s.activa ? 'Webhook pausado.' : 'Webhook activado.');
+      refrescar();
+    },
   });
-  const eliminar = useMutation({ mutationFn: (s: Suscripcion) => pedir(`/configuracion/webhooks/${s.id}`, 'DELETE'), onSuccess: refrescar });
+  const eliminar = useMutation({ meta: { exito: 'Webhook eliminado.', error: 'No se pudo eliminar el webhook.' }, mutationFn: (s: Suscripcion) => pedir(`/configuracion/webhooks/${s.id}`, 'DELETE'), onSuccess: refrescar });
   const rotar = useMutation({
+    meta: { exito: 'Secreto rotado.', error: 'No se pudo rotar el secreto.' },
     mutationFn: (s: Suscripcion) => pedir<{ secreto: string }>(`/configuracion/webhooks/${s.id}/rotar-secreto`, 'POST'),
     onSuccess: (r) => setSecreto(r.secreto),
   });
-  const probar = useMutation({ mutationFn: (s: Suscripcion) => pedir<{ ok: boolean; status: number | null; error: string | null }>(`/configuracion/webhooks/${s.id}/probar`, 'POST') });
+  const probar = useMutation({ meta: { error: 'No se pudo probar el webhook.' }, mutationFn: (s: Suscripcion) => pedir<{ ok: boolean; status: number | null; error: string | null }>(`/configuracion/webhooks/${s.id}/probar`, 'POST'),
+    onSuccess: (r) =>
+      r.ok
+        ? toast.exito('El webhook respondió bien.', r.status ? `HTTP ${r.status}` : undefined)
+        : toast.error('El webhook no respondió bien.', r.error ?? (r.status ? `HTTP ${r.status}` : undefined)),
+  });
 
   if (error) return <AlertaError error={error} />;
   if (!data) return <Cargando />;
@@ -171,6 +182,7 @@ function NuevoWebhook({ onCreado }: { onCreado: (secreto: string) => void }) {
   const [eventos, setEventos] = useState<string[]>(['comprobante.emitido', 'comprobante.rechazado']);
 
   const crear = useMutation({
+    meta: { exito: 'Webhook creado.', error: 'No se pudo crear el webhook.' },
     mutationFn: () => pedir<{ secreto: string }>('/configuracion/webhooks', 'POST', { url: url.trim(), eventos }),
     onSuccess: (r) => {
       setUrl('');
@@ -220,6 +232,7 @@ function EntregasModal({ suscripcion, onCerrar }: { suscripcion: Suscripcion; on
   const clave = ['webhook-entregas', suscripcion.id];
   const { data, error } = useQuery({ queryKey: clave, queryFn: () => pedir<Entrega[]>(`/configuracion/webhooks/${suscripcion.id}/entregas`) });
   const reenviar = useMutation({
+    meta: { exito: 'Entrega reenviada.', error: 'No se pudo reenviar la entrega.' },
     mutationFn: (e: Entrega) => pedir(`/configuracion/webhooks/entregas/${e.id}/reenviar`, 'POST'),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: clave }),
   });

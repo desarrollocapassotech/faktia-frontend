@@ -6,6 +6,7 @@ import { ApiError } from '@/lib/api';
 import { dinero, letraDe, numeroComprobante, tipoLargo } from '@/lib/formato';
 import type { Comprobante, TipoComprobante } from '@/lib/tipos';
 import { useApi } from '@/lib/useApi';
+import { toast } from '@/lib/toasts';
 
 export type ClaseNota = 'NOTA_CREDITO' | 'NOTA_DEBITO';
 
@@ -29,9 +30,13 @@ export function EmitirModal({
   const [clave, setClave] = useState(() => crypto.randomUUID());
 
   const emitir = useMutation({
+    meta: { error: 'No se pudo emitir el comprobante.' },
     mutationFn: () =>
       pedir<Comprobante>(`/comprobantes/${c.id}/emitir`, 'POST', { version: c.version }, { 'Idempotency-Key': clave }),
     onSuccess: (nuevo) => {
+      // El mensaje depende de lo que respondió ARCA.
+      if (nuevo.estado === 'EMITIDO') toast.exito('Comprobante emitido.', nuevo.cae ? `CAE ${nuevo.cae}` : undefined);
+      else if (nuevo.estado === 'PENDIENTE_VERIFICACION') toast.error('ARCA no respondió a tiempo.', 'No lo vuelvas a emitir: el sistema lo verifica solo.');
       queryClient.setQueryData(['comprobante', nuevo.id], nuevo);
       void queryClient.invalidateQueries({ queryKey: ['comprobantes'] });
       onActualizado(nuevo);
@@ -105,6 +110,7 @@ export function NotaModal({
   const texto = clase === 'NOTA_CREDITO' ? 'nota de crédito' : 'nota de débito';
 
   const crear = useMutation({
+    meta: { exito: 'Nota creada.', error: 'No se pudo crear la nota.' },
     mutationFn: () => pedir<Comprobante>(`/comprobantes/${factura.id}/notas`, 'POST', { clase, motivo: motivo.trim() }),
     onSuccess: (n) => {
       queryClient.setQueryData(['comprobante', n.id], n);

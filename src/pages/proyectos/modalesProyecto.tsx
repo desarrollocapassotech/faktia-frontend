@@ -58,6 +58,7 @@ export function EntregaModal({ proyecto, onCerrar, onRecibo }: { proyecto: Proye
   const equivalente = otraMoneda && tc > 0 && Number(importe) > 0 ? (moneda === 'ARS' ? Number(importe) / tc : Number(importe) * tc) : null;
 
   const guardar = useMutation({
+    meta: { exito: 'Entrega registrada.', error: 'No se pudo registrar la entrega.' },
     mutationFn: () =>
       pedir<{ reciboId: string | null }>(`/proyectos/${proyecto.id}/entregas`, 'POST', {
         fecha,
@@ -154,6 +155,7 @@ export function CertificacionModal({ proyecto, hito, onCerrar }: { proyecto: Pro
   const resta = Number(hito.aCertificar);
 
   const guardar = useMutation({
+    meta: { exito: 'Certificación registrada.', error: 'No se pudo registrar la certificación.' },
     mutationFn: () =>
       pedir<ProyectoDetalle>(`/proyectos/${proyecto.id}/hitos/${hito.id}/certificaciones`, 'POST', {
         fecha,
@@ -234,6 +236,7 @@ export function AdicionalModal({ proyecto, onCerrar }: { proyecto: ProyectoDetal
   const [importe, setImporte] = useState('');
   const [vencimiento, setVencimiento] = useState('');
   const guardar = useMutation({
+    meta: { exito: 'Adicional agregado.', error: 'No se pudo agregar el adicional.' },
     mutationFn: () =>
       pedir<ProyectoDetalle>(`/proyectos/${proyecto.id}/adicionales`, 'POST', {
         fecha,
@@ -298,6 +301,7 @@ export function PlanModal({ proyecto, onCerrar }: { proyecto: ProyectoDetalle; o
   );
   const descuadre = Boolean(montoAcordado) && hitos.length > 0 && Math.abs(sumaHitos(hitos) - Number(montoAcordado)) > 0.004;
   const guardar = useMutation({
+    meta: { exito: 'Plan actualizado.', error: 'No se pudo guardar el plan.' },
     mutationFn: () =>
       pedir<ProyectoDetalle>(`/proyectos/${proyecto.id}/plan`, 'PUT', {
         montoAcordado: montoAcordado ? Number(montoAcordado).toFixed(2) : null,
@@ -336,6 +340,7 @@ export function DatosProyectoModal({ proyecto, onCerrar }: { proyecto: ProyectoD
   const [tipoCambioFijo, setTipoCambioFijo] = useState(proyecto.tipoCambioFijo ?? '');
   const [observaciones, setObservaciones] = useState(proyecto.observaciones ?? '');
   const guardar = useMutation({
+    meta: { exito: 'Cambios guardados.', error: 'No se pudieron guardar los cambios.' },
     mutationFn: () =>
       pedir<ProyectoDetalle>(`/proyectos/${proyecto.id}`, 'PATCH', {
         nombre: nombre.trim(),

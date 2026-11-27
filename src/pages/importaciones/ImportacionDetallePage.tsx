@@ -23,6 +23,7 @@ import type { Cliente, CondicionIva, EstadoItem, Importacion, ItemFacturable, Mo
 import { useApi } from '@/lib/useApi';
 import { ClienteModal } from '../clientes/ClienteModal';
 import { FormularioTarifa } from '../configuracion/TarifasSeccion';
+import { toast } from '@/lib/toasts';
 
 const FILTROS: Array<{ id: EstadoItem | ''; texto: string; icono: LucideIcon }> = [
   { id: '', texto: 'Todos', icono: List },
@@ -66,12 +67,16 @@ export function ImportacionDetallePage() {
   };
 
   const accionItem = useMutation({
+    meta: { error: 'No se pudo actualizar el ítem.' },
     mutationFn: ({ item, accion }: { item: ItemFacturable; accion: 'descartar' | 'restaurar' }) =>
       pedir<ItemFacturable>(`/importaciones/items/${item.id}/${accion}`, 'POST'),
-    onSuccess: refrescar,
+    onSuccess: (_r, { accion }) => {
+      toast.exito(accion === 'descartar' ? 'Ítem descartado.' : 'Ítem restaurado.');
+      refrescar();
+    },
   });
-  const confirmar = useMutation({ mutationFn: () => pedir<Importacion>(`/importaciones/${id}/confirmar`, 'POST'), onSuccess: refrescar });
-  const descartar = useMutation({ mutationFn: () => pedir<Importacion>(`/importaciones/${id}/descartar`, 'POST'), onSuccess: refrescar });
+  const confirmar = useMutation({ meta: { exito: 'Importación confirmada.', error: 'No se pudo confirmar la importación.' }, mutationFn: () => pedir<Importacion>(`/importaciones/${id}/confirmar`, 'POST'), onSuccess: refrescar });
+  const descartar = useMutation({ meta: { exito: 'Importación descartada.', error: 'No se pudo descartar la importación.' }, mutationFn: () => pedir<Importacion>(`/importaciones/${id}/descartar`, 'POST'), onSuccess: refrescar });
 
   /** Después de crear una tarifa, revalida los ítems con error del mismo cliente. */
   async function revalidarCliente(clienteId: string) {
@@ -234,6 +239,7 @@ function Acciones({
   const listos = i.estadosItems?.VALIDO ?? 0;
 
   const generar = useMutation({
+    meta: { exito: 'Comprobantes generados.', error: 'No se pudieron generar los comprobantes.' },
     mutationFn: () => pedir<ResultadoGenerar>('/comprobantes/generar', 'POST', { importacionId: i.id, agrupacion, fechaEmision }),
     onSuccess: onGenerado,
   });
@@ -437,6 +443,7 @@ function EditarItemModal({ item, onCerrar, onGuardado }: { item: ItemFacturable;
   }
 
   const guardar = useMutation({
+    meta: { exito: 'Ítem actualizado.', error: 'No se pudo guardar el ítem.' },
     mutationFn: () =>
       pedir<ItemFacturable>(`/importaciones/items/${item.id}`, 'PATCH', {
         descripcion: form.descripcion.trim(),
@@ -551,6 +558,7 @@ function AsignarClienteModal({ item, onCerrar, onGuardado }: { item: ItemFactura
   const clientes = useQuery({ queryKey: ['clientes', { q: '', inactivos: false }], queryFn: () => pedir<Cliente[]>('/clientes?') });
 
   const asignar = useMutation({
+    meta: { exito: 'Cliente asignado.', error: 'No se pudo asignar el cliente.' },
     mutationFn: (id: string) => pedir<ItemFacturable & { actualizadosConElMismoCliente?: number }>(`/importaciones/items/${item.id}`, 'PATCH', { clienteId: id }),
     onSuccess: () => {
       onGuardado();

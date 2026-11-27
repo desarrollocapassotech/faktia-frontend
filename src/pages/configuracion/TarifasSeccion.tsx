@@ -21,6 +21,7 @@ export function TarifasSeccion() {
   const { data, error } = useQuery({ queryKey: ['tarifas'], queryFn: () => pedir<Tarifa[]>('/configuracion/tarifas') });
 
   const eliminar = useMutation({
+    meta: { exito: 'Tarifa eliminada.', error: 'No se pudo eliminar la tarifa.' },
     mutationFn: (t: Tarifa) => pedir<void>(`/configuracion/tarifas/${t.id}`, 'DELETE'),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tarifas'] }),
   });
@@ -119,6 +120,7 @@ export function FormularioTarifa({ inicial, onCreada }: { inicial?: TarifaInicia
   }
 
   const crear = useMutation({
+    meta: { exito: 'Tarifa creada.', error: 'No se pudo crear la tarifa.' },
     mutationFn: () =>
       pedir<Tarifa>('/configuracion/tarifas', 'POST', {
         clienteId: form.clienteId,

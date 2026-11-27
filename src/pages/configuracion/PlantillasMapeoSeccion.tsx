@@ -86,6 +86,7 @@ function EditorPlantilla({ plantilla, onCerrar }: { plantilla: PlantillaMapeo | 
   const [vista, setVista] = useState<Vista | null>(null);
 
   const previsualizar = useMutation({
+    meta: { error: 'No se pudo leer el archivo.' },
     mutationFn: (f: File) =>
       subir<Vista>('/configuracion/plantillas-mapeo/previsualizar', 'archivo', f, {
         method: 'POST',
@@ -111,6 +112,7 @@ function EditorPlantilla({ plantilla, onCerrar }: { plantilla: PlantillaMapeo | 
   });
 
   const guardar = useMutation({
+    meta: { exito: plantilla ? 'Plantilla de importación actualizada.' : 'Plantilla de importación creada.', error: 'No se pudo guardar la plantilla de importación.' },
     mutationFn: () =>
       plantilla
         ? pedir<PlantillaMapeo>(`/configuracion/plantillas-mapeo/${plantilla.id}`, 'PATCH', { nombre: nombre.trim(), formato, config: config(), activa })

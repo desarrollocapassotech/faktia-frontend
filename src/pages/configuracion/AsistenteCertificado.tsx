@@ -375,6 +375,7 @@ function PasoPuntoVenta({
   const queryClient = useQueryClient();
   const [numero, setNumero] = useState('');
   const crear = useMutation({
+    meta: { exito: 'Punto de venta creado.', error: 'No se pudo crear el punto de venta.' },
     mutationFn: () => pedir<PuntoVenta>('/configuracion/puntos-venta', 'POST', { numero: Number(numero), ambiente: 'PRODUCCION' }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['puntos-venta'] });
@@ -520,6 +521,7 @@ export function SubirCertificado({
   const [listo, setListo] = useState(false);
 
   const cargar = useMutation({
+    meta: { exito: 'Certificado cargado.', error: 'No se pudo cargar el certificado.' },
     mutationFn: () =>
       pedir<Certificado>('/configuracion/certificados', 'POST', {
         ambiente: 'PRODUCCION',

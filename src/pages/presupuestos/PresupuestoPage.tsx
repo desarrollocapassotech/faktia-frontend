@@ -27,6 +27,7 @@ import { useApi } from '@/lib/useApi';
 import { ClienteModal } from '@/pages/clientes/ClienteModal';
 import { EditorPlan } from '@/pages/proyectos/EditorPlan';
 import { hitosParaEnviar, sumaHitos, type HitoEditable } from '@/pages/proyectos/plan';
+import { toast } from '@/lib/toasts';
 
 const FORMAS: Array<{ id: FormaCotizar; texto: string; ayuda: string; icono: LucideIcon }> = [
   { id: 'POR_ITEM', texto: 'Por ítem', ayuda: 'Cada trabajo con su importe', icono: List },
@@ -146,6 +147,7 @@ function Formulario({ presupuesto, catalogo, diasValidez }: { presupuesto?: Pres
     if (!presupuesto) navigate(`/presupuestos/${p.id}`, { replace: true });
   };
   const guardar = useMutation({
+    meta: { exito: presupuesto ? 'Cambios guardados.' : 'Presupuesto creado.', error: 'No se pudo guardar el presupuesto.' },
     mutationFn: () => (presupuesto ? pedir<Presupuesto>(`/presupuestos/${presupuesto.id}`, 'PUT', body()) : pedir<Presupuesto>('/presupuestos', 'POST', body())),
     onSuccess: alGuardar,
   });
@@ -155,10 +157,16 @@ function Formulario({ presupuesto, catalogo, diasValidez }: { presupuesto?: Pres
     guardar.reset();
   };
   const estado = useMutation({
+    meta: { error: 'No se pudo cambiar el estado.' },
     mutationFn: (e: Exclude<EstadoPresupuesto, 'VENCIDO'>) => pedir<Presupuesto>(`/presupuestos/${presupuesto!.id}/estado`, 'PATCH', { estado: e }),
-    onSuccess: alGuardar,
+    onSuccess: (p, e) => {
+      const mensajes = { BORRADOR: 'Volvió a borrador.', ENVIADO: 'Presupuesto marcado como enviado.', ACEPTADO: 'Presupuesto aceptado.', RECHAZADO: 'Presupuesto rechazado.' };
+      toast.exito(mensajes[e]);
+      alGuardar(p);
+    },
   });
   const duplicar = useMutation({
+    meta: { exito: 'Presupuesto duplicado.', error: 'No se pudo duplicar el presupuesto.' },
     mutationFn: (reemplaza: boolean) => pedir<Presupuesto>(`/presupuestos/${presupuesto!.id}/duplicar`, 'POST', { reemplaza }),
     onSuccess: (p) => {
       void queryClient.invalidateQueries({ queryKey: ['presupuestos'] });
@@ -167,6 +175,7 @@ function Formulario({ presupuesto, catalogo, diasValidez }: { presupuesto?: Pres
     },
   });
   const eliminar = useMutation({
+    meta: { exito: 'Borrador eliminado.', error: 'No se pudo eliminar el presupuesto.' },
     mutationFn: () => pedir(`/presupuestos/${presupuesto!.id}`, 'DELETE'),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['presupuestos'] });
@@ -209,6 +218,50 @@ function Formulario({ presupuesto, catalogo, diasValidez }: { presupuesto?: Pres
         tituloEnBarra
         migas={[{ texto: 'Presupuestos', a: '/presupuestos' }, { texto: presupuesto ? presupuesto.numero : 'Nuevo presupuesto' }]}
         junto={e && <EtiquetaEstado estado={ESTADOS_PRESUPUESTO[e]} />}
+        inicio={
+          presupuesto && (
+            <>
+              {e === 'BORRADOR' && (
+                <Boton variante="secundario" onClick={() => estado.mutate('ENVIADO')} cargando={estado.isPending}>
+                  Marcar como enviado
+                </Boton>
+              )}
+              {e === 'ENVIADO' && (
+                <Boton variante="terciario" onClick={() => estado.mutate('BORRADOR')}>
+                  Volver a borrador
+                </Boton>
+              )}
+              {e && ['BORRADOR', 'ENVIADO', 'VENCIDO'].includes(e) && (
+                <>
+                  <Boton variante="secundario" onClick={() => estado.mutate('ACEPTADO')}>
+                    Aceptado
+                  </Boton>
+                  <Boton variante="destructivo" onClick={() => estado.mutate('RECHAZADO')}>
+                    Rechazado
+                  </Boton>
+                </>
+              )}
+              {e && ['ENVIADO', 'ACEPTADO'].includes(e) && !presupuesto.proyectoId && (
+                <Boton variante="terciario" onClick={() => duplicar.mutate(true)}>
+                  Duplicar y reemplazar
+                </Boton>
+              )}
+              {e === 'ACEPTADO' && tiene('proyectos') && (
+                presupuesto.proyectoId ? (
+                  <Boton variante="fantasma" onClick={() => navigate(`/proyectos/${presupuesto.proyectoId}`)}>
+                    <HardHat className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+                    Ver {etiquetaMin}
+                  </Boton>
+                ) : (
+                  <Boton variante="secundario" onClick={() => setCrearObra(true)}>
+                    <HardHat className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+                    Crear {etiquetaMin}
+                  </Boton>
+                )
+              )}
+            </>
+          )
+        }
         acciones={
           presupuesto && (
             <>
@@ -232,48 +285,6 @@ function Formulario({ presupuesto, catalogo, diasValidez }: { presupuesto?: Pres
             ? 'Venció sin aceptarse ni rechazarse. Duplicalo para mandarlo con fecha nueva.'
             : 'Ya no es un borrador: para cambiarlo, duplicalo. El duplicado puede reemplazar a este (queda rechazado).'}
         </Aviso>
-      )}
-      {presupuesto && (
-        <div className="flex flex-wrap items-center gap-2">
-          {e === 'BORRADOR' && (
-            <Boton variante="secundario" onClick={() => estado.mutate('ENVIADO')} cargando={estado.isPending}>
-              Marcar como enviado
-            </Boton>
-          )}
-          {e === 'ENVIADO' && (
-            <Boton variante="terciario" onClick={() => estado.mutate('BORRADOR')}>
-              Volver a borrador
-            </Boton>
-          )}
-          {e && ['BORRADOR', 'ENVIADO', 'VENCIDO'].includes(e) && (
-            <>
-              <Boton variante="secundario" onClick={() => estado.mutate('ACEPTADO')}>
-                Aceptado
-              </Boton>
-              <Boton variante="destructivo" onClick={() => estado.mutate('RECHAZADO')}>
-                Rechazado
-              </Boton>
-            </>
-          )}
-          {e && ['ENVIADO', 'ACEPTADO'].includes(e) && !presupuesto.proyectoId && (
-            <Boton variante="terciario" onClick={() => duplicar.mutate(true)}>
-              Duplicar y reemplazar
-            </Boton>
-          )}
-          {e === 'ACEPTADO' && tiene('proyectos') && (
-            presupuesto.proyectoId ? (
-              <Boton variante="fantasma" onClick={() => navigate(`/proyectos/${presupuesto.proyectoId}`)}>
-                <HardHat className="h-4 w-4" strokeWidth={1.75} aria-hidden />
-                Ver {etiquetaMin}
-              </Boton>
-            ) : (
-              <Boton variante="secundario" onClick={() => setCrearObra(true)}>
-                <HardHat className="h-4 w-4" strokeWidth={1.75} aria-hidden />
-                Crear {etiquetaMin}
-              </Boton>
-            )
-          )}
-        </div>
       )}
 
       <fieldset disabled={!editable} className="space-y-6">
@@ -624,6 +635,7 @@ function CrearObraModal({ presupuesto, onCerrar }: { presupuesto: Presupuesto; o
   const [hitos, setHitos] = useState<HitoEditable[]>([]);
   const descuadre = hitos.length > 0 && Math.abs(sumaHitos(hitos) - Number(acordado)) > 0.004;
   const crear = useMutation({
+    meta: { exito: `Listo: ${etiquetaMin} en marcha.`, error: `No se pudo crear: ${etiquetaMin}.` },
     mutationFn: () => pedir<{ proyectoId: string }>(`/presupuestos/${presupuesto.id}/proyecto`, 'POST', { nombre: nombre.trim() || undefined, hitos: hitosParaEnviar(hitos) }),
     onSuccess: (r) => {
       void queryClient.invalidateQueries({ queryKey: ['proyectos'] });

@@ -18,6 +18,7 @@ import type { Comprobante } from '@/lib/tipos';
 import { useApi } from '@/lib/useApi';
 import { EditorComprobante } from './EditorComprobante';
 import { EmitirModal, NotaModal, type ClaseNota } from './modalesComprobante';
+import { toast } from '@/lib/toasts';
 
 const EDITABLES = ['BORRADOR', 'RECHAZADO'];
 
@@ -104,8 +105,13 @@ export function ComprobanteDetallePage() {
 function PendienteVerificacion({ comprobante: c, onActualizado }: { comprobante: Comprobante; onActualizado: (c: Comprobante) => void }) {
   const { pedir } = useApi();
   const verificar = useMutation({
+    meta: { error: 'No se pudo verificar el comprobante.' },
     mutationFn: () => pedir<Comprobante>(`/comprobantes/${c.id}/verificar`, 'POST'),
-    onSuccess: onActualizado,
+    onSuccess: (nuevo) => {
+      if (nuevo.estado === 'EMITIDO') toast.exito('ARCA lo había autorizado.', nuevo.cae ? `CAE ${nuevo.cae}` : undefined);
+      else if (nuevo.estado === 'PENDIENTE_VERIFICACION') toast.error('ARCA todavía no responde.', 'Se vuelve a consultar solo cada minuto.');
+      onActualizado(nuevo);
+    },
   });
   return (
     <div className="space-y-2">
@@ -150,6 +156,7 @@ function EliminarBorrador({ comprobante: c }: { comprobante: Comprobante }) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const eliminar = useMutation({
+    meta: { exito: 'Comprobante eliminado.', error: 'No se pudo eliminar el comprobante.' },
     mutationFn: () => pedir<void>(`/comprobantes/${c.id}`, 'DELETE'),
     onSuccess: () => {
       queryClient.removeQueries({ queryKey: ['comprobante', c.id] });

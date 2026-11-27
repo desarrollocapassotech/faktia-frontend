@@ -91,6 +91,7 @@ export function FormularioCliente({
   }
 
   const padron = useMutation({
+    meta: { exito: 'Datos cargados desde el padrón de ARCA.', error: 'No se pudo consultar el padrón.' },
     mutationFn: () => pedir<DatosPadron>(`/clientes/padron/${encodeURIComponent(form.numeroDocumento.replace(/[-.\s]/g, ''))}`),
     onSuccess: (d) => {
       setForm((f) => ({
@@ -104,6 +105,7 @@ export function FormularioCliente({
   });
 
   const guardar = useMutation({
+    meta: { exito: cliente ? 'Cliente actualizado.' : 'Cliente creado.', error: 'No se pudo guardar el cliente.' },
     mutationFn: () => {
       const body = {
         razonSocial: form.razonSocial.trim(),

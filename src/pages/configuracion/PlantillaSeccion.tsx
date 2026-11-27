@@ -33,6 +33,7 @@ function FormularioPlantilla({ plantilla }: { plantilla: PlantillaPdf }) {
   const [guardado, setGuardado] = useState(false);
 
   const guardar = useMutation({
+    meta: { exito: 'Plantilla guardada.', error: 'No se pudo guardar la plantilla.' },
     mutationFn: () => pedir<PlantillaPdf>('/configuracion/plantilla-pdf', 'PATCH', { ...form, textoPie: form.textoPie.trim() || null, firmaTexto: form.firmaTexto.trim() || null }),
     onSuccess: (p) => {
       queryClient.setQueryData(['plantilla-pdf'], p);
@@ -138,10 +139,12 @@ function Logo({ tieneLogo }: { tieneLogo: boolean }) {
   };
 
   const subirLogo = useMutation({
+    meta: { exito: 'Logo actualizado.', error: 'No se pudo subir el logo.' },
     mutationFn: (archivo: File) => subir<PlantillaPdf>('/configuracion/plantilla-pdf/logo', 'logo', archivo),
     onSuccess: alTerminar,
   });
   const borrarLogo = useMutation({
+    meta: { exito: 'Logo quitado.', error: 'No se pudo quitar el logo.' },
     mutationFn: () => pedir<PlantillaPdf>('/configuracion/plantilla-pdf/logo', 'DELETE'),
     onSuccess: alTerminar,
   });

@@ -5,6 +5,7 @@ import { AlertaError, Aviso, Boton, Campo, Cargando, Entrada, EntradaNumero, Eti
 import { dinero, fecha } from '@/lib/formato';
 import type { HistorialAvisos, PreferenciasEmpresa, VistaPreviaAviso } from '@/lib/tipos';
 import { useApi } from '@/lib/useApi';
+import { toast } from '@/lib/toasts';
 
 const NOMBRE_MODULO: Record<string, string> = {
   comprobantes: 'Facturación electrónica',
@@ -51,6 +52,7 @@ function FormularioEtiquetas({ preferencias }: { preferencias: PreferenciasEmpre
   const [plural, setPlural] = useState(preferencias.etiquetaProyectoPlural);
   const [guardado, setGuardado] = useState(false);
   const guardar = useMutation({
+    meta: { exito: 'Preferencias guardadas.', error: 'No se pudieron guardar las preferencias.' },
     mutationFn: () =>
       pedir<PreferenciasEmpresa>('/configuracion/preferencias', 'PATCH', { etiquetaProyecto: singular.trim(), etiquetaProyectoPlural: plural.trim() }),
     onSuccess: async () => {
@@ -118,6 +120,7 @@ function Avisos({ preferencias }: { preferencias: PreferenciasEmpresa }) {
   const vista = useQuery({ queryKey: ['avisos', 'vista-previa'], queryFn: () => pedir<VistaPreviaAviso>('/avisos/vista-previa') });
   const historial = useQuery({ queryKey: ['avisos', 'historial'], queryFn: () => pedir<HistorialAvisos>('/avisos/historial') });
   const guardar = useMutation({
+    meta: { exito: 'Avisos guardados.', error: 'No se pudieron guardar los avisos.' },
     mutationFn: () => pedir<PreferenciasEmpresa>('/configuracion/preferencias', 'PATCH', { avisosEmail: activos, diasAvisoVencimiento: Number(dias) || 0 }),
     onSuccess: (p) => {
       queryClient.setQueryData(['preferencias'], p);
@@ -125,7 +128,9 @@ function Avisos({ preferencias }: { preferencias: PreferenciasEmpresa }) {
       setGuardado(true);
     },
   });
-  const probar = useMutation({ mutationFn: () => pedir<{ enviado: boolean; destinatarios?: string[] }>('/avisos/probar', 'POST') });
+  const probar = useMutation({ meta: { error: 'No se pudo enviar el correo de prueba.' }, mutationFn: () => pedir<{ enviado: boolean; destinatarios?: string[] }>('/avisos/probar', 'POST'),
+    onSuccess: (r) => (r.enviado ? toast.exito('Correo de prueba enviado.', r.destinatarios?.join(', ')) : toast.error('No se envió el correo de prueba.')),
+  });
   const items = [...(vista.data?.vencidos ?? []), ...(vista.data?.proximos ?? [])];
 
   return (
@@ -218,6 +223,7 @@ function ValidezPresupuestos({ dias: inicial }: { dias: number }) {
   const queryClient = useQueryClient();
   const [dias, setDias] = useState(String(inicial));
   const guardar = useMutation({
+    meta: { exito: 'Preferencias guardadas.', error: 'No se pudieron guardar las preferencias.' },
     mutationFn: () => pedir<PreferenciasEmpresa>('/configuracion/preferencias', 'PATCH', { diasValidezPresupuesto: Number(dias) || 15 }),
     onSuccess: (p) => queryClient.setQueryData(['preferencias'], p),
   });

@@ -22,6 +22,7 @@ function DatosPersonales() {
   const [guardado, setGuardado] = useState(false);
 
   const guardar = useMutation({
+    meta: { exito: 'Nombre actualizado.', error: 'No se pudo guardar el nombre.' },
     mutationFn: () => actualizarNombre(nombre.trim()),
     onSuccess: () => setGuardado(true),
   });
@@ -87,6 +88,7 @@ function CambiarPassword() {
   const noCoinciden = repetida.length > 0 && nueva !== repetida;
 
   const cambiar = useMutation({
+    meta: { exito: 'Contraseña actualizada.', error: 'No se pudo cambiar la contraseña.' },
     mutationFn: () => cambiarPassword({ ...(tienePassword ? { passwordActual: actual } : {}), passwordNueva: nueva }),
     onSuccess: () => {
       setActual('');

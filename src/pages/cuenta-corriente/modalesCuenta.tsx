@@ -57,6 +57,7 @@ export function MovimientoModal({
   const candidatos = useMemo(() => pendientes.filter((p) => p.moneda === moneda), [pendientes, moneda]);
 
   const guardar = useMutation({
+    meta: { exito: movimiento ? 'Movimiento actualizado.' : 'Movimiento registrado.', error: 'No se pudo guardar el movimiento.' },
     mutationFn: () => {
       const comunes = {
         concepto: concepto.trim(),
@@ -200,6 +201,7 @@ export function ImputarModal({ movimiento, movimientos, onCerrar }: { movimiento
   const valor = importe ?? (maximo ? maximo.toFixed(2) : '');
 
   const imputar = useMutation({
+    meta: { exito: 'Imputación registrada.', error: 'No se pudo imputar.' },
     mutationFn: () =>
       pedir('/cuenta-corriente/imputaciones', 'POST', {
         haberId: esHaber ? movimiento.id : elegido,
@@ -283,6 +285,7 @@ export function ImputacionesModal({ movimiento, onCerrar }: { movimiento: Movimi
   const { pedir } = useApi();
   const refrescar = useRefrescarCuentas();
   const deshacer = useMutation({
+    meta: { exito: 'Imputación deshecha.', error: 'No se pudo deshacer la imputación.' },
     mutationFn: (id: string) => pedir(`/cuenta-corriente/imputaciones/${id}`, 'DELETE'),
     onSuccess: () => {
       void refrescar();
@@ -331,6 +334,7 @@ export function VencimientoModal({ movimiento, onCerrar }: { movimiento: Movimie
   const refrescar = useRefrescarCuentas();
   const [vencimiento, setVencimiento] = useState(movimiento.fechaVencimiento ?? '');
   const guardar = useMutation({
+    meta: { exito: 'Vencimiento actualizado.', error: 'No se pudo cambiar el vencimiento.' },
     mutationFn: () => pedir(`/cuenta-corriente/movimientos/${movimiento.id}`, 'PATCH', { fechaVencimiento: vencimiento || null }),
     onSuccess: () => {
       void refrescar();
@@ -367,6 +371,7 @@ export function EliminarMovimientoModal({ movimiento, onCerrar }: { movimiento: 
   const { pedir } = useApi();
   const refrescar = useRefrescarCuentas();
   const eliminar = useMutation({
+    meta: { exito: 'Movimiento eliminado.', error: 'No se pudo eliminar el movimiento.' },
     mutationFn: () => pedir(`/cuenta-corriente/movimientos/${movimiento.id}`, 'DELETE'),
     onSuccess: () => {
       void refrescar();

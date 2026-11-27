@@ -156,3 +156,47 @@
 .fk-texto-formato .c-azul { color: var(--fk-fiordo); }
 .fk-texto-formato .c-verde { color: var(--fk-pino); }
 .fk-texto-formato .c-naranja { color: var(--fk-terracota-texto); }
+
+/* Toasts con forma de ticket (components/Toasts.tsx).
+   - Borde de abajo en zigzag (papel cortado) con una máscara; por eso la sombra va como drop-shadow
+     en el contenedor (un box-shadow quedaría recortado).
+   - Entrada: el papel "se imprime" de arriba hacia abajo, a tirones cortos como una impresora térmica.
+   - Después cae el sello. Al cerrarse, el ticket se "arranca" (gira un poco y se va).
+   - Sin animaciones con "reducir movimiento". */
+.fk-ticket-sombra {
+  filter: drop-shadow(0 6px 14px color-mix(in srgb, var(--fk-grafito) 16%, transparent)) drop-shadow(0 1px 2px color-mix(in srgb, var(--fk-grafito) 12%, transparent));
+}
+.fk-ticket {
+  --diente: 7px;
+  mask:
+    linear-gradient(#000 0 0) top / 100% calc(100% - var(--diente)) no-repeat,
+    conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / calc(2 * var(--diente)) var(--diente) repeat-x;
+  animation: fk-ticket-imprimir 420ms steps(7, end) both;
+}
+.fk-ticket-sello {
+  transform: rotate(-8deg);
+  opacity: 0.85;
+  animation: fk-ticket-sellar 260ms cubic-bezier(0.3, 0, 0.6, 1) 380ms both;
+}
+.fk-ticket-salir {
+  animation: fk-ticket-arrancar 220ms cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+@keyframes fk-ticket-imprimir {
+  from { clip-path: inset(0 0 100% 0); transform: translateY(-6px); }
+  to { clip-path: inset(0 0 0 0); transform: translateY(0); }
+}
+@keyframes fk-ticket-sellar {
+  0% { opacity: 0; transform: rotate(-8deg) scale(1.8); }
+  70% { opacity: 0.95; transform: rotate(-8deg) scale(0.94); }
+  100% { opacity: 0.85; transform: rotate(-8deg) scale(1); }
+}
+@keyframes fk-ticket-arrancar {
+  to { opacity: 0; transform: translate(24px, -10px) rotate(4deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fk-ticket,
+  .fk-ticket-sello,
+  .fk-ticket-salir {
+    animation: none;
+  }
+}

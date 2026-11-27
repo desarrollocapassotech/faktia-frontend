@@ -44,6 +44,7 @@ export function ProyectoDetallePage() {
   });
 
   const quitarCertificacion = useMutation({
+    meta: { exito: 'Certificación quitada.', error: 'No se pudo quitar la certificación.' },
     mutationFn: (certificacionId: string) => pedir<ProyectoDetalle>(`/proyectos/${id}/certificaciones/${certificacionId}`, 'DELETE'),
     onSuccess: (d) => {
       queryClient.setQueryData(['proyecto', id], d);
@@ -51,6 +52,7 @@ export function ProyectoDetallePage() {
     },
   });
   const eliminar = useMutation({
+    meta: { exito: `Se eliminó: ${etiquetaMin}.`, error: `No se pudo eliminar: ${etiquetaMin}.` },
     mutationFn: () => pedir(`/proyectos/${id}`, 'DELETE'),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['proyectos'] });

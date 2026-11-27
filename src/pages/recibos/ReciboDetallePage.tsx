@@ -143,6 +143,7 @@ function AnularReciboModal({ id, onCerrar }: { id: string; onCerrar: () => void 
   const queryClient = useQueryClient();
   const [motivo, setMotivo] = useState('');
   const anular = useMutation({
+    meta: { exito: 'Recibo anulado.', error: 'No se pudo anular el recibo.' },
     mutationFn: () => pedir(`/recibos/${id}/anular`, 'POST', { motivo: motivo.trim() }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['recibo', id] });
