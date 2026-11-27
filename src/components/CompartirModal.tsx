@@ -64,7 +64,13 @@ export function CompartirModal({
   const texto = mensaje;
   const compartirSistema = puedeCompartirArchivos();
 
-  const archivo = useQuery({ queryKey: ['archivo-compartir', rutaPdf], queryFn: () => traerArchivo(rutaPdf, nombreArchivo), enabled: abierto, staleTime: 0, gcTime: 0 });
+  const archivo = useQuery({
+    queryKey: ['archivo-compartir', rutaPdf],
+    queryFn: () => traerArchivo(rutaPdf, nombreArchivo),
+    enabled: abierto,
+    staleTime: 0,
+    gcTime: 0,
+  });
 
   const email = useMutation({
     meta: { exito: 'Enviado por email.', error: 'No se pudo enviar el email.' },

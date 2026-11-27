@@ -9,6 +9,7 @@ import { migrarClavesViejas } from './lib/storage';
 import { toast } from './lib/toasts';
 import { Toasts } from './components/Toasts';
 import { Confirmacion } from './components/Confirmacion';
+import { CargadorEsquina } from './components/ui';
 import './index.css';
 
 // Antes de que el AuthProvider lea la sesión guardada.
@@ -50,6 +51,7 @@ createRoot(document.getElementById('root')!).render(
         </AuthProvider>
         <Toasts />
         <Confirmacion />
+        <CargadorEsquina />
       </QueryClientProvider>
     </BrowserRouter>
   </StrictMode>,

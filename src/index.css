@@ -206,7 +206,7 @@
 }
 
 /* Loader (Cargando en ui.tsx): una impresora de tickets. El papel sale de la ranura, cae el sello, el
-   ticket se arranca y vuelve a empezar (ciclo de 2,8 s). */
+   ticket se arranca y vuelve a empezar. Ciclo de 2,8 s: igual a CICLO_CARGADOR_MS (lib/cargador.ts). */
 .fk-cargador {
   display: flex;
   flex-direction: column;
@@ -229,6 +229,8 @@
 }
 .fk-cargador-mover {
   animation: fk-cargador-imprimir 2.8s infinite;
+  /* La esquina sigue el ciclo donde lo dejó el loader grande (desfase negativo). */
+  animation-delay: var(--fk-cargador-desfase, 0ms);
 }
 .fk-cargador-papel {
   --diente: 6px;
@@ -277,6 +279,7 @@
   opacity: 0;
   transform: rotate(-12deg) scale(1.8);
   animation: fk-cargador-sellar 2.8s infinite;
+  animation-delay: var(--fk-cargador-desfase, 0ms);
 }
 /* El tilde del sello, dibujado con dos bordes. */
 .fk-cargador-sello::after {
@@ -289,6 +292,17 @@
   border-right: 2px solid var(--fk-ok-texto);
   border-bottom: 2px solid var(--fk-ok-texto);
   transform: rotate(40deg);
+}
+/* En chico, abajo a la derecha (CargadorEsquina): termina el ciclo y se desvanece con el ticket. */
+.fk-cargador-esquina {
+  transform: scale(0.5);
+  transform-origin: bottom right;
+  animation: fk-cargador-esquina 2.8s forwards;
+  animation-delay: var(--fk-cargador-desfase, 0ms);
+}
+@keyframes fk-cargador-esquina {
+  0%, 85% { opacity: 1; }
+  100% { opacity: 0; }
 }
 @keyframes fk-cargador-imprimir {
   0% { transform: translateY(-100%); opacity: 1; animation-timing-function: cubic-bezier(0.33, 0, 0.15, 1); }
@@ -307,7 +321,8 @@
   .fk-ticket-mover,
   .fk-ticket-sello,
   .fk-ticket-salir,
-  .fk-cargador-mover {
+  .fk-cargador-mover,
+  .fk-cargador-esquina {
     animation: none;
   }
   .fk-cargador-sello { animation: none; opacity: 0.9; transform: rotate(-12deg); }

@@ -6,15 +6,18 @@ import {
   useRef,
   useState,
   type ButtonHTMLAttributes,
+  type CSSProperties,
   type InputHTMLAttributes,
   type KeyboardEvent as EventoTeclado,
   type ReactNode,
+  type Ref,
   type SelectHTMLAttributes,
 } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { ArrowDown, ArrowUp, ArrowUpDown, ChevronDown, ChevronRight, CircleHelp, Eye, EyeOff, FlaskConical, X, type LucideIcon } from 'lucide-react';
 import { ApiError } from '@/lib/api';
+import { useCargadorEsquina, useRegistroCargador } from '@/lib/cargador';
 import type { Estado, Tono } from '@/lib/formato';
 import { etiquetaDirOrden, type OrdenColumna } from '@/lib/orden';
 import { leerNumero, numeroEditable } from '@/lib/numeros';
@@ -765,18 +768,17 @@ export function Ayuda({ children, etiqueta = 'Ayuda', className = '' }: { childr
 }
 
 /**
- * Loader: una impresora de tickets que imprime un comprobante (ícono de la marca, renglones, total y
- * sello), lo arranca y empieza otro. Estilos y animación en index.css (`.fk-cargador*`); con
- * "reducir movimiento" se ve el ticket quieto.
+ * La impresora de tickets del loader: imprime un comprobante (ícono de la marca, renglones, total y
+ * sello), lo arranca y empieza otro. Estilos en index.css (`.fk-cargador*`). `desfaseMs` arranca la
+ * animación en otro punto del ciclo (lo usa la esquina para seguir donde quedó el loader grande).
  */
-export function Cargando({ texto = 'Cargando…' }: { texto?: string }) {
+function ImpresoraTickets({ desfaseMs = 0, className = '', ref }: { desfaseMs?: number; className?: string; ref?: Ref<HTMLDivElement> }) {
   return (
-    <div role="status" className="flex flex-col items-center justify-center gap-4 py-12 text-center text-sm text-fk-gris-texto">
-      <div className="fk-cargador" aria-hidden>
-        <div className="fk-cargador-ranura" />
-        {/* boca (recorta) › mover (se desliza, con la sombra) › papel (zigzag, quieto respecto del que se mueve) */}
-        <div className="fk-cargador-boca">
-          <div className="fk-cargador-mover fk-papel-sombra">
+    <div ref={ref} className={`fk-cargador ${className}`} style={{ '--fk-cargador-desfase': `${-desfaseMs}ms` } as CSSProperties} aria-hidden>
+      <div className="fk-cargador-ranura" />
+      {/* boca (recorta) › mover (se desliza, con la sombra) › papel (zigzag, quieto respecto del que se mueve) */}
+      <div className="fk-cargador-boca">
+        <div className="fk-cargador-mover fk-papel-sombra">
           <div className="fk-cargador-papel fk-papel-zigzag">
             <img src="/brand/faktia-icono.svg" alt="" className="fk-cargador-logo" />
             <span className="fk-cargador-linea w-[78%]" />
@@ -789,10 +791,69 @@ export function Cargando({ texto = 'Cargando…' }: { texto?: string }) {
             </span>
             <span className="fk-cargador-sello" />
           </div>
-          </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Loader de pantalla. Si los datos llegan antes de un ciclo completo, se muestran enseguida y el
+ * loader termina su ciclo en chico en una esquina (<CargadorEsquina />, ver lib/cargador.ts).
+ * Con "reducir movimiento" se ve el ticket quieto.
+ */
+export function Cargando({ texto = 'Cargando…' }: { texto?: string }) {
+  const impresora = useRef<HTMLDivElement>(null);
+  useRegistroCargador(impresora);
+  return (
+    <div role="status" className="flex flex-col items-center justify-center gap-4 py-12 text-center text-sm text-fk-gris-texto">
+      <ImpresoraTickets ref={impresora} />
       <p>{texto}</p>
+    </div>
+  );
+}
+
+/**
+ * El loader en chico, abajo a la derecha, terminando el ciclo que empezó en pantalla. Al aparecer vuela
+ * desde donde estaba el loader grande hasta la esquina, achicándose (FLIP: solo transform). El vuelo
+ * no se saltea con "reducir movimiento": es un pedido explícito.
+ * Se monta una vez en main.tsx.
+ */
+export function CargadorEsquina() {
+  const ciclo = useCargadorEsquina();
+  if (!ciclo) return null;
+  return <CargadorEnEsquina key={ciclo.inicio} inicio={ciclo.inicio} origen={ciclo.origen} />;
+}
+
+function CargadorEnEsquina({ inicio, origen }: { inicio: number; origen: DOMRect | null }) {
+  const contenedor = useRef<HTMLDivElement>(null);
+  const impresora = useRef<HTMLDivElement>(null);
+  // El desfase se fija al aparecer: después la animación CSS sigue sola.
+  const [desfase] = useState(() => performance.now() - inicio);
+
+  useLayoutEffect(() => {
+    const caja = contenedor.current;
+    const dibujo = impresora.current;
+    if (!caja || !dibujo) return;
+    // Lugar final (ya achicado) y lugar de partida: se lleva el dibujo del primero al segundo y se anima
+    // la vuelta. Vuela siempre (también con "reducir movimiento", a pedido): sin origen medido, desde
+    // el centro de la pantalla con el tamaño del loader grande.
+    const final = dibujo.getBoundingClientRect();
+    const base = caja.getBoundingClientRect();
+    if (!final.width) return;
+    const ancho = origen?.width ?? final.width * 2;
+    const desde = origen ?? { left: (window.innerWidth - ancho) / 2, top: (window.innerHeight - final.height * 2) / 2 };
+    const escala = ancho / final.width;
+    caja.style.transformOrigin = `${final.left - base.left}px ${final.top - base.top}px`;
+    caja.animate(
+      [{ transform: `translate(${desde.left - final.left}px, ${desde.top - final.top}px) scale(${escala})` }, { transform: 'translate(0, 0) scale(1)' }],
+      { duration: 520, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' },
+    );
+  }, [origen]);
+
+  return (
+    <div ref={contenedor} role="status" aria-label="Terminando de cargar" className="pointer-events-none fixed right-4 bottom-4 z-[350] will-change-transform">
+      <ImpresoraTickets ref={impresora} desfaseMs={desfase} className="fk-cargador-esquina" />
     </div>
   );
 }

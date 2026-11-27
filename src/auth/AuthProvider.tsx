@@ -4,6 +4,21 @@ import { borrar, guardar, leer } from '@/lib/storage';
 import { AuthContext, type AuthState, type OpcionTenant, type TenantSesion, type Usuario } from './auth-context';
 
 const CLAVE_TOKEN = 'faktia.sesion';
+/**
+ * Último perfil confirmado (usuario y empresa, sin secretos). Con él, al refrescar la página la app
+ * arranca enseguida y la sesión se valida en segundo plano: así se ve un solo loader (el de la
+ * pantalla) y no uno a pantalla completa antes. Si la sesión no es válida, se cierra igual.
+ */
+const CLAVE_PERFIL = 'faktia.perfil';
+
+function leerPerfil(): PerfilResponse | null {
+  try {
+    const v = JSON.parse(leer(CLAVE_PERFIL) ?? 'null') as PerfilResponse | null;
+    return v?.usuario && v?.tenant ? v : null;
+  } catch {
+    return null;
+  }
+}
 
 interface SesionResponse {
   accessToken: string;
@@ -18,15 +33,24 @@ interface PerfilResponse {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const tokenRef = useRef<string | null>(leer(CLAVE_TOKEN));
-  const [estado, setEstado] = useState<AuthState['estado']>(tokenRef.current ? 'cargando' : 'anonimo');
-  const [usuario, setUsuario] = useState<Usuario | null>(null);
-  const [tenant, setTenant] = useState<TenantSesion | null>(null);
+  const perfilInicial = useRef(tokenRef.current ? leerPerfil() : null).current;
+  const [estado, setEstado] = useState<AuthState['estado']>(tokenRef.current ? (perfilInicial ? 'autenticado' : 'cargando') : 'anonimo');
+  const [usuario, setUsuario] = useState<Usuario | null>(perfilInicial?.usuario ?? null);
+  const [tenant, setTenant] = useState<TenantSesion | null>(perfilInicial?.tenant ?? null);
   const [recienIngresado, setRecienIngresado] = useState(false);
   const ingresoVisto = useCallback(() => setRecienIngresado(false), []);
+
+  /** Aplica un perfil confirmado por el backend y lo recuerda para el próximo arranque. */
+  const aplicarPerfil = useCallback((perfil: PerfilResponse) => {
+    setUsuario(perfil.usuario);
+    setTenant(perfil.tenant);
+    guardar(CLAVE_PERFIL, JSON.stringify({ usuario: perfil.usuario, tenant: perfil.tenant }));
+  }, []);
 
   const logout = useCallback(() => {
     tokenRef.current = null;
     borrar(CLAVE_TOKEN);
+    borrar(CLAVE_PERFIL);
     setUsuario(null);
     setTenant(null);
     setEstado('anonimo');
@@ -45,25 +69,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const controller = new AbortController();
     api<PerfilResponse>('/auth/me', { token, signal: controller.signal })
       .then((perfil) => {
-        setUsuario(perfil.usuario);
-        setTenant(perfil.tenant);
+        aplicarPerfil(perfil);
         setEstado('autenticado');
       })
       .catch((err: unknown) => {
         if ((err as Error).name === 'AbortError') return;
+        // Sin conexión, con un perfil guardado se sigue: las pantallas muestran su propio error.
+        if (err instanceof ApiError && err.status === 0 && perfilInicial) return;
         logout();
       });
     return () => controller.abort();
-  }, [logout]);
+  }, [logout, aplicarPerfil, perfilInicial]);
 
   const abrirSesion = useCallback(async (accessToken: string) => {
     tokenRef.current = accessToken;
     guardar(CLAVE_TOKEN, accessToken);
     const perfil = await api<PerfilResponse>('/auth/me', { token: accessToken });
-    setUsuario(perfil.usuario);
-    setTenant(perfil.tenant);
+    aplicarPerfil(perfil);
     setEstado('autenticado');
-  }, []);
+  }, [aplicarPerfil]);
 
   const login = useCallback<AuthState['login']>(async (email, password, tenantSlug) => {
     try {
@@ -95,17 +119,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const token = tokenRef.current;
     if (!token) return;
     const perfil = await api<PerfilResponse>('/auth/me', { token });
-    setUsuario(perfil.usuario);
-    setTenant(perfil.tenant);
-  }, []);
+    aplicarPerfil(perfil);
+  }, [aplicarPerfil]);
 
   const actualizarNombre = useCallback<AuthState['actualizarNombre']>(async (nombre) => {
     const token = tokenRef.current;
     if (!token) return;
     const perfil = await api<PerfilResponse>('/auth/me', { method: 'PATCH', token, body: { nombre } });
-    setUsuario(perfil.usuario);
-    setTenant(perfil.tenant);
-  }, []);
+    aplicarPerfil(perfil);
+  }, [aplicarPerfil]);
 
   const cambiarPassword = useCallback<AuthState['cambiarPassword']>(
     async (datos) => {
