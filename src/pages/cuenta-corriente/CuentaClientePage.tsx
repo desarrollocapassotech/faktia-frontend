@@ -105,7 +105,15 @@ export function CuentaClientePage() {
               key={s.moneda}
               titulo={`Saldo en ${s.moneda === 'ARS' ? 'pesos' : 'dólares'}`}
               valor={dinero(Math.abs(n), s.moneda)}
-              ayuda={n > 0 ? 'Lo que el cliente debe.' : n < 0 ? 'A favor del cliente.' : 'Sin deuda.'}
+              ayuda={
+                s.exigible !== undefined && s.exigible !== s.saldo
+                  ? `Exigible hoy: ${dinero(s.exigible, s.moneda)} (el resto falta certificar).`
+                  : n > 0
+                    ? 'Lo que el cliente debe.'
+                    : n < 0
+                      ? 'A favor del cliente.'
+                      : 'Sin deuda.'
+              }
             />
           );
         })}
@@ -225,6 +233,20 @@ function FilaMovimiento({
           <span className="font-medium">{m.concepto}</span>
         )}
         {m.numero && <span className="ml-1.5 tabular-nums">{m.numero}</span>}
+        {m.anulado && <span className="ml-1.5 text-xs text-fk-gris-texto">(anulado)</span>}
+        {m.proyecto && (
+          <Link to={`/proyectos/${m.proyecto.id}`} className="block text-xs text-fk-fiordo hover:underline">
+            {m.proyecto.nombre}
+          </Link>
+        )}
+        {m.monedaOrigen && m.importeOrigen && (
+          <span className="block text-xs text-fk-gris-texto">
+            Pagó {dinero(m.importeOrigen, m.monedaOrigen)} a TC {dinero(m.tipoCambio ?? 0)}
+          </span>
+        )}
+        {m.porCertificacion && Number(m.aCertificar) > 0 && (
+          <span className="block text-xs text-fk-gris-texto">{dinero(m.aCertificar ?? 0, m.moneda)} a certificar</span>
+        )}
         {m.observaciones && <span className="block text-xs text-fk-gris-texto">{m.observaciones}</span>}
       </td>
       <td className="whitespace-nowrap tabular-nums">{esDebe ? fecha(m.fechaVencimiento) : ''}</td>

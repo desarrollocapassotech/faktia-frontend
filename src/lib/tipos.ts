@@ -48,6 +48,8 @@ export interface Emisor {
   domicilioFiscal: string | null;
   ingresosBrutos: string | null;
   inicioActividades: string | null;
+  telefono: string | null;
+  emailContacto: string | null;
   ambienteArca: Ambiente;
   /** Razón social, CUIT, condición IVA y domicilio cargados: sin esto no se puede facturar. */
   datosFiscalesCompletos: boolean;
@@ -86,6 +88,7 @@ export interface PlantillaPdf {
   colorPrimario: string;
   colorSecundario: string;
   textoPie: string | null;
+  firmaTexto: string | null;
   mostrarDuplicado: boolean;
   tieneLogo: boolean;
   logoMime: string | null;
@@ -169,6 +172,9 @@ export interface Recibo {
   periodo: string | null;
   medioPago: string | null;
   observaciones: string | null;
+  proyectoId?: string | null;
+  anuladoEn?: string | null;
+  motivoAnulacion?: string | null;
   createdAt: string;
 }
 
@@ -195,6 +201,7 @@ export interface Comprobante {
   importeTributos: string;
   importeTotal: string;
   observaciones: string | null;
+  proyectoId?: string | null;
   motivo: string | null;
   cae: string | null;
   caeVencimiento: string | null;
@@ -354,12 +361,14 @@ export interface Paginado<T> {
 // cliente debe) y HABER resta (cobros, notas de crédito, ajustes a su favor).
 
 export type TipoMovimientoCc = 'DEBE' | 'HABER';
-export type OrigenMovimientoCc = 'COMPROBANTE' | 'RECIBO' | 'MANUAL';
+export type OrigenMovimientoCc = 'COMPROBANTE' | 'RECIBO' | 'MANUAL' | 'ACUERDO' | 'ANULACION';
 export type EstadoMovimientoCc = 'PENDIENTE' | 'PARCIAL' | 'CANCELADO';
 
 export interface SaldoCc {
   moneda: Moneda;
   saldo: string;
+  /** Sin lo que falta certificar de sus proyectos. */
+  exigible?: string;
 }
 
 export interface TotalCc {
@@ -386,6 +395,9 @@ export interface PendienteCc {
   id: string;
   clienteId: string;
   razonSocial: string;
+  proyectoId?: string | null;
+  proyecto?: string | null;
+  certificacionId?: string | null;
   concepto: string;
   numero: string | null;
   moneda: Moneda;
@@ -400,6 +412,8 @@ export interface ResumenCc {
   porCobrar: TotalCc[];
   vencido: TotalCc[];
   proximo: TotalCc[];
+  /** Lo que falta certificar de los proyectos: está en "por cobrar", pero no vence. */
+  aCertificar?: TotalCc[];
   vencidos: PendienteCc[];
   proximos: PendienteCc[];
 }
@@ -432,6 +446,13 @@ export interface MovimientoCc {
   /** Saldo de su moneda después de este movimiento. */
   saldo: string;
   imputaciones: ImputacionCc[];
+  proyecto?: { id: string; nombre: string } | null;
+  porCertificacion?: boolean;
+  aCertificar?: string | null;
+  monedaOrigen?: Moneda | null;
+  importeOrigen?: string | null;
+  tipoCambio?: string | null;
+  anulado?: boolean;
   createdAt: string;
 }
 
@@ -440,4 +461,277 @@ export interface CuentaClienteCc {
   cliente: Pick<Cliente, 'id' | 'razonSocial' | 'tipoDocumento' | 'numeroDocumento' | 'condicionIva' | 'activo' | 'diasVencimiento' | 'monedaPreferida'>;
   saldos: SaldoCc[];
   movimientos: MovimientoCc[];
+}
+
+export interface PreferenciasEmpresa {
+  modulos: string[];
+  etiquetaProyecto: string;
+  etiquetaProyectoPlural: string;
+  avisosEmail: boolean;
+  diasAvisoVencimiento: number;
+  diasValidezPresupuesto: number;
+}
+
+export interface ItemAviso {
+  cliente: string;
+  proyecto: string | null;
+  concepto: string;
+  numero: string | null;
+  moneda: Moneda;
+  pendiente: string;
+  fechaVencimiento: string;
+}
+
+export interface VistaPreviaAviso {
+  dias: number;
+  vencidos: ItemAviso[];
+  proximos: ItemAviso[];
+}
+
+export interface HistorialAvisos {
+  transporte: 'smtp' | 'log';
+  envios: Array<{ fecha: string; destinatarios: string[]; vencidos: number; proximos: number; transporte: string }>;
+}
+
+// ─────────────────────────────── Proyectos ───────────────────────────────
+
+export type EstadoProyecto = 'EN_CURSO' | 'FINALIZADO' | 'CANCELADO';
+export type ModoIvaProyecto = 'MAS_IVA' | 'ACORDADO_FINAL';
+
+export interface SaldosProyecto {
+  montoAcordado: string | null;
+  adicionales: string;
+  totalEntregado: string;
+  saldo: string;
+  saldoExigible: string;
+  aCertificar: string;
+  vencido: string;
+}
+
+export interface ProyectoResumen {
+  id: string;
+  clienteId: string;
+  nombre: string;
+  ubicacion: string | null;
+  estado: EstadoProyecto;
+  moneda: Moneda;
+  montoAcordado: string | null;
+  modoIva: ModoIvaProyecto;
+  tipoCambioFijo: string | null;
+  fechaInicio: string | null;
+  fechaFin: string | null;
+  observaciones: string | null;
+  cliente: { id: string; razonSocial: string };
+  saldos: SaldosProyecto;
+}
+
+export interface CertificacionProyecto {
+  id: string;
+  fecha: string;
+  descripcion: string;
+  importe: string;
+  fechaVencimiento: string | null;
+  pendiente: string;
+  vencido: boolean;
+}
+
+export interface HitoProyecto {
+  id: string;
+  orden: number;
+  descripcion: string;
+  importe: string;
+  fechaVencimiento: string | null;
+  porCertificacion: boolean;
+  cobrado: string;
+  pendiente: string;
+  exigible: string;
+  certificado: string;
+  aCertificar: string;
+  vencido: boolean;
+  /** Sin cobros ni certificaciones: se puede cambiar el importe o quitar. */
+  editable: boolean;
+  certificaciones: CertificacionProyecto[];
+}
+
+export interface CargoProyecto {
+  id: string;
+  origen: OrigenMovimientoCc;
+  concepto: string;
+  numero: string | null;
+  comprobanteId: string | null;
+  fecha: string;
+  fechaVencimiento: string | null;
+  importe: string;
+  pendiente: string;
+  observaciones: string | null;
+  vencido: boolean;
+}
+
+export interface EntregaProyecto {
+  id: string;
+  origen: OrigenMovimientoCc;
+  reciboId: string | null;
+  concepto: string;
+  numero: string | null;
+  fecha: string;
+  importe: string;
+  monedaOrigen: Moneda | null;
+  importeOrigen: string | null;
+  tipoCambio: string | null;
+  observaciones: string | null;
+  anulado: boolean;
+  aCuenta: string;
+}
+
+export interface ProyectoDetalle extends Omit<ProyectoResumen, 'cliente'> {
+  cliente: { id: string; razonSocial: string; tipoDocumento: TipoDocumento; numeroDocumento: string };
+  hitos: HitoProyecto[];
+  cargos: CargoProyecto[];
+  entregas: EntregaProyecto[];
+  notasCredito: Array<{ id: string; concepto: string; numero: string | null; comprobanteId: string | null; fecha: string; importe: string }>;
+  recibos: Array<{ id: string; numero: string | null; fecha: string; moneda: Moneda; total: string; anulado: boolean; medioPago: string | null }>;
+}
+
+// ─────────────────────────────── Presupuestos ───────────────────────────────
+
+export type EstadoPresupuesto = 'BORRADOR' | 'ENVIADO' | 'ACEPTADO' | 'RECHAZADO' | 'VENCIDO';
+export type FormaCotizar = 'POR_ITEM' | 'GLOBAL' | 'SUPERFICIE';
+export type IvaPresupuesto = 'SIN_IVA' | 'NO_INCLUYE' | 'DISCRIMINADO';
+
+export interface Superficie {
+  ancho?: string | null;
+  largo?: string | null;
+  alturaLateral?: string | null;
+  alturaCumbrera?: string | null;
+  metrosCuadrados?: string | null;
+  precioMetroCuadrado?: string | null;
+}
+
+export interface PresupuestoResumen {
+  id: string;
+  numero: string;
+  fecha: string;
+  fechaVencimiento: string;
+  estado: EstadoPresupuesto;
+  titulo: string | null;
+  lugar: string | null;
+  moneda: Moneda;
+  total: string;
+  cliente: { id: string; razonSocial: string };
+  proyectoId: string | null;
+}
+
+export interface Presupuesto {
+  id: string;
+  numero: string;
+  fecha: string;
+  fechaVencimiento: string;
+  estado: EstadoPresupuesto;
+  clienteId: string;
+  titulo: string | null;
+  lugar: string | null;
+  moneda: Moneda;
+  formaCotizar: FormaCotizar;
+  superficie: Superficie | null;
+  importeGlobal: string | null;
+  ivaModo: IvaPresupuesto;
+  alicuotaIva: string;
+  subtotal: string;
+  iva: string;
+  total: string;
+  observaciones: Array<{ texto: string; valor?: string }>;
+  notas: string | null;
+  cliente: { razonSocial: string; documento: string | null; domicilio: string | null };
+  proyectoId: string | null;
+  duplicadoDeId: string | null;
+  editable: boolean;
+  items: Array<{ id: string; orden: number; cantidad: string | null; descripcion: string; importe: string | null }>;
+}
+
+export interface ItemBiblioteca {
+  id: string;
+  titulo: string;
+  descripcion: string;
+  categoria: string | null;
+  activo: boolean;
+}
+
+export interface ObservacionCatalogo {
+  id: string;
+  texto: string;
+  llevaValor: boolean;
+  valorSugerido: string | null;
+  porDefecto: boolean;
+  orden: number;
+  activo: boolean;
+}
+
+// ─────────────────────────────── Materiales ───────────────────────────────
+
+export interface Proveedor {
+  id: string;
+  nombre: string;
+  cuit: string | null;
+  contacto: string | null;
+  telefono: string | null;
+  email: string | null;
+  notas: string | null;
+  activo: boolean;
+}
+
+export interface Material {
+  id: string;
+  nombre: string;
+  unidad: string;
+  categoria: string | null;
+  precioCosto: string | null;
+  monedaCosto: Moneda;
+  precioVenta: string | null;
+  monedaVenta: Moneda;
+  proveedorId: string | null;
+  proveedor: { id: string; nombre: string } | null;
+  preciosActualizadosEn: string | null;
+  activo: boolean;
+}
+
+export type PreciosListado = 'NINGUNO' | 'COSTO' | 'VENTA';
+
+export interface RenglonListado {
+  id: string;
+  orden: number;
+  cantidad: string;
+  materialId: string | null;
+  nombre: string;
+  unidad: string;
+  precioCosto: string | null;
+  monedaCosto: Moneda | null;
+  precioVenta: string | null;
+  monedaVenta: Moneda | null;
+  subtotal: string | null;
+}
+
+export interface ListadoMateriales {
+  id: string;
+  titulo: string;
+  fecha: string;
+  proyecto: { id: string; nombre: string } | null;
+  presupuesto: { id: string; numero: string } | null;
+  proveedor: { id: string; nombre: string } | null;
+  destino: string | null;
+  observaciones: string | null;
+  precios: PreciosListado;
+  renglones: RenglonListado[];
+  totales: TotalCc[];
+  renglonesSinPrecio: number;
+}
+
+export interface ListadoResumen {
+  id: string;
+  titulo: string;
+  fecha: string;
+  proyecto: { id: string; nombre: string } | null;
+  proveedor: { id: string; nombre: string } | null;
+  precios: PreciosListado;
+  renglones: number;
+  totales: TotalCc[];
 }

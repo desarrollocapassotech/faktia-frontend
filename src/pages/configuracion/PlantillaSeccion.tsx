@@ -27,12 +27,13 @@ function FormularioPlantilla({ plantilla }: { plantilla: PlantillaPdf }) {
     colorPrimario: plantilla.colorPrimario,
     colorSecundario: plantilla.colorSecundario,
     textoPie: plantilla.textoPie ?? '',
+    firmaTexto: plantilla.firmaTexto ?? '',
     mostrarDuplicado: plantilla.mostrarDuplicado,
   });
   const [guardado, setGuardado] = useState(false);
 
   const guardar = useMutation({
-    mutationFn: () => pedir<PlantillaPdf>('/configuracion/plantilla-pdf', 'PATCH', { ...form, textoPie: form.textoPie.trim() || null }),
+    mutationFn: () => pedir<PlantillaPdf>('/configuracion/plantilla-pdf', 'PATCH', { ...form, textoPie: form.textoPie.trim() || null, firmaTexto: form.firmaTexto.trim() || null }),
     onSuccess: (p) => {
       queryClient.setQueryData(['plantilla-pdf'], p);
       setGuardado(true);
@@ -83,6 +84,9 @@ function FormularioPlantilla({ plantilla }: { plantilla: PlantillaPdf }) {
             onChange={(e) => cambiar('textoPie', e.target.value)}
             maxLength={500}
           />
+        </Campo>
+        <Campo etiqueta="Firma" ayuda="Va al pie de presupuestos, recibos y listados. Por ejemplo: ATTE. ALEXIS NAHUEL HERMAN.">
+          <Entrada value={form.firmaTexto} onChange={(e) => cambiar('firmaTexto', e.target.value)} maxLength={200} />
         </Campo>
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" checked={form.mostrarDuplicado} onChange={(e) => cambiar('mostrarDuplicado', e.target.checked)} />

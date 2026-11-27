@@ -96,7 +96,8 @@ export function CuentaCorrientePage() {
     () => [...(resumen.data?.vencidos ?? []), ...(resumen.data?.proximos ?? [])],
     [resumen.data],
   );
-  const idsVencidos = useMemo(() => new Set((resumen.data?.vencidos ?? []).map((v) => v.id)), [resumen.data]);
+  const clavePendiente = (p: PendienteCc) => `${p.id}-${p.certificacionId ?? ''}`;
+  const idsVencidos = useMemo(() => new Set((resumen.data?.vencidos ?? []).map(clavePendiente)), [resumen.data]);
   const abrir = (clienteId: string) => navigate(`/cuenta-corriente/${clienteId}`);
 
   return (
@@ -107,7 +108,15 @@ export function CuentaCorrientePage() {
         <AlertaError error={resumen.error} />
       ) : (
         <div className="grid gap-4 sm:grid-cols-3">
-          <Indicador titulo="Por cobrar" valor={resumen.data ? saldosTexto(resumen.data.porCobrar) : '—'} ayuda="Suma de los saldos de todas las cuentas." />
+          <Indicador
+            titulo="Por cobrar"
+            valor={resumen.data ? saldosTexto(resumen.data.porCobrar) : '—'}
+            ayuda={
+              resumen.data?.aCertificar?.length
+                ? `Incluye ${saldosTexto(resumen.data.aCertificar)} que falta certificar.`
+                : 'Suma de los saldos de todas las cuentas.'
+            }
+          />
           <Indicador titulo="Vencido" valor={resumen.data ? saldosTexto(resumen.data.vencido) : '—'} alerta={Boolean(resumen.data?.vencidos.length)} />
           <Indicador titulo={`Vence en ${DIAS_PROXIMOS} días`} valor={resumen.data ? saldosTexto(resumen.data.proximo) : '—'} />
         </div>
@@ -127,7 +136,7 @@ export function CuentaCorrientePage() {
               </thead>
               <tbody>
                 {pendientes.slice(0, MAX_PENDIENTES).map((p) => (
-                  <FilaPendiente key={p.id} p={p} vencido={idsVencidos.has(p.id)} onAbrir={abrir} />
+                  <FilaPendiente key={clavePendiente(p)} p={p} vencido={idsVencidos.has(clavePendiente(p))} onAbrir={abrir} />
                 ))}
               </tbody>
             </table>
@@ -231,8 +240,9 @@ function FilaPendiente({ p, vencido, onAbrir }: { p: PendienteCc; vencido: boole
   return (
     <tr onClick={() => onAbrir(p.clienteId)} title="Click para ver la cuenta" className="cursor-pointer transition-colors hover:bg-fk-niebla/50">
       <td className="font-medium text-fk-fiordo">{p.razonSocial}</td>
-      <td className="whitespace-nowrap">
+      <td>
         {p.concepto} <span className="tabular-nums">{p.numero ?? ''}</span>
+        {p.proyecto && <span className="block text-xs text-fk-gris-texto">{p.proyecto}</span>}
       </td>
       <td className="whitespace-nowrap tabular-nums">
         <span className="inline-flex items-center gap-2">

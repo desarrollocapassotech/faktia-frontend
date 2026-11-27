@@ -1,8 +1,8 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { FileText } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { AlertaError, Boton, Cargando, ContenedorTabla, EncabezadoPagina, EtiquetaEstado, Tarjeta } from '@/components/ui';
+import { AlertaError, Aviso, Boton, Campo, Cargando, ContenedorTabla, EncabezadoPagina, Entrada, EtiquetaEstado, Modal, Tarjeta } from '@/components/ui';
 import { dinero, ESTADOS, fecha, fechaHora } from '@/lib/formato';
 import type { Recibo } from '@/lib/tipos';
 import { useApi } from '@/lib/useApi';
@@ -14,6 +14,7 @@ export function ReciboDetallePage() {
   const { id = '' } = useParams();
   const { pedir, verEnPestana } = useApi();
   const [errorPdf, setErrorPdf] = useState<unknown>(null);
+  const [anulando, setAnulando] = useState(false);
 
   const { data: r, error } = useQuery({
     queryKey: ['recibo', id],
@@ -41,17 +42,30 @@ export function ReciboDetallePage() {
         titulo={titulo}
         tituloEnBarra
         migas={[{ texto: 'Comprobantes', a: '/comprobantes' }, { texto: r.numero ? `${titulo} ${r.numero}` : titulo }]}
-        junto={<EtiquetaEstado estado={ESTADOS.EMITIDO} />}
+        junto={<EtiquetaEstado estado={r.anuladoEn ? ESTADOS.ANULADO : ESTADOS.EMITIDO} />}
       />
       <AlertaError error={errorPdf} />
+      {r.anuladoEn && (
+        <Aviso tono="ambar">
+          Anulado el {fechaHora(r.anuladoEn)}
+          {r.motivoAnulacion ? `: ${r.motivoAnulacion}` : ''}. Su cobro ya no cuenta en la cuenta corriente.
+        </Aviso>
+      )}
 
       <Tarjeta
         titulo="Datos"
         acciones={
-          <Boton onClick={() => void verPdf()}>
-            <FileText className="h-4 w-4" strokeWidth={2} aria-hidden />
-            Ver PDF
-          </Boton>
+          <div className="flex flex-wrap gap-2">
+            {esCobro && !r.anuladoEn && (
+              <Boton variante="destructivo" onClick={() => setAnulando(true)}>
+                Anular
+              </Boton>
+            )}
+            <Boton onClick={() => void verPdf()}>
+              <FileText className="h-4 w-4" strokeWidth={2} aria-hidden />
+              Ver PDF
+            </Boton>
+          </div>
         }
       >
         <dl className="grid gap-5 text-sm sm:grid-cols-2 lg:grid-cols-4">
@@ -118,7 +132,50 @@ export function ReciboDetallePage() {
           </ul>
         </Tarjeta>
       )}
+      {anulando && <AnularReciboModal id={r.id} onCerrar={() => setAnulando(false)} />}
     </div>
+  );
+}
+
+/** Anular no borra el recibo: queda con la marca y la cuenta corriente revierte su cobro. */
+function AnularReciboModal({ id, onCerrar }: { id: string; onCerrar: () => void }) {
+  const { pedir } = useApi();
+  const queryClient = useQueryClient();
+  const [motivo, setMotivo] = useState('');
+  const anular = useMutation({
+    mutationFn: () => pedir(`/recibos/${id}/anular`, 'POST', { motivo: motivo.trim() }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['recibo', id] });
+      void queryClient.invalidateQueries({ queryKey: ['cuenta-corriente'] });
+      void queryClient.invalidateQueries({ queryKey: ['proyectos'] });
+      void queryClient.invalidateQueries({ queryKey: ['proyecto'] });
+      onCerrar();
+    },
+  });
+  return (
+    <Modal abierto titulo="Anular recibo" onCerrar={onCerrar}>
+      <form
+        className="space-y-4"
+        onSubmit={(e) => {
+          e.preventDefault();
+          anular.mutate();
+        }}
+      >
+        <p className="text-sm text-fk-gris-texto">El recibo queda guardado con la marca de anulado y su cobro deja de contar en la cuenta corriente.</p>
+        <Campo etiqueta="Motivo">
+          <Entrada value={motivo} onChange={(e) => setMotivo(e.target.value)} maxLength={300} required autoFocus />
+        </Campo>
+        <AlertaError error={anular.error} />
+        <div className="flex justify-end gap-2">
+          <Boton variante="terciario" onClick={onCerrar}>
+            Cancelar
+          </Boton>
+          <Boton type="submit" variante="destructivo" cargando={anular.isPending}>
+            Anular recibo
+          </Boton>
+        </div>
+      </form>
+    </Modal>
   );
 }
 

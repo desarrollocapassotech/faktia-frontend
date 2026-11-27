@@ -1,4 +1,9 @@
 import type {
+  EstadoPresupuesto,
+  FormaCotizar,
+  IvaPresupuesto,
+  EstadoProyecto,
+  ModoIvaProyecto,
   Ambiente,
   CondicionIva,
   Concepto,
@@ -34,7 +39,7 @@ export const TIPOS_DOCUMENTO: Record<TipoDocumento, string> = {
   CUIL: 'CUIL',
   DNI: 'DNI',
   PASAPORTE: 'Pasaporte',
-  CONSUMIDOR_FINAL: 'Sin identificar (consumidor final)',
+  CONSUMIDOR_FINAL: 'Sin documento',
 };
 
 export const CONCEPTOS: Record<Concepto, string> = {
@@ -212,3 +217,53 @@ export function documentoCliente(c: { tipoDocumento: TipoDocumento; numeroDocume
 export function hoy(): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' }).format(new Date());
 }
+
+export const ESTADOS_PROYECTO: Record<EstadoProyecto, Estado> = {
+  EN_CURSO: { texto: 'En curso', tono: 'pendiente' },
+  FINALIZADO: { texto: 'Finalizado', tono: 'ok' },
+  CANCELADO: { texto: 'Cancelado', tono: 'info', tachado: true },
+};
+
+export const MODOS_IVA: Record<ModoIvaProyecto, string> = {
+  MAS_IVA: 'Más IVA',
+  ACORDADO_FINAL: 'Acordado final (IVA incluido)',
+};
+
+export const MODOS_IVA_AYUDA: Record<ModoIvaProyecto, string> = {
+  MAS_IVA: 'Cada factura suma solo su IVA: el neto ya está en el acordado.',
+  ACORDADO_FINAL: 'Las facturas no suman nada: el acordado es el precio final.',
+};
+
+export const ESTADOS_PRESUPUESTO: Record<EstadoPresupuesto, Estado> = {
+  BORRADOR: { texto: 'Borrador', tono: 'info' },
+  ENVIADO: { texto: 'Enviado', tono: 'pendiente' },
+  ACEPTADO: { texto: 'Aceptado', tono: 'ok' },
+  RECHAZADO: { texto: 'Rechazado', tono: 'error' },
+  VENCIDO: { texto: 'Vencido', tono: 'info', tachado: true },
+};
+
+export const FORMAS_COTIZAR: Record<FormaCotizar, string> = {
+  POR_ITEM: 'Por ítem',
+  GLOBAL: 'Total global',
+  SUPERFICIE: 'Por superficie',
+};
+
+export const IVA_PRESUPUESTO: Record<IvaPresupuesto, string> = {
+  NO_INCLUYE: 'Aclarar que no incluye IVA',
+  DISCRIMINADO: 'IVA discriminado y total con IVA',
+  SIN_IVA: 'Sin mencionar el IVA',
+};
+
+/** "Plazo de obra: {valor}." con su valor. */
+export function textoObservacion(o: { texto: string; valor?: string }): string {
+  if (o.texto.includes('{valor}')) return o.texto.replace('{valor}', o.valor?.trim() || '…');
+  return o.valor ? `${o.texto} ${o.valor}` : o.texto;
+}
+
+export const PRECIOS_LISTADO: Record<'NINGUNO' | 'COSTO' | 'VENTA', string> = {
+  NINGUNO: 'Sin precios (para pedir cotización)',
+  COSTO: 'Precios de costo',
+  VENTA: 'Precios de venta (para el cliente)',
+};
+
+export const UNIDADES_MATERIAL = ['barras', 'metros', 'chapas', 'unidades', 'litros', 'm³', 'kg', 'rollos'];

@@ -4,7 +4,10 @@ import { createPortal } from 'react-dom';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
+  FileText,
+  HardHat,
   LogOut,
+  Package,
   Menu,
   PanelLeftClose,
   PanelLeftOpen,
@@ -17,19 +20,26 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { useAuth } from '@/auth/auth-context';
+import { useEmpresa, type Modulo } from '@/lib/modulos';
 import type { Certificado } from '@/lib/tipos';
 import { useApi } from '@/lib/useApi';
 import { Aviso, Boton, Etiqueta, ID_BARRA_MIGAS, Modal } from './ui';
 
-type ItemNav = { a: string; texto: string; icono: LucideIcon; secundario?: boolean };
+/** `modulos`: el ítem se ve si la empresa tiene alguno de esos módulos habilitado. */
+type ItemNav = { a: string; texto: string; icono: LucideIcon; secundario?: boolean; modulos?: Modulo[] };
 
-const NAV: ItemNav[] = [
-  { a: '/comprobantes', texto: 'Comprobantes', icono: Receipt },
-  { a: '/clientes', texto: 'Clientes', icono: Users },
-  { a: '/cuenta-corriente', texto: 'Cuenta corriente', icono: Wallet },
-  // Secundario: va pegado al fondo del menú.
-  { a: '/configuracion', texto: 'Configuración', icono: Settings, secundario: true },
-];
+function itemsNav(etiquetaPlural: string): ItemNav[] {
+  return [
+    { a: '/comprobantes', texto: 'Comprobantes', icono: Receipt, modulos: ['comprobantes', 'recibos'] },
+    { a: '/clientes', texto: 'Clientes', icono: Users },
+    { a: '/proyectos', texto: etiquetaPlural, icono: HardHat, modulos: ['proyectos'] },
+    { a: '/cuenta-corriente', texto: 'Cuenta corriente', icono: Wallet, modulos: ['cuenta-corriente'] },
+    { a: '/presupuestos', texto: 'Presupuestos', icono: FileText, modulos: ['presupuestos'] },
+    { a: '/materiales', texto: 'Materiales', icono: Package, modulos: ['materiales'] },
+    // Secundario: va pegado al fondo del menú.
+    { a: '/configuracion', texto: 'Configuración', icono: Settings, secundario: true },
+  ];
+}
 
 const claseMenuBase =
   'fk-sobre-oscuro flex shrink-0 flex-col gap-8 overflow-y-auto bg-fk-fiordo py-6 text-fk-blanco-roto transition-[width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] [scrollbar-width:thin] [scrollbar-color:color-mix(in_srgb,var(--fk-blanco-roto)_25%,transparent)_transparent]';
@@ -59,7 +69,9 @@ function AvisoConfiguracionPendiente() {
   const navigate = useNavigate();
   const location = useLocation();
   const yaEstaAhi = location.pathname.startsWith('/primeros-pasos') || location.search.includes('tab=certificados');
-  const abierto = recienIngresado && tenant?.ambienteArca !== 'PRODUCCION' && !yaEstaAhi;
+  // Solo para quien factura con ARCA: sin el módulo de comprobantes, el certificado no hace falta.
+  const factura = useEmpresa().tiene('comprobantes');
+  const abierto = factura && recienIngresado && tenant?.ambienteArca !== 'PRODUCCION' && !yaEstaAhi;
 
   // Si el ingreso llevó directo a esa pantalla, el aviso ya no hace falta (ni más tarde, al salir de ahí).
   useEffect(() => {
@@ -186,7 +198,10 @@ export function AppLayout() {
   const iniciales = inicialesDe(usuario?.nombre, usuario?.email);
   const nombreEmpresa = tenant?.nombre ?? 'Mi perfil';
   const enPerfil = location.pathname.startsWith('/perfil');
-  const enPruebas = tenant?.ambienteArca === 'HOMOLOGACION';
+  const empresa = useEmpresa();
+  const NAV = itemsNav(empresa.etiquetaPlural).filter((i) => !i.modulos || i.modulos.some((m) => empresa.tiene(m)));
+  // El ambiente de pruebas de ARCA solo importa si la empresa factura.
+  const enPruebas = tenant?.ambienteArca === 'HOMOLOGACION' && empresa.tiene('comprobantes');
   // Empresa recién registrada: en Configuración y en Primeros pasos ya está el formulario, ahí el aviso sobra.
   const enConfiguracion = location.pathname.startsWith('/configuracion') || location.pathname.startsWith('/primeros-pasos');
   const faltanDatosFiscales = tenant?.datosFiscalesCompletos === false && !enConfiguracion;

@@ -15,6 +15,11 @@ export interface TenantSesion {
   ambienteArca?: 'HOMOLOGACION' | 'PRODUCCION';
   /** false en una empresa recién registrada hasta que cargue sus datos fiscales en Configuración. */
   datosFiscalesCompletos?: boolean;
+  /** Módulos habilitados de la empresa: el menú y las pantallas muestran solo estos. */
+  modulos?: string[];
+  /** Cómo se llama la entidad Proyecto en esta empresa (ej. "Obra" / "Obras"). */
+  etiquetaProyecto?: string;
+  etiquetaProyectoPlural?: string;
 }
 
 export interface DatosRegistro {

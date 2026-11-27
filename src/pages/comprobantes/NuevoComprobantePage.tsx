@@ -2,6 +2,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { FilePlus, FileSpreadsheet, HandCoins, Receipt, ScrollText, Wallet, type LucideIcon } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { EncabezadoPagina } from '@/components/ui';
+import { useEmpresa, type Modulo } from '@/lib/modulos';
 import { CreacionMasiva } from '@/pages/importaciones/ImportacionesPage';
 import { FormularioRecibo } from '@/pages/recibos/RecibosPage';
 import { EditorComprobante } from './EditorComprobante';
@@ -9,21 +10,21 @@ import { EditorComprobante } from './EditorComprobante';
 type Clase = 'factura' | 'recibo';
 type Modo = 'una' | 'masiva' | 'cobro' | 'pago';
 
-type Opcion<T extends string> = { id: T; titulo: string; ayuda: string; icono: LucideIcon };
+type Opcion<T extends string> = { id: T; titulo: string; ayuda: string; icono: LucideIcon; modulo?: Modulo };
 
-const CLASES: Opcion<Clase>[] = [
-  { id: 'factura', titulo: 'Factura', ayuda: 'Con CAE de ARCA', icono: Receipt },
-  { id: 'recibo', titulo: 'Recibo', ayuda: 'PDF con tu logo', icono: ScrollText },
+const TODAS_CLASES: Opcion<Clase>[] = [
+  { id: 'factura', titulo: 'Factura', ayuda: 'Con CAE de ARCA', icono: Receipt, modulo: 'comprobantes' },
+  { id: 'recibo', titulo: 'Recibo', ayuda: 'PDF con tu logo', icono: ScrollText, modulo: 'recibos' },
 ];
 
-const MODOS: Record<Clase, Opcion<Modo>[]> = {
+const TODOS_MODOS: Record<Clase, Opcion<Modo>[]> = {
   factura: [
     { id: 'una', titulo: 'Una sola', ayuda: 'La cargás a mano', icono: FilePlus },
-    { id: 'masiva', titulo: 'Masiva', ayuda: 'Desde una planilla', icono: FileSpreadsheet },
+    { id: 'masiva', titulo: 'Masiva', ayuda: 'Desde una planilla', icono: FileSpreadsheet, modulo: 'importaciones' },
   ],
   recibo: [
     { id: 'cobro', titulo: 'De cobro', ayuda: 'Un cliente te paga', icono: HandCoins },
-    { id: 'pago', titulo: 'De pago', ayuda: 'Vos le pagás a alguien', icono: Wallet },
+    { id: 'pago', titulo: 'De pago', ayuda: 'Vos le pagás a alguien', icono: Wallet, modulo: 'recibos-pago' },
   ],
 };
 
@@ -36,11 +37,16 @@ export function NuevoComprobantePage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [params, setParams] = useSearchParams();
+  // Solo lo que la empresa tiene habilitado (ej. sin recibos de pago ni factura masiva).
+  const { tiene } = useEmpresa();
+  const habilitada = (o: Opcion<string>) => !o.modulo || tiene(o.modulo);
+  const CLASES = TODAS_CLASES.filter(habilitada);
+  const MODOS: Record<Clase, Opcion<Modo>[]> = { factura: TODOS_MODOS.factura.filter(habilitada), recibo: TODOS_MODOS.recibo.filter(habilitada) };
 
   const modoUrl = params.get('modo');
   // `?modo=masiva` sin tipo (link viejo de Creación masiva) es una factura.
   const clase = (params.get('tipo') ?? (modoUrl === 'una' || modoUrl === 'masiva' ? 'factura' : null)) as Clase | null;
-  const claseValida = clase && clase in MODOS ? clase : null;
+  const claseValida = clase && CLASES.some((c) => c.id === clase) ? clase : null;
   const modo = claseValida && MODOS[claseValida].some((m) => m.id === modoUrl) ? (modoUrl as Modo) : null;
 
   function elegir(nuevaClase: Clase | null, nuevoModo: Modo | null) {

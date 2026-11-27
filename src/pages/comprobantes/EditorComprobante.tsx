@@ -4,7 +4,8 @@ import { Link } from 'react-router-dom';
 import { Plus, Trash2 } from 'lucide-react';
 import { AlertaError, Aviso, Boton, BotonIcono, Campo, Cargando, claseInput, Entrada, EntradaNumero, Selector, Tarjeta } from '@/components/ui';
 import { ALICUOTAS, CONCEPTOS, conLetra, dinero, hoy, soloFecha, sugerirLetra, UNIDADES } from '@/lib/formato';
-import type { Cliente, Comprobante, Concepto, Emisor, Linea, Moneda, PuntoVenta, Unidad } from '@/lib/tipos';
+import { useEmpresa } from '@/lib/modulos';
+import type { Cliente, Comprobante, Concepto, Emisor, Linea, Moneda, ProyectoResumen, PuntoVenta, Unidad } from '@/lib/tipos';
 import { useApi } from '@/lib/useApi';
 
 type Letra = 'A' | 'B' | 'C';
@@ -69,6 +70,8 @@ interface Form {
   moneda: Moneda;
   cancelaMismaMoneda: boolean;
   observaciones: string;
+  /** Proyecto (obra) del cliente: la cuenta corriente aplica su modo de IVA. */
+  proyectoId: string;
   motivo: string;
   lineas: Linea[];
 }
@@ -87,6 +90,7 @@ function formInicial(c?: Comprobante): Form {
       moneda: 'ARS',
       cancelaMismaMoneda: false,
       observaciones: '',
+      proyectoId: '',
       motivo: '',
       lineas: [lineaVacia('SERVICIOS')],
     };
@@ -103,6 +107,7 @@ function formInicial(c?: Comprobante): Form {
     moneda: c.moneda,
     cancelaMismaMoneda: c.cancelaMismaMoneda,
     observaciones: c.observaciones ?? '',
+    proyectoId: c.proyectoId ?? '',
     motivo: c.motivo ?? '',
     lineas: c.lineas.map((l) => ({
       descripcion: l.descripcion,
@@ -155,6 +160,12 @@ export function EditorComprobante({
 
   const emisor = useQuery({ queryKey: ['emisor'], queryFn: () => pedir<Emisor>('/configuracion/emisor') });
   const clientes = useQuery({ queryKey: ['clientes', { q: '', inactivos: false }], queryFn: () => pedir<Cliente[]>('/clientes?') });
+  const empresa = useEmpresa();
+  const proyectos = useQuery({
+    queryKey: ['proyectos', `clienteId=${form.clienteId}`],
+    queryFn: () => pedir<ProyectoResumen[]>(`/proyectos?clienteId=${form.clienteId}`),
+    enabled: Boolean(form.clienteId) && empresa.tiene('proyectos'),
+  });
   const puntos = useQuery({ queryKey: ['puntos-venta'], queryFn: () => pedir<PuntoVenta[]>('/configuracion/puntos-venta') });
 
   const esNota = Boolean(comprobante?.asociado);
@@ -189,6 +200,7 @@ export function EditorComprobante({
         moneda: form.moneda,
         cancelaMismaMoneda: form.moneda === 'USD' ? form.cancelaMismaMoneda : false,
         observaciones: form.observaciones.trim() || null,
+        ...(empresa.tiene('proyectos') && !esNota ? { proyectoId: form.proyectoId || null } : {}),
         lineas: form.lineas.map((l) => ({
           descripcion: l.descripcion.trim(),
           cantidad: normalizarNumero(l.cantidad),
@@ -223,6 +235,8 @@ export function EditorComprobante({
     setForm((f) => ({
       ...f,
       clienteId: id,
+      // Los proyectos son de cada cliente.
+      proyectoId: id === f.clienteId ? f.proyectoId : '',
       // En un alta, la moneda y el vencimiento siguen al cliente mientras el usuario no los toque.
       ...(!comprobante && c
         ? {
@@ -475,6 +489,18 @@ export function EditorComprobante({
           {esNota && (
             <Campo etiqueta="Motivo de la nota">
               <Entrada value={form.motivo} onChange={(e) => cambiar('motivo', e.target.value)} maxLength={500} />
+            </Campo>
+          )}
+          {empresa.tiene('proyectos') && !esNota && (proyectos.data?.length ?? 0) > 0 && (
+            <Campo etiqueta={empresa.etiqueta} ayuda="Opcional. Con monto acordado, la factura suma a la cuenta según el IVA de la obra.">
+              <Selector value={form.proyectoId} onChange={(e) => cambiar('proyectoId', e.target.value)}>
+                <option value="">Sin {empresa.etiquetaMin}</option>
+                {proyectos.data!.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.nombre}
+                  </option>
+                ))}
+              </Selector>
             </Campo>
           )}
           <Campo etiqueta="Observaciones" ayuda="Opcional. Se imprimen en el PDF.">
