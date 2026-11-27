@@ -18,6 +18,8 @@ import { LoginPage } from './pages/LoginPage';
 import { PerfilPage } from './pages/PerfilPage';
 import { NuevoProyectoPage } from './pages/proyectos/NuevoProyectoPage';
 import { BibliotecaPage } from './pages/presupuestos/BibliotecaPage';
+import { ListadoPage } from './pages/materiales/ListadoPage';
+import { MaterialesPage } from './pages/materiales/MaterialesPage';
 import { PresupuestoPage } from './pages/presupuestos/PresupuestoPage';
 import { PresupuestosPage } from './pages/presupuestos/PresupuestosPage';
 import { ProyectoDetallePage } from './pages/proyectos/ProyectoDetallePage';
@@ -78,6 +80,9 @@ export default function App() {
         <Route path="presupuestos/nuevo" element={<PresupuestoPage />} />
         <Route path="presupuestos/biblioteca" element={<BibliotecaPage />} />
         <Route path="presupuestos/:id" element={<PresupuestoPage />} />
+        <Route path="materiales" element={<MaterialesPage />} />
+        <Route path="materiales/listados/nuevo" element={<ListadoPage />} />
+        <Route path="materiales/listados/:id" element={<ListadoPage />} />
         <Route path="cuenta-corriente" element={<CuentaCorrientePage />} />
         <Route path="cuenta-corriente/:clienteId" element={<CuentaClientePage />} />
         <Route path="configuracion" element={<ConfiguracionPage />} />

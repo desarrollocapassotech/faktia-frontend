@@ -665,3 +665,73 @@ export interface ObservacionCatalogo {
   orden: number;
   activo: boolean;
 }
+
+// ─────────────────────────────── Materiales ───────────────────────────────
+
+export interface Proveedor {
+  id: string;
+  nombre: string;
+  cuit: string | null;
+  contacto: string | null;
+  telefono: string | null;
+  email: string | null;
+  notas: string | null;
+  activo: boolean;
+}
+
+export interface Material {
+  id: string;
+  nombre: string;
+  unidad: string;
+  categoria: string | null;
+  precioCosto: string | null;
+  monedaCosto: Moneda;
+  precioVenta: string | null;
+  monedaVenta: Moneda;
+  proveedorId: string | null;
+  proveedor: { id: string; nombre: string } | null;
+  preciosActualizadosEn: string | null;
+  activo: boolean;
+}
+
+export type PreciosListado = 'NINGUNO' | 'COSTO' | 'VENTA';
+
+export interface RenglonListado {
+  id: string;
+  orden: number;
+  cantidad: string;
+  materialId: string | null;
+  nombre: string;
+  unidad: string;
+  precioCosto: string | null;
+  monedaCosto: Moneda | null;
+  precioVenta: string | null;
+  monedaVenta: Moneda | null;
+  subtotal: string | null;
+}
+
+export interface ListadoMateriales {
+  id: string;
+  titulo: string;
+  fecha: string;
+  proyecto: { id: string; nombre: string } | null;
+  presupuesto: { id: string; numero: string } | null;
+  proveedor: { id: string; nombre: string } | null;
+  destino: string | null;
+  observaciones: string | null;
+  precios: PreciosListado;
+  renglones: RenglonListado[];
+  totales: TotalCc[];
+  renglonesSinPrecio: number;
+}
+
+export interface ListadoResumen {
+  id: string;
+  titulo: string;
+  fecha: string;
+  proyecto: { id: string; nombre: string } | null;
+  proveedor: { id: string; nombre: string } | null;
+  precios: PreciosListado;
+  renglones: number;
+  totales: TotalCc[];
+}

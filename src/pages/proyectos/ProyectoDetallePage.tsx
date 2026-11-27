@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Fragment, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { FileText, HandCoins, Pencil, Plus, Trash2 } from 'lucide-react';
+import { FileText, HandCoins, Package, Pencil, Plus, Trash2 } from 'lucide-react';
 import {
   AlertaError,
   Boton,
@@ -35,7 +35,7 @@ export function ProyectoDetallePage() {
   const { pedir, verEnPestana } = useApi();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { etiqueta, etiquetaPlural, etiquetaMin } = useEmpresa();
+  const { etiqueta, etiquetaPlural, etiquetaMin, tiene } = useEmpresa();
   const [modal, setModal] = useState<ModalAbierto>(null);
   const [errorPdf, setErrorPdf] = useState<unknown>(null);
   const { data: p, error } = useQuery({
@@ -92,6 +92,12 @@ export function ProyectoDetallePage() {
         }
         acciones={
           <>
+            {tiene('materiales') && (
+              <Boton variante="terciario" onClick={() => navigate(`/materiales/listados/nuevo?proyecto=${p.id}`)}>
+                <Package className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+                Listado de materiales
+              </Boton>
+            )}
             <Boton variante="terciario" onClick={() => setModal({ tipo: 'datos' })}>
               <Pencil className="h-4 w-4" strokeWidth={1.75} aria-hidden />
               Editar datos

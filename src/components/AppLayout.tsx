@@ -7,6 +7,7 @@ import {
   FileText,
   HardHat,
   LogOut,
+  Package,
   Menu,
   PanelLeftClose,
   PanelLeftOpen,
@@ -34,6 +35,7 @@ function itemsNav(etiquetaPlural: string): ItemNav[] {
     { a: '/proyectos', texto: etiquetaPlural, icono: HardHat, modulos: ['proyectos'] },
     { a: '/cuenta-corriente', texto: 'Cuenta corriente', icono: Wallet, modulos: ['cuenta-corriente'] },
     { a: '/presupuestos', texto: 'Presupuestos', icono: FileText, modulos: ['presupuestos'] },
+    { a: '/materiales', texto: 'Materiales', icono: Package, modulos: ['materiales'] },
     // Secundario: va pegado al fondo del menú.
     { a: '/configuracion', texto: 'Configuración', icono: Settings, secundario: true },
   ];

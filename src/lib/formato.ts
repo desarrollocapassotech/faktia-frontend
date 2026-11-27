@@ -259,3 +259,11 @@ export function textoObservacion(o: { texto: string; valor?: string }): string {
   if (o.texto.includes('{valor}')) return o.texto.replace('{valor}', o.valor?.trim() || '…');
   return o.valor ? `${o.texto} ${o.valor}` : o.texto;
 }
+
+export const PRECIOS_LISTADO: Record<'NINGUNO' | 'COSTO' | 'VENTA', string> = {
+  NINGUNO: 'Sin precios (para pedir cotización)',
+  COSTO: 'Precios de costo',
+  VENTA: 'Precios de venta (para el cliente)',
+};
+
+export const UNIDADES_MATERIAL = ['barras', 'metros', 'chapas', 'unidades', 'litros', 'm³', 'kg', 'rollos'];
