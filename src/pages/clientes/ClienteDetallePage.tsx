@@ -1,10 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
 import { Pencil, Plus, Wallet } from 'lucide-react';
+import { claseBoton } from '@/components/estilos';
 import type { ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { AlertaError, Boton, Cargando, ContenedorTabla, EncabezadoPagina, Etiqueta, EtiquetaEstado, EtiquetaPrueba, Tarjeta, Vacio } from '@/components/ui';
-import { CONDICIONES_IVA, dinero, documentoCliente, ESTADOS, fecha, numeroComprobante, tipoLargo } from '@/lib/formato';
-import type { Cliente, FilaComprobantes, Paginado } from '@/lib/tipos';
+import { CONDICIONES_IVA, dinero, documentoCliente, ESTADOS, ESTADOS_PRESUPUESTO, ESTADOS_PROYECTO, fecha, numeroComprobante, tipoLargo } from '@/lib/formato';
+import { useEmpresa } from '@/lib/modulos';
+import type { Cliente, FilaComprobantes, Paginado, PresupuestoResumen, ProyectoResumen } from '@/lib/tipos';
 import { useApi } from '@/lib/useApi';
 
 const ULTIMOS = 10;
@@ -60,6 +62,8 @@ export function ClienteDetallePage() {
           <Dato titulo="Estado" valor={c.activo ? 'Activo' : 'Inactivo (no aparece al facturar)'} />
         </dl>
       </Tarjeta>
+
+      <ObrasYPresupuestos clienteId={c.id} />
 
       <Tarjeta
         titulo="Últimos comprobantes"
@@ -126,6 +130,125 @@ export function ClienteDetallePage() {
           </>
         )}
       </Tarjeta>
+    </div>
+  );
+}
+
+/** Obras (proyectos) y presupuestos del cliente, según los módulos de la empresa. */
+function ObrasYPresupuestos({ clienteId }: { clienteId: string }) {
+  const { pedir } = useApi();
+  const { tiene, etiqueta, etiquetaPlural, etiquetaMin } = useEmpresa();
+  const conProyectos = tiene('proyectos');
+  const conPresupuestos = tiene('presupuestos');
+  const proyectos = useQuery({
+    queryKey: ['proyectos', `clienteId=${clienteId}`],
+    queryFn: () => pedir<ProyectoResumen[]>(`/proyectos?clienteId=${encodeURIComponent(clienteId)}`),
+    enabled: conProyectos,
+  });
+  const presupuestos = useQuery({
+    queryKey: ['presupuestos', `clienteId=${clienteId}`],
+    queryFn: () => pedir<PresupuestoResumen[]>(`/presupuestos?clienteId=${encodeURIComponent(clienteId)}`),
+    enabled: conPresupuestos,
+  });
+  if (!conProyectos && !conPresupuestos) return null;
+  return (
+    <div className={`grid gap-6 ${conProyectos && conPresupuestos ? 'xl:grid-cols-2' : ''} xl:items-start`}>
+      {conProyectos && (
+        <Tarjeta
+          titulo={etiquetaPlural}
+          acciones={
+            <Link to={`/proyectos/nuevo?cliente=${clienteId}`} className={claseBoton('terciario')}>
+              <Plus className="h-4 w-4" strokeWidth={2} aria-hidden />
+              Nueva {etiquetaMin}
+            </Link>
+          }
+        >
+          {proyectos.error ? (
+            <AlertaError error={proyectos.error} />
+          ) : !proyectos.data ? (
+            <Cargando />
+          ) : proyectos.data.length === 0 ? (
+            <Vacio>Todavía no tiene {etiquetaPlural.toLowerCase()}.</Vacio>
+          ) : (
+            <ContenedorTabla>
+              <table className="fk-tabla">
+                <thead>
+                  <tr>
+                    <th>{etiqueta}</th>
+                    <th>Estado</th>
+                    <th className="fk-num">Saldo</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {proyectos.data.map((p) => (
+                    <tr key={p.id}>
+                      <td>
+                        <Link to={`/proyectos/${p.id}`} className="font-medium text-fk-fiordo underline-offset-2 hover:underline">
+                          {p.nombre}
+                        </Link>
+                        {p.ubicacion && <span className="block text-xs text-fk-gris-texto">{p.ubicacion}</span>}
+                      </td>
+                      <td>
+                        <EtiquetaEstado estado={ESTADOS_PROYECTO[p.estado]} />
+                      </td>
+                      <td className="fk-num">{dinero(p.saldos.saldo, p.moneda)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </ContenedorTabla>
+          )}
+        </Tarjeta>
+      )}
+      {conPresupuestos && (
+        <Tarjeta
+          titulo="Presupuestos"
+          acciones={
+            <Link to={`/presupuestos/nuevo?cliente=${clienteId}`} className={claseBoton('terciario')}>
+              <Plus className="h-4 w-4" strokeWidth={2} aria-hidden />
+              Nuevo presupuesto
+            </Link>
+          }
+        >
+          {presupuestos.error ? (
+            <AlertaError error={presupuestos.error} />
+          ) : !presupuestos.data ? (
+            <Cargando />
+          ) : presupuestos.data.length === 0 ? (
+            <Vacio>Todavía no tiene presupuestos.</Vacio>
+          ) : (
+            <ContenedorTabla>
+              <table className="fk-tabla">
+                <thead>
+                  <tr>
+                    <th>Número</th>
+                    <th>Trabajo</th>
+                    <th>Estado</th>
+                    <th className="fk-num">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {presupuestos.data.map((p) => (
+                    <tr key={p.id}>
+                      <td className="whitespace-nowrap tabular-nums">
+                        <Link to={`/presupuestos/${p.id}`} className="font-medium text-fk-fiordo underline-offset-2 hover:underline">
+                          {p.numero}
+                        </Link>
+                        <span className="block text-xs text-fk-gris-texto">{fecha(p.fecha)}</span>
+                      </td>
+                      <td>{p.titulo ?? p.lugar ?? '—'}</td>
+                      <td>
+                        <EtiquetaEstado estado={ESTADOS_PRESUPUESTO[p.estado]} />
+                      </td>
+                      <td className="fk-num">{dinero(p.total, p.moneda)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </ContenedorTabla>
+          )}
+        </Tarjeta>
+      )}
     </div>
   );
 }

@@ -1,8 +1,8 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Trash2 } from 'lucide-react';
-import { AlertaError, Aviso, Boton, BotonIcono, Campo, Cargando, claseInput, Entrada, EntradaNumero, Selector, Tarjeta } from '@/components/ui';
+import { AlertaError, Aviso, Boton, BotonIcono, Campo, Cargando, claseInput, Entrada, EntradaNumero, Modal, Selector, Tarjeta } from '@/components/ui';
 import { ALICUOTAS, CONCEPTOS, conLetra, dinero, hoy, soloFecha, sugerirLetra, UNIDADES } from '@/lib/formato';
 import { useEmpresa } from '@/lib/modulos';
 import type { Cliente, Comprobante, Concepto, Emisor, Linea, Moneda, ProyectoResumen, PuntoVenta, Unidad } from '@/lib/tipos';
@@ -161,6 +161,7 @@ export function EditorComprobante({
   const emisor = useQuery({ queryKey: ['emisor'], queryFn: () => pedir<Emisor>('/configuracion/emisor') });
   const clientes = useQuery({ queryKey: ['clientes', { q: '', inactivos: false }], queryFn: () => pedir<Cliente[]>('/clientes?') });
   const empresa = useEmpresa();
+  const [nuevaObra, setNuevaObra] = useState(false);
   const proyectos = useQuery({
     queryKey: ['proyectos', `clienteId=${form.clienteId}`],
     queryFn: () => pedir<ProyectoResumen[]>(`/proyectos?clienteId=${form.clienteId}`),
@@ -491,16 +492,22 @@ export function EditorComprobante({
               <Entrada value={form.motivo} onChange={(e) => cambiar('motivo', e.target.value)} maxLength={500} />
             </Campo>
           )}
-          {empresa.tiene('proyectos') && !esNota && (proyectos.data?.length ?? 0) > 0 && (
+          {empresa.tiene('proyectos') && !esNota && form.clienteId && (
             <Campo etiqueta={empresa.etiqueta} ayuda="Opcional. Con monto acordado, la factura suma a la cuenta según el IVA de la obra.">
-              <Selector value={form.proyectoId} onChange={(e) => cambiar('proyectoId', e.target.value)}>
-                <option value="">Sin {empresa.etiquetaMin}</option>
-                {proyectos.data!.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.nombre}
-                  </option>
-                ))}
-              </Selector>
+              <div className="flex gap-2">
+                <Selector value={form.proyectoId} onChange={(e) => cambiar('proyectoId', e.target.value)} className="min-w-0 flex-1">
+                  <option value="">Sin {empresa.etiquetaMin}</option>
+                  {(proyectos.data ?? []).map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.nombre}
+                    </option>
+                  ))}
+                </Selector>
+                <Boton variante="terciario" onClick={() => setNuevaObra(true)} className="shrink-0" title={`Nueva ${empresa.etiquetaMin} para este cliente`}>
+                  <Plus className="h-4 w-4" strokeWidth={2} aria-hidden />
+                  Nueva
+                </Boton>
+              </div>
             </Campo>
           )}
           <Campo etiqueta="Observaciones" ayuda="Opcional. Se imprimen en el PDF.">
@@ -514,6 +521,17 @@ export function EditorComprobante({
         </div>
       </Tarjeta>
 
+      {nuevaObra && (
+        <NuevaObraModal
+          clienteId={form.clienteId}
+          moneda={form.moneda}
+          onCerrar={() => setNuevaObra(false)}
+          onCreada={(id) => {
+            cambiar('proyectoId', id);
+            setNuevaObra(false);
+          }}
+        />
+      )}
       <AlertaError mensaje={errorLocal} />
       <AlertaError error={guardar.error} />
       <div className="flex flex-wrap items-center justify-end gap-2">
@@ -524,5 +542,49 @@ export function EditorComprobante({
         </Boton>
       </div>
     </form>
+  );
+}
+
+/** Alta rápida de una obra para el cliente de la factura (sin salir del editor). */
+function NuevaObraModal({ clienteId, moneda, onCerrar, onCreada }: { clienteId: string; moneda: Moneda; onCerrar: () => void; onCreada: (id: string) => void }) {
+  const { pedir } = useApi();
+  const queryClient = useQueryClient();
+  const { etiquetaMin } = useEmpresa();
+  const [nombre, setNombre] = useState('');
+  const [montoAcordado, setMontoAcordado] = useState('');
+  const crear = useMutation({
+    mutationFn: () =>
+      pedir<{ id: string }>('/proyectos', 'POST', {
+        clienteId,
+        nombre: nombre.trim(),
+        moneda,
+        montoAcordado: montoAcordado ? Number(montoAcordado).toFixed(2) : null,
+        hitos: [],
+      }),
+    onSuccess: (p) => {
+      void queryClient.invalidateQueries({ queryKey: ['proyectos'] });
+      onCreada(p.id);
+    },
+  });
+  return (
+    <Modal abierto titulo={`Nueva ${etiquetaMin}`} onCerrar={onCerrar}>
+      <div className="space-y-4">
+        <Campo etiqueta="Nombre">
+          <Entrada value={nombre} onChange={(e) => setNombre(e.target.value)} maxLength={200} autoFocus />
+        </Campo>
+        <Campo etiqueta="Monto acordado" ayuda={`Opcional. Sin acordado, la factura suma su total. El plan de pagos se carga después, en la ${etiquetaMin}.`}>
+          <EntradaNumero value={montoAcordado} onValueChange={setMontoAcordado} sinNegativos />
+        </Campo>
+        <AlertaError error={crear.error} />
+        <div className="flex justify-end gap-2">
+          <Boton variante="terciario" onClick={onCerrar}>
+            Cancelar
+          </Boton>
+          <Boton variante="secundario" onClick={() => crear.mutate()} cargando={crear.isPending} disabled={!nombre.trim()}>
+            Crear {etiquetaMin}
+          </Boton>
+        </div>
+      </div>
+    </Modal>
   );
 }

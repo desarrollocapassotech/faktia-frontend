@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ArrowDown, ArrowUp, BookOpen, Calculator, Copy, FileText, Grid2x2, HardHat, List, Plus, Trash2, UserPlus, type LucideIcon } from 'lucide-react';
 import { EditorTexto, TextoFormato } from '@/components/EditorTexto';
 import {
@@ -75,8 +75,10 @@ function Formulario({ presupuesto, catalogo, diasValidez }: { presupuesto?: Pres
   const { etiqueta, etiquetaMin, tiene } = useEmpresa();
   const editable = !presupuesto || presupuesto.editable;
   const clientes = useQuery({ queryKey: ['clientes', 'todos'], queryFn: () => pedir<Cliente[]>('/clientes') });
+  const [params] = useSearchParams();
 
-  const [clienteId, setClienteId] = useState(presupuesto?.clienteId ?? '');
+  // Desde la ficha del cliente llega ya elegido (?cliente=).
+  const [clienteId, setClienteId] = useState(presupuesto?.clienteId ?? params.get('cliente') ?? '');
   const [altaCliente, setAltaCliente] = useState(false);
   const [fecha, setFecha] = useState(presupuesto?.fecha ?? hoy());
   const [vencimiento, setVencimiento] = useState(presupuesto?.fechaVencimiento ?? sumarDias(hoy(), diasValidez));
